@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,58 +8,85 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Users, Target, Search, Filter, Plus, MoreVertical, Edit, Trash2, Copy, Eye } from 'lucide-react';
 import CreatePersonaModal from '@/components/modals/CreatePersonaModal';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useWorkspace } from '@/hooks/useWorkspace';
 
-const personas = [
-  {
-    id: 1,
-    name: 'Ana Executiva',
-    description: 'Profissional ambiciosa que busca crescimento na carreira',
-    segment: 'B2B',
-    ageRange: '28-35',
-    location: 'São Paulo, SP',
-    painPoints: ['Falta de tempo', 'Pressão por resultados'],
-    goals: ['Crescimento profissional', 'Eficiência em campanhas'],
-    channels: ['LinkedIn', 'Instagram'],
-    campaigns: 12
-  },
-  {
-    id: 2,
-    name: 'João Empreendedor',
-    description: 'Fundador de startup tech focado em crescimento',
-    segment: 'Startups',
-    ageRange: '25-35',
-    location: 'Rio de Janeiro, RJ',
-    painPoints: ['Recursos limitados', 'Competição'],
-    goals: ['Crescimento rápido', 'Automação'],
-    channels: ['Twitter', 'LinkedIn'],
-    campaigns: 8
-  },
-  {
-    id: 3,
-    name: 'Maria Consultora',
-    description: 'Consultora experiente em transformação digital',
-    segment: 'Consultoria',
-    ageRange: '35-45',
-    location: 'Belo Horizonte, MG',
-    painPoints: ['Credibilidade online', 'Geração de leads'],
-    goals: ['Autoridade no mercado', 'Pipeline de clientes'],
-    channels: ['LinkedIn', 'Blog'],
-    campaigns: 6
-  }
-];
+interface Persona {
+  id: string;
+  name: string;
+  occupation: string;
+  age_range: string;
+  location: string;
+  pain_points: string[];
+  goals: string[];
+  interests: string[];
+  preferred_channels: string[];
+  usage_count: number;
+  created_at: string;
+}
 
 const Personas = () => {
+  const { user } = useAuth();
+  const { workspace } = useWorkspace();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSegment, setFilterSegment] = useState('Todos');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [personasList, setPersonasList] = useState(personas);
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingPersona, setEditingPersona] = useState(null);
 
-  const handleCreatePersona = (newPersona: any) => {
-    if (editingPersona) {
-      setPersonasList(prev => prev.map(p => p.id === editingPersona.id ? newPersona : p));
-    } else {
-      setPersonasList(prev => [newPersona, ...prev]);
+  useEffect(() => {
+    const fetchPersonas = async () => {
+      if (!workspace) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('target_personas')
+          .select('*')
+          .eq('workspace_id', workspace.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching personas:', error);
+        } else {
+          setPersonas(data || []);
+        }
+      } catch (error) {
+        console.error('Error in personas fetch:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPersonas();
+  }, [workspace]);
+
+  const handleCreatePersona = async (newPersona: any) => {
+    if (!workspace || !user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('target_personas')
+        .insert({
+          ...newPersona,
+          workspace_id: workspace.id,
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating persona:', error);
+      } else {
+        if (editingPersona) {
+          setPersonas(prev => prev.map(p => p.id === editingPersona.id ? data : p));
+        } else {
+          setPersonas(prev => [data, ...prev]);
+        }
+      }
+    } catch (error) {
+      console.error('Error in persona creation:', error);
     }
   };
 
@@ -67,10 +95,26 @@ const Personas = () => {
     setShowCreateModal(true);
   };
 
-  const filteredPersonas = personasList.filter(persona =>
-    persona.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (filterSegment === 'Todos' || persona.segment === filterSegment)
-  );
+  const filteredPersonas = personas.filter(persona => {
+    const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (persona.occupation && persona.occupation.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSegment = filterSegment === 'Todos' || 
+                          (persona.occupation && persona.occupation.toLowerCase().includes(filterSegment.toLowerCase()));
+    return matchesSearch && matchesSegment;
+  });
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Personas</h1>
+            <p className="text-muted-foreground">Carregando personas...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -98,7 +142,7 @@ const Personas = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total de Personas</p>
-                <p className="text-2xl font-bold text-foreground">{personasList.length}</p>
+                <p className="text-2xl font-bold text-foreground">{personas.length}</p>
               </div>
               <Users className="w-8 h-8 text-primary" />
             </div>
@@ -111,7 +155,7 @@ const Personas = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Campanhas Ativas</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {personasList.reduce((acc, p) => acc + p.campaigns, 0)}
+                  {personas.reduce((acc, p) => acc + p.usage_count, 0)}
                 </p>
               </div>
               <Target className="w-8 h-8 text-success" />
@@ -123,9 +167,9 @@ const Personas = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Segmentos</p>
+                <p className="text-sm font-medium text-muted-foreground">Ocupações</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {new Set(personasList.map(p => p.segment)).size}
+                  {new Set(personas.map(p => p.occupation).filter(Boolean)).size}
                 </p>
               </div>
               <Filter className="w-8 h-8 text-blue-500" />
@@ -139,7 +183,7 @@ const Personas = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Mais Usada</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {Math.max(...personasList.map(p => p.campaigns))}
+                  {personas.length > 0 ? Math.max(...personas.map(p => p.usage_count)) : 0}
                 </p>
               </div>
               <Eye className="w-8 h-8 text-purple-500" />
@@ -161,14 +205,14 @@ const Personas = () => {
         </div>
         <Select value={filterSegment} onValueChange={setFilterSegment}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filtrar por segmento" />
+            <SelectValue placeholder="Filtrar por ocupação" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Todos">Todos os segmentos</SelectItem>
-            <SelectItem value="B2B">B2B</SelectItem>
-            <SelectItem value="Startups">Startups</SelectItem>
-            <SelectItem value="Consultoria">Consultoria</SelectItem>
-            <SelectItem value="E-commerce">E-commerce</SelectItem>
+            <SelectItem value="Todos">Todas as ocupações</SelectItem>
+            <SelectItem value="Executivo">Executivos</SelectItem>
+            <SelectItem value="Empreendedor">Empreendedores</SelectItem>
+            <SelectItem value="Consultor">Consultores</SelectItem>
+            <SelectItem value="Marketing">Marketing</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -185,7 +229,7 @@ const Personas = () => {
                   </div>
                   <div>
                     <CardTitle className="text-lg">{persona.name}</CardTitle>
-                    <Badge variant="outline">{persona.segment}</Badge>
+                    <Badge variant="outline">{persona.occupation || 'Profissional'}</Badge>
                   </div>
                 </div>
                 
@@ -218,66 +262,70 @@ const Personas = () => {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <CardDescription>{persona.description}</CardDescription>
-
               <div className="space-y-3">
                 <div>
                   <h4 className="text-sm font-medium mb-2">Demografia</h4>
                   <div className="flex gap-2 text-sm text-muted-foreground">
-                    <span>{persona.ageRange} anos</span>
+                    <span>{persona.age_range || '25-45'} anos</span>
                     <span>•</span>
-                    <span>{persona.location}</span>
+                    <span>{persona.location || 'Brasil'}</span>
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Principais Dores</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {persona.painPoints.slice(0, 2).map((pain, i) => (
-                      <Badge key={i} variant="destructive" className="text-xs">
-                        {pain}
-                      </Badge>
-                    ))}
-                    {persona.painPoints.length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{persona.painPoints.length - 2}
-                      </Badge>
-                    )}
+                {persona.pain_points && persona.pain_points.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Principais Dores</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {persona.pain_points.slice(0, 2).map((pain, i) => (
+                        <Badge key={i} variant="destructive" className="text-xs">
+                          {pain}
+                        </Badge>
+                      ))}
+                      {persona.pain_points.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{persona.pain_points.length - 2}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Objetivos</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {persona.goals.slice(0, 2).map((goal, i) => (
-                      <Badge key={i} variant="default" className="text-xs">
-                        {goal}
-                      </Badge>
-                    ))}
-                    {persona.goals.length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{persona.goals.length - 2}
-                      </Badge>
-                    )}
+                {persona.goals && persona.goals.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Objetivos</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {persona.goals.slice(0, 2).map((goal, i) => (
+                        <Badge key={i} variant="default" className="text-xs">
+                          {goal}
+                        </Badge>
+                      ))}
+                      {persona.goals.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{persona.goals.length - 2}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Canais Preferidos</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {persona.channels.map((channel, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {channel}
-                      </Badge>
-                    ))}
+                {persona.preferred_channels && persona.preferred_channels.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Canais Preferidos</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {persona.preferred_channels.map((channel, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {channel}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
                   <Target className="w-4 h-4 inline mr-1" />
-                  {persona.campaigns} campanhas
+                  {persona.usage_count} campanhas
                 </div>
                 <Button variant="outline" size="sm">
                   Usar Persona
@@ -287,6 +335,20 @@ const Personas = () => {
           </Card>
         ))}
       </div>
+
+      {filteredPersonas.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Nenhuma persona encontrada</h3>
+          <p className="text-muted-foreground mb-6">
+            Crie sua primeira persona ou ajuste os filtros de busca.
+          </p>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Criar Primeira Persona
+          </Button>
+        </div>
+      )}
 
       {/* Create Persona Modal */}
       <CreatePersonaModal 

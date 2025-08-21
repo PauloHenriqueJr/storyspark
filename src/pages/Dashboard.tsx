@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -17,72 +18,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateCampaignModal from '@/components/modals/CreateCampaignModal';
-
-const stats = [
-  {
-    title: 'Campanhas Ativas',
-    value: '24',
-    change: '+12%',
-    trend: 'up',
-    icon: Target,
-    color: 'text-primary'
-  },
-  {
-    title: 'Engagement Rate',
-    value: '8.2%',
-    change: '+2.4%',
-    trend: 'up',
-    icon: TrendingUp,
-    color: 'text-emerald-500'
-  },
-  {
-    title: 'Alcance Total',
-    value: '143.2K',
-    change: '+18%',
-    trend: 'up',
-    icon: Users,
-    color: 'text-blue-500'
-  },
-  {
-    title: 'Copies Geradas',
-    value: '89',
-    change: '+34%',
-    trend: 'up',
-    icon: Zap,
-    color: 'text-purple-500'
-  }
-];
-
-const recentActivities = [
-  {
-    title: 'Nova campanha criada',
-    description: 'Black Friday 2024 - E-commerce',
-    time: '2 min atrás',
-    icon: Target,
-    color: 'bg-primary/10 text-primary'
-  },
-  {
-    title: 'Copy otimizada pela IA',
-    description: 'Instagram Stories - Persona: Jovem Urbano',
-    time: '15 min atrás',
-    icon: Bot,
-    color: 'bg-purple-100 text-purple-600'
-  },
-  {
-    title: 'Relatório gerado',
-    description: 'Analytics semanal disponível',
-    time: '1 hora atrás',
-    icon: BarChart3,
-    color: 'bg-blue-100 text-blue-600'
-  },
-  {
-    title: 'Nova integração',
-    description: 'TikTok Business conectado',
-    time: '2 horas atrás',
-    icon: Sparkles,
-    color: 'bg-emerald-100 text-emerald-600'
-  }
-];
+import { useStats } from '@/hooks/useStats';
+import { useRecentActivities } from '@/hooks/useRecentActivities';
+import { useWorkspace } from '@/hooks/useWorkspace';
 
 const quickActions = [
   {
@@ -132,6 +70,9 @@ const staggerContainer = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [showCreateCampaign, setShowCreateCampaign] = useState(false);
+  const { stats, loading: statsLoading } = useStats();
+  const { activities, loading: activitiesLoading } = useRecentActivities();
+  const { workspace, loading: workspaceLoading } = useWorkspace();
 
   const handleQuickAction = (href: string) => {
     if (href === '/campaigns') {
@@ -143,9 +84,43 @@ const Dashboard = () => {
 
   const handleCreateCampaign = (campaign: any) => {
     console.log('Nova campanha criada:', campaign);
-    // Here you would typically save to state management or API
     navigate('/campaigns');
   };
+
+  const statsCards = [
+    {
+      title: 'Campanhas Ativas',
+      value: statsLoading ? '...' : stats.totalCampaigns.toString(),
+      change: '+12%',
+      trend: 'up',
+      icon: Target,
+      color: 'text-primary'
+    },
+    {
+      title: 'Engagement Rate',
+      value: statsLoading ? '...' : stats.engagementRate,
+      change: '+2.4%',
+      trend: 'up',
+      icon: TrendingUp,
+      color: 'text-emerald-500'
+    },
+    {
+      title: 'Alcance Total',
+      value: statsLoading ? '...' : stats.totalReach,
+      change: '+18%',
+      trend: 'up',
+      icon: Users,
+      color: 'text-blue-500'
+    },
+    {
+      title: 'Copies Geradas',
+      value: statsLoading ? '...' : stats.copiesGenerated.toString(),
+      change: '+34%',
+      trend: 'up',
+      icon: Zap,
+      color: 'text-purple-500'
+    }
+  ];
 
   return (
     <div className="space-y-8">
@@ -161,7 +136,7 @@ const Dashboard = () => {
             Bem-vindo de volta! 👋
           </h1>
           <p className="text-muted-foreground">
-            Aqui está um resumo das suas campanhas e performance.
+            {workspaceLoading ? 'Carregando...' : `Aqui está um resumo do ${workspace?.name || 'seu workspace'}.`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -186,7 +161,7 @@ const Dashboard = () => {
         animate="animate"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
       >
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <motion.div key={index} variants={fadeInUp}>
             <Card className="hover:shadow-elegant transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -267,22 +242,28 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${activity.color}`}>
-                    <activity.icon className="h-4 w-4" />
+              {activitiesLoading ? (
+                <div className="text-sm text-muted-foreground">Carregando atividades...</div>
+              ) : activities.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Nenhuma atividade recente</div>
+              ) : (
+                activities.map((activity, index) => (
+                  <div key={activity.id} className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">{activity.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(activity.created_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium">{activity.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.description}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -300,7 +281,7 @@ const Dashboard = () => {
               <div>
                 <CardTitle>Performance Overview</CardTitle>
                 <CardDescription>
-                  Métricas das suas campanhas ativas
+                  {workspaceLoading ? 'Carregando...' : `Métricas do ${workspace?.name || 'workspace'}`}
                 </CardDescription>
               </div>
               <Badge variant="secondary">Última atualização: agora</Badge>
@@ -324,10 +305,10 @@ const Dashboard = () => {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>ROI Target</span>
-                  <span>94%</span>
+                  <span>Créditos Usados</span>
+                  <span>{workspace ? Math.round((workspace.credits_used / workspace.credits) * 100) : 0}%</span>
                 </div>
-                <Progress value={94} className="h-2" />
+                <Progress value={workspace ? (workspace.credits_used / workspace.credits) * 100 : 0} className="h-2" />
               </div>
             </div>
           </CardContent>
