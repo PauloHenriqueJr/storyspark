@@ -1,0 +1,448 @@
+import { Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { AppWrapper } from "@/components/layout/AppWrapper";
+import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+
+// Lazy load pages for better performance
+import React, { Suspense } from 'react';
+import { LazyLoadWrapper } from "@/components/performance/LazyLoadWrapper";
+
+// Landing and Public Pages
+import Index from "./pages/Index";
+import Modern from "./pages/Modern";
+import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
+import NotFound from "./pages/NotFound";
+
+// Blog Pages
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+
+// Lazy load main app pages
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Composer = React.lazy(() => import('./pages/Composer'));
+const Campaigns = React.lazy(() => import('./pages/Campaigns'));
+const Calendar = React.lazy(() => import('./pages/Calendar'));
+const Analytics = React.lazy(() => import('./pages/Analytics'));
+const Personas = React.lazy(() => import('./pages/Personas'));
+const Settings = React.lazy(() => import('./pages/Settings'));
+const BrandVoices = React.lazy(() => import('./pages/BrandVoices'));
+const Templates = React.lazy(() => import('./pages/Templates'));
+const Integrations = React.lazy(() => import('./pages/Integrations'));
+const Team = React.lazy(() => import('./pages/Team'));
+const Billing = React.lazy(() => import('./pages/Billing'));
+const Voices = React.lazy(() => import('./pages/Voices'));
+
+// Lazy load specialized pages
+const EmailMarketing = React.lazy(() => import('./pages/EmailMarketing'));
+const SocialScheduler = React.lazy(() => import('./pages/SocialScheduler'));
+const LandingPages = React.lazy(() => import('./pages/LandingPages'));
+const PushWhatsApp = React.lazy(() => import('./pages/PushWhatsApp'));
+const Funnels = React.lazy(() => import('./pages/Funnels'));
+const ABTests = React.lazy(() => import('./pages/ABTests'));
+const CallScripts = React.lazy(() => import('./pages/CallScripts'));
+const ContentLibrary = React.lazy(() => import('./pages/ContentLibrary'));
+const AIIdeas = React.lazy(() => import('./pages/AIIdeas'));
+const TrendingHooks = React.lazy(() => import('./pages/TrendingHooks'));
+const CRM = React.lazy(() => import('./pages/CRM'));
+const Feedback = React.lazy(() => import('./pages/Feedback'));
+
+// Lazy load admin pages
+const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminUsers = React.lazy(() => import('./pages/admin/AdminUsers'));
+const AdminManagers = React.lazy(() => import('./pages/admin/AdminManagers'));
+const AdminSettings = React.lazy(() => import('./pages/admin/AdminSettings'));
+const AdminBlog = React.lazy(() => import('./pages/admin/AdminBlog'));
+const AdminCampaigns = React.lazy(() => import('./pages/admin/AdminCampaigns'));
+const AdminTemplates = React.lazy(() => import('./pages/admin/AdminTemplates'));
+const AdminAnalytics = React.lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminLogs = React.lazy(() => import('./pages/admin/AdminLogs'));
+const AdminIntegrations = React.lazy(() => import('./pages/admin/AdminIntegrations'));
+const AdminBillingGlobal = React.lazy(() => import('./pages/admin/AdminBillingGlobal'));
+const AdminSecurity = React.lazy(() => import('./pages/admin/AdminSecurity'));
+const AdminPermissions = React.lazy(() => import('./pages/admin/AdminPermissions'));
+const AdminBackup = React.lazy(() => import('./pages/admin/AdminBackup'));
+
+const App = () => (
+  <AppWrapper>
+    <OnboardingModal />
+    
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/modern" element={<Modern />} />
+      
+      {/* Blog Routes */}
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/:slug" element={<BlogPost />} />
+      
+      {/* Auth Routes - Support both /auth and /login */}
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/login" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      
+      {/* Protected App Routes */}
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Dashboard />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/composer" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Composer />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/campaigns" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Campaigns />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/calendar" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Calendar />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/analytics" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Analytics />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/personas" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Personas />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Settings />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/brand-voices" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <BrandVoices />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/templates" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Templates />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/integrations" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Integrations />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/team" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Team />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/billing" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Billing />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/voices" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Voices />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      
+      {/* Specialized Pages Routes - continue with lazy loading */}
+      <Route path="/email-marketing" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <EmailMarketing />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/social-scheduler" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <SocialScheduler />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/landing-pages" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <LandingPages />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/push-whatsapp" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <PushWhatsApp />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/funnels" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Funnels />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/ab-tests" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <ABTests />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/call-scripts" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <CallScripts />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/content-library" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <ContentLibrary />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/ai-ideas" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AIIdeas />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/trending-hooks" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <TrendingHooks />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/crm" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <CRM />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/feedback" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Feedback />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+
+      {/* Admin Routes */}
+      <Route path="/admin" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminDashboard />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/users" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminUsers />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/managers" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminManagers />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/settings" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminSettings />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/blog" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminBlog />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/campaigns" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminCampaigns />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/templates" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminTemplates />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/analytics" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminAnalytics />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/logs" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminLogs />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/integrations" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminIntegrations />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/billing" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminBillingGlobal />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/security" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminSecurity />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/permissions" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminPermissions />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/backup" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminBackup />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      
+      {/* Catch-all route */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </AppWrapper>
+);
+
+export default App;
