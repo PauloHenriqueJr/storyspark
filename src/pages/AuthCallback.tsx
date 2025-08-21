@@ -32,9 +32,17 @@ const AuthCallback = () => {
 
           if (data.session) {
             setStatus('success');
+            
+            // Buscar perfil do usuário para mostrar nome correto
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', data.session.user.id)
+              .single();
+            
             toast({
               title: "Login realizado com sucesso!",
-              description: "Bem-vindo ao StorySpark!",
+              description: `Bem-vindo ${profile?.full_name || 'ao StorySpark'}!`,
             });
             
             // Redirect to dashboard after a brief success display
