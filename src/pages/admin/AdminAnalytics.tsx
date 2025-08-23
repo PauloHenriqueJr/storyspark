@@ -20,7 +20,10 @@ import {
   BarChart3,
   PieChart,
   Download,
-  Calendar
+  Calendar,
+  Loader2,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import {
   AreaChart,
@@ -36,80 +39,23 @@ import {
   BarChart,
   Bar
 } from 'recharts';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const AdminAnalytics = () => {
-  const [period, setPeriod] = useState('30d');
   const [activeTab, setActiveTab] = useState('overview');
-
-  // Mock data para analytics globais
-  const globalStats = [
-    {
-      title: 'Usuários Ativos',
-      value: '12,487',
-      change: '+12.5%',
-      trend: 'up',
-      icon: Users,
-      period: 'último mês'
-    },
-    {
-      title: 'Receita Total',
-      value: 'R$ 284K',
-      change: '+18.2%',
-      trend: 'up',
-      icon: DollarSign,
-      period: 'último mês'
-    },
-    {
-      title: 'Copies Geradas',
-      value: '156K',
-      change: '+23.8%',
-      trend: 'up',
-      icon: Activity,
-      period: 'último mês'
-    },
-    {
-      title: 'Taxa de Retenção',
-      value: '87.3%',
-      change: '-2.1%',
-      trend: 'down',
-      icon: Globe,
-      period: 'último mês'
-    }
-  ];
-
-  const usageData = [
-    { name: 'Jan', usuarios: 8400, copies: 12400, campanhas: 2400 },
-    { name: 'Fev', usuarios: 9300, copies: 13800, campanhas: 2800 },
-    { name: 'Mar', usuarios: 10200, copies: 15200, campanhas: 3200 },
-    { name: 'Abr', usuarios: 11100, copies: 16800, campanhas: 3600 },
-    { name: 'Mai', usuarios: 12000, copies: 18400, campanhas: 4000 },
-    { name: 'Jun', usuarios: 12900, copies: 20200, campanhas: 4400 }
-  ];
-
-  const platformDistribution = [
-    { name: 'Instagram', value: 35, color: '#E1306C' },
-    { name: 'Facebook', value: 28, color: '#4267B2' },
-    { name: 'LinkedIn', value: 20, color: '#0077B5' },
-    { name: 'Twitter', value: 12, color: '#1DA1F2' },
-    { name: 'Outros', value: 5, color: '#8B5CF6' }
-  ];
-
-  const revenueData = [
-    { name: 'Jan', receita: 45000, custos: 32000 },
-    { name: 'Fev', receita: 52000, custos: 35000 },
-    { name: 'Mar', receita: 58000, custos: 38000 },
-    { name: 'Abr', receita: 64000, custos: 41000 },
-    { name: 'Mai', receita: 71000, custos: 44000 },
-    { name: 'Jun', receita: 78000, custos: 47000 }
-  ];
-
-  const topUsers = [
-    { name: 'TechCorp Solutions', usage: 2847, revenue: 'R$ 15.2K', growth: '+23%' },
-    { name: 'Marketing Pro Agency', usage: 2156, revenue: 'R$ 12.8K', growth: '+18%' },
-    { name: 'Creative Studio Ltd', usage: 1934, revenue: 'R$ 11.4K', growth: '+15%' },
-    { name: 'Digital Innovation Co', usage: 1728, revenue: 'R$ 9.7K', growth: '+12%' },
-    { name: 'Brand Masters Inc', usage: 1543, revenue: 'R$ 8.9K', growth: '+9%' }
-  ];
+  
+  const {
+    globalStats,
+    usageData,
+    revenueData,
+    platformDistribution,
+    topUsers,
+    loading,
+    error,
+    timeRange,
+    setTimeRange,
+    refreshData
+  } = useAnalytics(true); // Enable global stats for admin
 
   const getTrendIcon = (trend: string) => {
     return trend === 'up' ? TrendingUp : TrendingDown;
@@ -118,6 +64,71 @@ const AdminAnalytics = () => {
   const getTrendColor = (trend: string) => {
     return trend === 'up' ? 'text-green-600' : 'text-red-600';
   };
+
+  // Transform global stats into display format
+  const globalStatsCards = [
+    {
+      title: 'Usuários Ativos',
+      value: globalStats?.activeUsers?.toLocaleString() || '0',
+      change: '+12.5%',
+      trend: 'up',
+      icon: Users,
+      period: 'último mês'
+    },
+    {
+      title: 'Receita Total',
+      value: `R$ ${(globalStats?.totalRevenue || 0).toLocaleString()}`,
+      change: '+18.2%',
+      trend: 'up',
+      icon: DollarSign,
+      period: 'último mês'
+    },
+    {
+      title: 'Copies Geradas',
+      value: (globalStats?.totalCopies || 0).toLocaleString(),
+      change: '+23.8%',
+      trend: 'up',
+      icon: Activity,
+      period: 'último mês'
+    },
+    {
+      title: 'Taxa de Retenção',
+      value: `${globalStats?.retentionRate || 0}%`,
+      change: globalStats?.churnRate ? `-${globalStats.churnRate}%` : '0%',
+      trend: (globalStats?.churnRate || 0) < 10 ? 'up' : 'down',
+      icon: Globe,
+      period: 'último mês'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Carregando analytics globais...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">Erro ao carregar analytics</h3>
+            <p className="text-muted-foreground">{error}</p>
+            <Button className="mt-4" onClick={() => refreshData()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar Novamente
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -128,7 +139,7 @@ const AdminAnalytics = () => {
           <p className="text-muted-foreground">Métricas e performance da plataforma</p>
         </div>
         <div className="flex gap-3">
-          <Select value={period} onValueChange={setPeriod}>
+          <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -148,7 +159,7 @@ const AdminAnalytics = () => {
 
       {/* Global Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {globalStats.map((stat, index) => {
+        {globalStatsCards.map((stat, index) => {
           const TrendIcon = getTrendIcon(stat.trend);
           return (
             <Card key={index}>
@@ -197,9 +208,9 @@ const AdminAnalytics = () => {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="usuarios" stackId="1" stroke="#8884d8" fill="#8884d8" />
+                    <Area type="monotone" dataKey="users" stackId="1" stroke="#8884d8" fill="#8884d8" />
                     <Area type="monotone" dataKey="copies" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
-                    <Area type="monotone" dataKey="campanhas" stackId="1" stroke="#ffc658" fill="#ffc658" />
+                    <Area type="monotone" dataKey="campaigns" stackId="1" stroke="#ffc658" fill="#ffc658" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -278,11 +289,11 @@ const AdminAnalytics = () => {
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
+                  <XAxis dataKey="period" />
                   <YAxis />
                   <Tooltip formatter={(value) => `R$ ${value.toLocaleString()}`} />
-                  <Bar dataKey="receita" fill="#22c55e" name="Receita" />
-                  <Bar dataKey="custos" fill="#ef4444" name="Custos" />
+                  <Bar dataKey="revenue" fill="#22c55e" name="Receita" />
+                  <Bar dataKey="costs" fill="#ef4444" name="Custos" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -296,7 +307,7 @@ const AdminAnalytics = () => {
                 <CardTitle>Novos Usuários</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">1,247</div>
+                <div className="text-3xl font-bold">{((globalStats?.totalUsers || 0) - (globalStats?.activeUsers || 0)).toLocaleString()}</div>
                 <p className="text-sm text-muted-foreground">Este mês</p>
               </CardContent>
             </Card>
@@ -306,7 +317,7 @@ const AdminAnalytics = () => {
                 <CardTitle>Usuários Ativos</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">8,934</div>
+                <div className="text-3xl font-bold">{(globalStats?.activeUsers || 0).toLocaleString()}</div>
                 <p className="text-sm text-muted-foreground">Últimos 30 dias</p>
               </CardContent>
             </Card>
@@ -316,7 +327,7 @@ const AdminAnalytics = () => {
                 <CardTitle>Taxa de Churn</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">4.2%</div>
+                <div className="text-3xl font-bold">{globalStats?.churnRate || 0}%</div>
                 <p className="text-sm text-muted-foreground">Este mês</p>
               </CardContent>
             </Card>

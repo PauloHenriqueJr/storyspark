@@ -8,6 +8,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce', // Usar PKCE por padrão, mas suporta OAuth também
+  },
+  // Configurações para resolver clock skew e melhorar performance
+  global: {
+    headers: {
+      'X-Client-Info': 'storyspark-web@1.0.0'
+    }
+  },
+  db: {
+    schema: 'public'
+  },
+  // Configuração de realtime (se necessário)
+  realtime: {
+    timeout: 30000,
+    heartbeatIntervalMs: 30000
   }
 })
 

@@ -25,6 +25,20 @@ export const useWorkspace = () => {
         return;
       }
 
+      // Cache simples para workspace
+      const cacheKey = `workspace_${user.id}`;
+      const cached = localStorage.getItem(cacheKey);
+      const cacheTime = localStorage.getItem(`${cacheKey}_time`);
+      
+      if (cached && cacheTime) {
+        const ageMinutes = (Date.now() - parseInt(cacheTime)) / (1000 * 60);
+        if (ageMinutes < 10) { // Cache por 10 minutos
+          setWorkspace(JSON.parse(cached));
+          setLoading(false);
+          return;
+        }
+      }
+
       try {
         // First try to get existing workspace
         const { data: workspaces, error } = await supabase
@@ -41,6 +55,10 @@ export const useWorkspace = () => {
 
         if (workspaces && workspaces.length > 0) {
           setWorkspace(workspaces[0]);
+          // Cache o workspace
+          const cacheKey = `workspace_${user.id}`;
+          localStorage.setItem(cacheKey, JSON.stringify(workspaces[0]));
+          localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
         } else {
           // Create default workspace if none exists
           const { data: newWorkspace, error: createError } = await supabase
@@ -58,6 +76,11 @@ export const useWorkspace = () => {
             console.error('Error creating workspace:', createError);
           } else {
             setWorkspace(newWorkspace);
+            
+            // Cache o workspace criado
+            const cacheKey = `workspace_${user.id}`;
+            localStorage.setItem(cacheKey, JSON.stringify(newWorkspace));
+            localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
             
             // Add user as workspace member
             await supabase.from('workspace_members').insert({
@@ -77,5 +100,5 @@ export const useWorkspace = () => {
     fetchWorkspace();
   }, [user]);
 
-  return { workspace, loading };
+  return { workspace, user, loading };
 };

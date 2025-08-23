@@ -40,7 +40,7 @@ const AdminUsers = () => {
       company: 'TechCorp Inc.',
       plan: 'Enterprise',
       status: 'active',
-      role: 'admin',
+      role: 'user',
       lastLogin: '2024-01-15',
       createdAt: '2023-06-15'
     },
@@ -73,7 +73,7 @@ const AdminUsers = () => {
       company: 'Agência Digital',
       plan: 'Professional',
       status: 'active',
-      role: 'manager',
+      role: 'user',
       lastLogin: '2024-01-15',
       createdAt: '2023-09-12'
     },
@@ -110,7 +110,7 @@ const AdminUsers = () => {
       case 'manager':
         return <Badge variant="default"><Building2 className="w-3 h-3 mr-1" />Gerente</Badge>;
       case 'user':
-        return <Badge variant="secondary">Usuário</Badge>;
+        return <Badge variant="secondary">Cliente</Badge>;
       default:
         return <Badge variant="outline">-</Badge>;
     }
@@ -146,12 +146,12 @@ const AdminUsers = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Usuários</h1>
-          <p className="text-muted-foreground">Gerencie todos os usuários da plataforma</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Clientes</h1>
+          <p className="text-muted-foreground">Gerencie todos os clientes da plataforma</p>
         </div>
         <Button className="w-full sm:w-auto">
           <UserPlus className="w-4 h-4 mr-2" />
-          <span className="hidden sm:inline">Novo Usuário</span>
+          <span className="hidden sm:inline">Novo Cliente</span>
           <span className="sm:hidden">Novo</span>
         </Button>
       </div>
@@ -161,13 +161,13 @@ const AdminUsers = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-foreground">{stats.total}</div>
-            <p className="text-sm text-muted-foreground">Total de Usuários</p>
+            <p className="text-sm text-muted-foreground">Total de Clientes</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-            <p className="text-sm text-muted-foreground">Usuários Ativos</p>
+            <p className="text-sm text-muted-foreground">Clientes Ativos</p>
           </CardContent>
         </Card>
         <Card>
@@ -188,12 +188,12 @@ const AdminUsers = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Lista de Usuários</CardTitle>
+            <CardTitle>Lista de Clientes</CardTitle>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar usuários..."
+                  placeholder="Buscar clientes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64"
@@ -215,7 +215,7 @@ const AdminUsers = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Usuário</TableHead>
+                    <TableHead>Cliente</TableHead>
                     <TableHead>Empresa</TableHead>
                     <TableHead>Plano</TableHead>
                     <TableHead>Role</TableHead>

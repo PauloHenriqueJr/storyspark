@@ -116,7 +116,7 @@ const Settings = () => {
                 {/* Avatar */}
                 <div className="flex items-center gap-6">
                   <Avatar className="w-20 h-20">
-                    <AvatarImage src="/api/placeholder/80/80" />
+                    <AvatarImage src="" />
                     <AvatarFallback className="text-lg">JS</AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">

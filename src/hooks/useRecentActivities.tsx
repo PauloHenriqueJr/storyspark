@@ -19,8 +19,39 @@ export const useRecentActivities = () => {
   useEffect(() => {
     const fetchActivities = async () => {
       if (!user) {
+        // Retornar atividades padrão se não houver usuário
+        setActivities([
+          {
+            id: '1',
+            title: 'Copy criado',
+            description: 'Criado copy para campanha de verão',
+            type: 'content',
+            created_at: new Date().toISOString()
+          },
+          {
+            id: '2', 
+            title: 'Campanha publicada',
+            description: 'Campanha de Black Friday foi publicada',
+            type: 'campaign',
+            created_at: new Date(Date.now() - 3600000).toISOString()
+          }
+        ]);
         setLoading(false);
         return;
+      }
+
+      // Cache simples para atividades
+      const cacheKey = `activities_${user.id}`;
+      const cached = localStorage.getItem(cacheKey);
+      const cacheTime = localStorage.getItem(`${cacheKey}_time`);
+      
+      if (cached && cacheTime) {
+        const ageMinutes = (Date.now() - parseInt(cacheTime)) / (1000 * 60);
+        if (ageMinutes < 2) { // Cache por 2 minutos (atividades mudam mais frequentemente)
+          setActivities(JSON.parse(cached));
+          setLoading(false);
+          return;
+        }
       }
 
       try {

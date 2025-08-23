@@ -16,7 +16,8 @@ import {
   BarChart3,
   Users,
   Heart,
-  TestTube
+  TestTube,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,129 +29,143 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CreateBrandVoiceModal from '@/components/modals/CreateBrandVoiceModal';
 import VoiceTesterModal from '@/components/modals/VoiceTesterModal';
+import { useBrandVoices } from '@/hooks/useBrandVoices';
+import { useToast } from '@/hooks/use-toast';
+import type { BrandVoiceWithStats } from '@/services/brandVoicesService';
+import type { Database } from '@/integrations/supabase/types';
 
-const brandVoices = [
-  {
-    id: 1,
-    name: 'Tech Inovadora',
-    description: 'Tom técnico e inovador para produtos de tecnologia',
-    personality: ['Inovador', 'Técnico', 'Confiável'],
-    tone: 'Profissional',
-    style: 'Direto',
-    audience: 'Desenvolvedores e CTOs',
-    examples: [
-      'Revolucione sua arquitetura com nossa solução cloud-native.',
-      'Performance que escala: 99.9% de uptime garantido.',
-      'API REST intuitiva, documentação completa, suporte 24/7.'
-    ],
-    usageCount: 156,
-    campaigns: 24,
-    avgEngagement: 8.2,
-    active: true
-  },
-  {
-    id: 2,
-    name: 'Casual Amigável',
-    description: 'Tom descontraído e próximo para redes sociais',
-    personality: ['Amigável', 'Descontraído', 'Empático'],
-    tone: 'Casual',
-    style: 'Conversacional',
-    audience: 'Público geral, millennials',
-    examples: [
-      'Oi! Como foi seu dia? Aqui temos uma novidade incrível pra você! 😊',
-      'Sabe aquela sensação de "finalmente!"? É isso que você vai sentir.',
-      'Conta pra gente nos comentários: qual sua experiência favorita?'
-    ],
-    usageCount: 203,
-    campaigns: 31,
-    avgEngagement: 12.5,
-    active: true
-  },
-  {
-    id: 3,
-    name: 'Corporativo Premium',
-    description: 'Tom elegante e sofisticado para segmento premium',
-    personality: ['Sofisticado', 'Exclusivo', 'Elegante'],
-    tone: 'Formal',
-    style: 'Persuasivo',
-    audience: 'Executivos, C-level',
-    examples: [
-      'Exclusividade redefinida: experiência premium para líderes visionários.',
-      'Quando a excelência é o padrão, cada detalhe importa.',
-      'Acesso restrito a uma elite de inovadores e transformadores.'
-    ],
-    usageCount: 89,
-    campaigns: 12,
-    avgEngagement: 6.8,
-    active: true
-  },
-  {
-    id: 4,
-    name: 'Startup Disruptiva',
-    description: 'Tom ousado e revolucionário para startups',
-    personality: ['Ousado', 'Disruptivo', 'Dinâmico'],
-    tone: 'Energético',
-    style: 'Provocativo',
-    audience: 'Empreendedores, investidores',
-    examples: [
-      'Quebrar paradigmas não é hobby, é missão. 🚀',
-      'Enquanto outros seguem regras, nós criamos o futuro.',
-      'Disrupção real acontece quando você para de pedir permissão.'
-    ],
-    usageCount: 127,
-    campaigns: 18,
-    avgEngagement: 15.3,
-    active: false
-  }
-];
+type CreateBrandVoiceInput = Database['public']['Tables']['brand_voices']['Insert'];
+
+// Dados agora vêm do hook useBrandVoices conectado ao Supabase
 
 const BrandVoices = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTone, setFilterTone] = useState('Todos');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTesterModal, setShowTesterModal] = useState(false);
-  const [voicesList, setVoicesList] = useState(brandVoices);
-  const [editingVoice, setEditingVoice] = useState(null);
-  const [selectedVoice, setSelectedVoice] = useState(null);
+  const [editingVoice, setEditingVoice] = useState<BrandVoiceWithStats | null>(null);
+  const [selectedVoice, setSelectedVoice] = useState<BrandVoiceWithStats | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  
+  const { voices, loading, error, createVoice, updateVoice, deleteVoice, toggleVoiceStatus } = useBrandVoices();
+  const { toast } = useToast();
 
-  const handleCreateVoice = (newVoice: any) => {
-    if (editingVoice) {
-      setVoicesList(prev => prev.map(v => v.id === editingVoice.id ? newVoice : v));
-    } else {
-      setVoicesList(prev => [newVoice, ...prev]);
+  const handleCreateVoice = async (newVoice: Omit<CreateBrandVoiceInput, 'workspace_id' | 'user_id'>) => {
+    try {
+      if (editingVoice) {
+        await updateVoice(editingVoice.id, newVoice);
+        toast({
+          title: 'Sucesso!',
+          description: 'Brand voice atualizada com sucesso.',
+        });
+      } else {
+        await createVoice(newVoice);
+        toast({
+          title: 'Sucesso!',
+          description: 'Nova brand voice criada com sucesso.',
+        });
+      }
+      setShowCreateModal(false);
+      setEditingVoice(null);
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível salvar a brand voice. Tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 
-  const handleEditVoice = (voice: any) => {
+  const handleEditVoice = (voice: BrandVoiceWithStats) => {
     setEditingVoice(voice);
     setShowCreateModal(true);
   };
 
-  const handleTestVoice = (voice: any) => {
+  const handleTestVoice = (voice: BrandVoiceWithStats) => {
     setSelectedVoice(voice);
     setShowTesterModal(true);
   };
 
-  const toggleVoiceStatus = (voiceId: number) => {
-    setVoicesList(prev => prev.map(voice => 
-      voice.id === voiceId ? { ...voice, active: !voice.active } : voice
-    ));
+  const handleToggleStatus = async (voiceId: string) => {
+    try {
+      await toggleVoiceStatus(voiceId);
+      toast({
+        title: 'Status alterado',
+        description: 'Status da brand voice foi alterado com sucesso.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o status. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const filteredVoices = voicesList.filter(voice => {
+  const handleDeleteVoice = async (voiceId: string) => {
+    try {
+      await deleteVoice(voiceId);
+      toast({
+        title: 'Brand voice removida',
+        description: 'A brand voice foi removida com sucesso.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível remover a brand voice. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const filteredVoices = voices.filter(voice => {
     const matchesSearch = voice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         voice.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         (voice.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTone = filterTone === 'Todos' || voice.tone === filterTone;
     const matchesTab = activeTab === 'all' || 
-                      (activeTab === 'active' && voice.active) ||
-                      (activeTab === 'inactive' && !voice.active);
+                      (activeTab === 'active' && voice.is_active) ||
+                      (activeTab === 'inactive' && !voice.is_active);
     return matchesSearch && matchesTone && matchesTab;
   });
 
-  const activeVoices = voicesList.filter(v => v.active).length;
-  const totalUsage = voicesList.reduce((acc, v) => acc + v.usageCount, 0);
-  const avgEngagement = voicesList.reduce((acc, v) => acc + v.avgEngagement, 0) / voicesList.length;
+  const activeVoices = voices.filter(v => v.is_active).length;
+  const totalUsage = voices.reduce((acc, v) => acc + (v.usage_count || 0), 0);
+  const avgEngagement = voices.length > 0 ? voices.reduce((acc, v) => acc + (v.avgEngagement || 0), 0) / voices.length : 0;
+
+  // Estados de loading e erro
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Carregando brand voices...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <Mic className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Erro ao carregar brand voices</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -193,7 +208,7 @@ const BrandVoices = () => {
             <Volume2 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{voicesList.length}</div>
+            <div className="text-2xl font-bold">{voices.length}</div>
             <div className="text-xs text-emerald-500">
               {activeVoices} ativas
             </div>
@@ -239,7 +254,7 @@ const BrandVoices = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {voicesList.reduce((acc, v) => acc + v.campaigns, 0)}
+              {voices.reduce((acc, v) => acc + (v.campaigns || 0), 0)}
             </div>
             <div className="text-xs text-purple-500">
               +8 esta semana
@@ -281,9 +296,9 @@ const BrandVoices = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="all">Todas ({voicesList.length})</TabsTrigger>
+            <TabsTrigger value="all">Todas ({voices.length})</TabsTrigger>
             <TabsTrigger value="active">Ativas ({activeVoices})</TabsTrigger>
-            <TabsTrigger value="inactive">Inativas ({voicesList.length - activeVoices})</TabsTrigger>
+            <TabsTrigger value="inactive">Inativas ({voices.length - activeVoices})</TabsTrigger>
           </TabsList>
         </Tabs>
       </motion.div>
@@ -295,13 +310,37 @@ const BrandVoices = () => {
         transition={{ delay: 0.3 }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
-        {filteredVoices.map((voice, index) => (
-          <motion.div
-            key={voice.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
+        {filteredVoices.length === 0 ? (
+          <div className="col-span-full flex items-center justify-center min-h-[300px]">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                <Mic className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {voices.length === 0 ? 'Nenhuma brand voice criada' : 'Nenhuma brand voice encontrada'}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {voices.length === 0 
+                    ? 'Crie sua primeira brand voice para definir o tom e personalidade da sua marca'
+                    : 'Ajuste os filtros ou crie uma nova brand voice'
+                  }
+                </p>
+                <Button onClick={() => setShowCreateModal(true)} className="bg-gradient-primary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Brand Voice
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          filteredVoices.map((voice, index) => (
+            <motion.div
+              key={voice.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
             <Card className="border-0 bg-card/50 backdrop-blur-sm hover:shadow-elegant transition-all duration-300">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -312,8 +351,8 @@ const BrandVoices = () => {
                     <div>
                       <CardTitle className="text-lg">{voice.name}</CardTitle>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={voice.active ? "default" : "secondary"}>
-                          {voice.active ? 'Ativa' : 'Inativa'}
+                        <Badge variant={voice.is_active ? "default" : "secondary"}>
+                          {voice.is_active ? 'Ativa' : 'Inativa'}
                         </Badge>
                         <Badge variant="outline">{voice.tone}</Badge>
                       </div>
@@ -335,8 +374,8 @@ const BrandVoices = () => {
                         <Edit className="w-4 h-4 mr-2" />
                         Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toggleVoiceStatus(voice.id)}>
-                        {voice.active ? (
+                      <DropdownMenuItem onClick={() => handleToggleStatus(voice.id)}>
+                        {voice.is_active ? (
                           <>
                             <Pause className="w-4 h-4 mr-2" />
                             Desativar
@@ -352,7 +391,7 @@ const BrandVoices = () => {
                         <Copy className="w-4 h-4 mr-2" />
                         Duplicar
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteVoice(voice.id)}>
                         <Trash2 className="w-4 h-4 mr-2" />
                         Excluir
                       </DropdownMenuItem>
@@ -368,7 +407,7 @@ const BrandVoices = () => {
                 <div>
                   <h4 className="text-sm font-medium mb-2">Personalidade</h4>
                   <div className="flex flex-wrap gap-1">
-                    {voice.personality.map((trait, i) => (
+                    {voice.personality?.map((trait, i) => (
                       <Badge key={i} variant="secondary" className="text-xs">
                         {trait}
                       </Badge>
@@ -386,7 +425,7 @@ const BrandVoices = () => {
                 <div>
                   <h4 className="text-sm font-medium mb-2">Exemplo</h4>
                   <div className="p-3 bg-muted/30 rounded-lg">
-                    <p className="text-sm italic">"{voice.examples[0]}"</p>
+                    <p className="text-sm italic">"{voice.examples?.[0] || 'Sem exemplo disponível'}"</p>
                   </div>
                 </div>
 
@@ -394,15 +433,15 @@ const BrandVoices = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>Uso em campanhas</span>
-                    <span className="font-medium">{voice.usageCount} vezes</span>
+                    <span className="font-medium">{voice.usage_count || 0} vezes</span>
                   </div>
                   
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span>Engagement</span>
-                      <span className="font-medium">{voice.avgEngagement}%</span>
+                      <span className="font-medium">{voice.avgEngagement || 0}%</span>
                     </div>
-                    <Progress value={voice.avgEngagement * 5} className="h-1" />
+                    <Progress value={(voice.avgEngagement || 0) * 5} className="h-1" />
                   </div>
                 </div>
 
@@ -420,7 +459,8 @@ const BrandVoices = () => {
               </CardContent>
             </Card>
           </motion.div>
-        ))}
+          ))
+        )}
       </motion.div>
 
       {/* Modals */}

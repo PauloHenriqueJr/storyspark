@@ -13,31 +13,37 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Get the code and state from URL parameters
-        const code = searchParams.get('code');
-        const error = searchParams.get('error');
-        const errorDescription = searchParams.get('error_description');
+        // Processar parâmetros de callback do OAuth
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Verificar se há erro nos parâmetros
+        const error = urlParams.get('error') || hashParams.get('error');
+        const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
 
         if (error) {
           throw new Error(errorDescription || 'Authentication error');
         }
 
-        if (code) {
-          // Exchange the code for a session
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        // Deixar o Supabase lidar com o callback automaticamente
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          // Se der erro ao obter sessão, tentar processar hash fragment
+          const { data: hashData, error: hashError } = await supabase.auth.getSessionFromUrl();
           
-          if (exchangeError) {
-            throw exchangeError;
+          if (hashError) {
+            throw hashError;
           }
-
-          if (data.session) {
+          
+          if (hashData.session) {
             setStatus('success');
             
             // Buscar perfil do usuário para mostrar nome correto
             const { data: profile } = await supabase
               .from('profiles')
               .select('full_name')
-              .eq('id', data.session.user.id)
+              .eq('id', hashData.session.user.id)
               .single();
             
             toast({
@@ -45,13 +51,44 @@ const AuthCallback = () => {
               description: `Bem-vindo ${profile?.full_name || 'ao StorySpark'}!`,
             });
             
+            // Limpar URL para evitar reprocessamento
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
             // Redirect to dashboard after a brief success display
             setTimeout(() => {
               navigate('/dashboard', { replace: true });
             }, 1500);
+            return;
           }
+        }
+        
+        if (data.session) {
+          setStatus('success');
+          
+          // Buscar perfil do usuário para mostrar nome correto
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', data.session.user.id)
+            .single();
+          
+          toast({
+            title: "Login realizado com sucesso!",
+            description: `Bem-vindo ${profile?.full_name || 'ao StorySpark'}!`,
+          });
+          
+          // Limpar URL para evitar reprocessamento  
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Redirect to dashboard after a brief success display
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 1500);
         } else {
-          throw new Error('No authorization code received');
+          // Se não há sessão, redirecionar para auth
+          console.warn('No session found, redirecting to auth page');
+          navigate('/auth', { replace: true });
+          return;
         }
       } catch (error: any) {
         console.error('Auth callback error:', error);
@@ -62,7 +99,8 @@ const AuthCallback = () => {
           variant: "destructive",
         });
         
-        // Redirect to auth page after error
+        // Limpar URL e redirecionar para auth page after error
+        window.history.replaceState({}, document.title, window.location.pathname);
         setTimeout(() => {
           navigate('/auth', { replace: true });
         }, 3000);
@@ -70,7 +108,7 @@ const AuthCallback = () => {
     };
 
     handleAuthCallback();
-  }, [navigate, searchParams]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">

@@ -35,6 +35,8 @@ const Billing = React.lazy(() => import('./pages/Billing'));
 const Voices = React.lazy(() => import('./pages/Voices'));
 
 // Lazy load specialized pages
+const AdminSeedInserter = React.lazy(() => import('./components/AdminSeedInserter'));
+const TestCalendar = React.lazy(() => import('./pages/TestCalendar'));
 const EmailMarketing = React.lazy(() => import('./pages/EmailMarketing'));
 const SocialScheduler = React.lazy(() => import('./pages/SocialScheduler'));
 const LandingPages = React.lazy(() => import('./pages/LandingPages'));
@@ -77,10 +79,12 @@ const App = () => (
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPost />} />
       
-      {/* Auth Routes - Support both /auth and /login */}
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/login" element={<Auth />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
+      {/* Test Route */}
+      <Route path="/test-calendar" element={<TestCalendar />} />
+      
+  {/* Auth Routes - Apenas /auth */}
+  <Route path="/auth" element={<Auth />} />
+  <Route path="/auth/callback" element={<AuthCallback />} />
       
       {/* Protected App Routes */}
       <Route path="/dashboard" element={
@@ -434,6 +438,17 @@ const App = () => (
           <AppLayout>
             <LazyLoadWrapper>
               <AdminBackup />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      
+      {/* Temporary route for seed insertion */}
+      <Route path="/admin/seed-inserter" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminSeedInserter />
             </LazyLoadWrapper>
           </AppLayout>
         </ProtectedRoute>

@@ -17,7 +17,8 @@ import {
   Filter,
   Grid3X3,
   List,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,76 +27,109 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CreateEventModal from '@/components/modals/CreateEventModal';
 import DraggableCalendar from '@/components/calendar/DraggableCalendar';
-import { CalendarEvent } from '@/types/calendar';
+import { useCalendar } from '@/hooks/useCalendar';
+import { useToast } from '@/hooks/use-toast';
+import type { CalendarEventWithStats } from '@/services/calendarService';
+import type { CalendarEvent } from '@/types/calendar';
 
 const today = new Date();
 const currentMonth = today.getMonth();
 const currentYear = today.getFullYear();
 
-// Eventos do calendário
-const events: CalendarEvent[] = [
-  {
-    id: '1',
-    title: 'Post Black Friday',
-    platform: 'Instagram',
-    time: '09:00',
-    date: new Date(2024, 10, 20),
-    status: 'Agendado' as const,
-    color: 'bg-pink-500',
-    icon: Instagram
-  },
-  {
-    id: '2',
-    title: 'Stories Produto X',
-    platform: 'Instagram',
-    time: '14:30',
-    date: new Date(2024, 10, 20),
-    status: 'Agendado' as const,
-    color: 'bg-pink-500',
-    icon: Instagram
-  },
-  {
-    id: '3',
-    title: 'Campanha B2B',
-    platform: 'LinkedIn',
-    time: '10:00',
-    date: new Date(2024, 10, 22),
-    status: 'Publicado' as const,
-    color: 'bg-blue-700',
-    icon: Linkedin
-  },
-  {
-    id: '4',
-    title: 'Thread Educativa',
-    platform: 'Twitter',
-    time: '16:00',
-    date: new Date(2024, 10, 23),
-    status: 'Rascunho' as const,
-    color: 'bg-blue-400',
-    icon: Twitter
-  },
-  {
-    id: '5',
-    title: 'Vídeo Tutorial',
-    platform: 'YouTube',
-    time: '12:00',
-    date: new Date(2024, 10, 25),
-    status: 'Agendado' as const,
-    color: 'bg-red-500',
-    icon: Youtube
-  }
-];
+// Função para converter CalendarEventWithStats para CalendarEvent
+const transformEventForCalendar = (event: CalendarEventWithStats): CalendarEvent => {
+  // Função helper para obter o ícone da plataforma
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'Instagram': return Instagram;
+      case 'Facebook': return Facebook;
+      case 'Twitter': return Twitter;
+      case 'LinkedIn': return Linkedin;
+      case 'YouTube': return Youtube;
+      default: return CalendarIcon;
+    }
+  };
+
+  // Função helper para mapear status do banco para o formato esperado
+  const getStatusLabel = (status: string): 'Agendado' | 'Publicado' | 'Rascunho' => {
+    switch (status) {
+      case 'SCHEDULED': return 'Agendado';
+      case 'PUBLISHED': return 'Publicado';
+      case 'DRAFT': return 'Rascunho';
+      case 'CANCELLED': return 'Rascunho'; // Tratar cancelado como rascunho para compatibilidade
+      default: return 'Rascunho';
+    }
+  };
+
+  // Função helper para obter cores CSS válidas baseadas na plataforma
+  const getPlatformColor = (platform: string): string => {
+    switch (platform) {
+      case 'Instagram': return '#EC4899'; // pink-500
+      case 'Facebook': return '#3B82F6'; // blue-500
+      case 'Twitter': return '#60A5FA'; // blue-400
+      case 'LinkedIn': return '#2563EB'; // blue-600
+      case 'YouTube': return '#DC2626'; // red-600
+      default: return '#8B5CF6'; // purple-500
+    }
+  };
+
+  // Garantir que a data seja um objeto Date válido
+  const eventDate = new Date(`${event.event_date}T${event.event_time}`);
+
+  return {
+    id: event.id,
+    title: event.title,
+    platform: event.platform,
+    time: event.event_time.slice(0, 5), // HH:MM format
+    date: eventDate, // Garantir que seja um Date object
+    status: getStatusLabel(event.status),
+    color: event.color || getPlatformColor(event.platform), // Usar cor do evento ou cor da plataforma
+    icon: getPlatformIcon(event.platform)
+  };
+};
 
 const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentDate, setCurrentDate] = useState(new Date(currentYear, currentMonth, 1));
+  // Iniciar em novembro de 2024 onde estão os eventos de exemplo
+  const [currentDate, setCurrentDate] = useState(new Date(2024, 10, 1)); // 10 = novembro (0-indexado)
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [eventsList, setEventsList] = useState<CalendarEvent[]>(events);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month');
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
 
-  const handleCreateEvent = (newEvent: any) => {
-    setEventsList(prev => [...prev, newEvent]);
+  const { events, loading, error, stats, createEvent, deleteEvent, updateEventStatus, refetch } = useCalendar();
+  const { toast } = useToast();
+
+  const handleCreateEvent = async (newEvent: Omit<CalendarEventWithStats, 'id' | 'created_at' | 'updated_at' | 'workspace_id' | 'user_id' | 'formattedDate' | 'formattedTime' | 'statusBadge' | 'platformIcon'>) => {
+    try {
+      await createEvent(newEvent);
+      toast({
+        title: 'Sucesso!',
+        description: 'Novo evento criado com sucesso.',
+      });
+      setShowCreateModal(false);
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível criar o evento. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteEvent(eventId);
+      toast({
+        title: 'Evento removido',
+        description: 'O evento foi removido com sucesso.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível remover o evento. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -126,8 +160,9 @@ const Calendar = () => {
 
   const getEventsForDate = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    return eventsList.filter(event => {
-      const matchesDate = event.date.toDateString() === date.toDateString();
+    const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    return events.filter(event => {
+      const matchesDate = event.event_date === dateString;
       const matchesPlatform = filterPlatform === 'all' || event.platform.toLowerCase() === filterPlatform;
       return matchesDate && matchesPlatform;
     });
@@ -156,18 +191,79 @@ const Calendar = () => {
 
   const getStatusBadge = (status: string): "default" | "destructive" | "outline" | "secondary" => {
     const variants: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
-      'Agendado': 'default',
-      'Publicado': 'secondary',
-      'Rascunho': 'outline'
+      'SCHEDULED': 'default',
+      'PUBLISHED': 'secondary',
+      'DRAFT': 'outline',
+      'CANCELLED': 'destructive'
     };
     return variants[status] || 'outline';
   };
 
-  const selectedDateEvents = eventsList.filter(event => {
-    const matchesDate = event.date.toDateString() === selectedDate.toDateString();
+  const selectedDateEvents = events.filter(event => {
+    const selectedDateString = selectedDate.toISOString().split('T')[0];
+    const matchesDate = event.event_date === selectedDateString;
     const matchesPlatform = filterPlatform === 'all' || event.platform.toLowerCase() === filterPlatform;
     return matchesDate && matchesPlatform;
   });
+
+  // Transformar eventos do banco para o formato esperado pelo DraggableCalendar
+  const transformedEvents = events.map(transformEventForCalendar);
+
+  const handleEventsChange = async (newEvents: CalendarEvent[]) => {
+    // Fazer refetch dos dados para garantir sincronização
+    try {
+      await refetch();
+      toast({
+        title: 'Eventos atualizados',
+        description: 'Os eventos foram sincronizados com sucesso.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível sincronizar os eventos.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDateChange = (newDate: Date) => {
+    setCurrentDate(newDate);
+  };
+
+  // Estados de loading e erro
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Carregando eventos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <CalendarIcon className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Erro ao carregar eventos</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -250,12 +346,14 @@ const Calendar = () => {
           className="lg:col-span-3"
         >
           <DraggableCalendar
-            events={eventsList}
-            onEventsChange={setEventsList}
+            events={transformedEvents}
+            onEventsChange={handleEventsChange}
             selectedDate={selectedDate}
             onDateSelect={setSelectedDate}
             filterPlatform={filterPlatform}
             viewMode={viewMode}
+            currentDate={currentDate}
+            onDateChange={handleDateChange}
             onCreateEvent={(date) => {
               setSelectedDate(date);
               setShowCreateModal(true);
@@ -277,21 +375,27 @@ const Calendar = () => {
               <CardDescription>Próximos 7 dias</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {eventsList.slice(0, 5).map((event) => (
-                <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
-                  <event.icon className={`w-6 h-6 text-white p-1 rounded ${event.color}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{event.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {event.date.toLocaleDateString('pt-BR')} às {event.time}
-                    </p>
+              {events.slice(0, 5).map((event) => {
+                const eventDate = new Date(`${event.event_date}T${event.event_time}`);
+                
+                return (
+                  <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+                    <div className={`w-6 h-6 rounded p-1`} style={{ backgroundColor: event.color || '#8B5CF6' }}>
+                      <CalendarIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{event.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {eventDate.toLocaleDateString('pt-BR')} às {event.event_time.slice(0, 5)}
+                      </p>
+                    </div>
+                    <Badge variant={getStatusBadge(event.status)} className="text-xs">
+                      {event.statusBadge || event.status}
+                    </Badge>
                   </div>
-                  <Badge variant={getStatusBadge(event.status)} className="text-xs">
-                    {event.status}
-                  </Badge>
-                </div>
-              ))}
-              {eventsList.length === 0 && (
+                );
+              })}
+              {events.length === 0 && (
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground">
                     Nenhum post agendado
@@ -351,19 +455,25 @@ const Calendar = () => {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Posts Agendados</span>
                 <Badge variant="default" className="bg-primary/10 text-primary">
-                  {eventsList.filter(e => e.status === 'Agendado').length}
+                  {stats?.scheduledEvents || 0}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Posts Publicados</span>
                 <Badge variant="secondary">
-                  {eventsList.filter(e => e.status === 'Publicado').length}
+                  {stats?.publishedEvents || 0}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Rascunhos</span>
                 <Badge variant="outline">
-                  {eventsList.filter(e => e.status === 'Rascunho').length}
+                  {stats?.draftEvents || 0}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total de Eventos</span>
+                <Badge variant="outline">
+                  {stats?.totalEvents || 0}
                 </Badge>
               </div>
             </CardContent>

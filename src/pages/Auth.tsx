@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,10 +49,18 @@ type ResetForm = z.infer<typeof resetSchema>;
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { login, loginWithGoogle, register, resetPassword, loading: authLoading } = useAuth();
+  const { login, loginWithGoogle, register, resetPassword, loading: authLoading, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      console.log('User already authenticated, redirecting to dashboard...');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   // Login form
   const loginForm = useForm<LoginForm>({
@@ -87,6 +95,7 @@ const Auth = () => {
       await login({ email: data.email, password: data.password });
       navigate('/dashboard');
     } catch (error) {
+      console.error('Login error:', error);
       // Error handling is done in AuthProvider
     }
   };
@@ -120,8 +129,10 @@ const Auth = () => {
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
+      console.log('Google login initiated');
       // Redirect will happen automatically via auth state change
     } catch (error) {
+      console.error('Google login error:', error);
       // Error handling is done in AuthProvider
     }
   };

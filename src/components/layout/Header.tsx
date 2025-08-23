@@ -146,7 +146,7 @@ export const Header = () => {
                   variant="outline"
                   size="sm"
                 >
-                  <Link to="/login">
+                  <Link to="/auth">
                     <span>Entrar</span>
                   </Link>
                 </Button>

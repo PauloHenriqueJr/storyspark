@@ -81,16 +81,19 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
     e.preventDefault();
     
     const campaign = {
-      ...formData,
-      id: Date.now(),
-      status: 'Rascunho',
-      createdAt: new Date(),
-      progress: 0,
-      spent: 0,
-      impressions: '0',
-      clicks: 0,
-      ctr: '0%',
-      conversions: 0
+      name: formData.name,
+      description: formData.description,
+      status: 'DRAFT' as const,
+      budget: parseFloat(formData.budget) || 0,
+      start_date: formData.startDate?.toISOString().split('T')[0],
+      end_date: formData.endDate?.toISOString().split('T')[0],
+      metadata: {
+        objective: formData.objective,
+        platforms: formData.platforms,
+        targetAudience: formData.targetAudience,
+        persona: formData.persona
+      },
+      tags: formData.platforms
     };
 
     onCreateCampaign?.(campaign);

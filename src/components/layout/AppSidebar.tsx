@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useRole } from '@/hooks/useRole';
 
 // Navigation sections with organized structure
 const navSections = [
@@ -136,7 +137,7 @@ const adminSection = {
   icon: Shield,
   items: [
     { title: 'Admin Dashboard', url: '/admin', icon: Shield },
-    { title: 'Usuários', url: '/admin/users', icon: UserCog },
+    { title: 'Clientes', url: '/admin/users', icon: UserCog },
     { title: 'Gerentes', url: '/admin/managers', icon: Crown },
     { title: 'Sistema', url: '/admin/settings', icon: Database },
     { title: 'Segurança', url: '/admin/security', icon: Shield },
@@ -148,11 +149,9 @@ const adminSection = {
 export const AppSidebar = () => {
   const { state } = useSidebar();
   const location = useLocation();
+  const { hasAdminAccess } = useRole();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
-  
-  // In a real app, this would come from auth context
-  const isAdmin = true; // Mock admin status - replace with real auth
   
   // State for collapsible sections - keeps Principal open by default
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -275,7 +274,7 @@ export const AppSidebar = () => {
           ))}
           
           {/* Admin Section - Separated for security */}
-          {isAdmin && (
+          {hasAdminAccess() && (
             <>
               <div className="my-4 border-t border-sidebar-border/40" />
               <CollapsibleNavSection section={adminSection} isAdmin />

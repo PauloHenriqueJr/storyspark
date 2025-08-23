@@ -1,13 +1,28 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+// Componente de logo SVG simples
+const SimpleLogo = ({ name, bgColor, textColor }: { name: string; bgColor: string; textColor: string }) => (
+  <div 
+    className="inline-flex items-center justify-center w-[120px] h-[40px] rounded"
+    style={{ backgroundColor: bgColor }}
+  >
+    <span 
+      className="text-sm font-semibold"
+      style={{ color: textColor }}
+    >
+      {name}
+    </span>
+  </div>
+);
+
 const logos = [
-  { name: 'TechCorp', url: 'https://via.placeholder.com/120x40/6366F1/FFFFFF?text=TechCorp' },
-  { name: 'Innovate', url: 'https://via.placeholder.com/120x40/06B6D4/FFFFFF?text=Innovate' },
-  { name: 'Growth Co', url: 'https://via.placeholder.com/120x40/8B5CF6/FFFFFF?text=Growth+Co' },
-  { name: 'Digital Plus', url: 'https://via.placeholder.com/120x40/EF4444/FFFFFF?text=Digital+Plus' },
-  { name: 'NextGen', url: 'https://via.placeholder.com/120x40/10B981/FFFFFF?text=NextGen' },
-  { name: 'CreativeLab', url: 'https://via.placeholder.com/120x40/F59E0B/FFFFFF?text=CreativeLab' },
+  { name: 'TechCorp', bgColor: '#6366F1', textColor: '#FFFFFF' },
+  { name: 'Innovate', bgColor: '#06B6D4', textColor: '#FFFFFF' },
+  { name: 'Growth Co', bgColor: '#8B5CF6', textColor: '#FFFFFF' },
+  { name: 'Digital Plus', bgColor: '#EF4444', textColor: '#FFFFFF' },
+  { name: 'NextGen', bgColor: '#10B981', textColor: '#FFFFFF' },
+  { name: 'CreativeLab', bgColor: '#F59E0B', textColor: '#FFFFFF' },
 ];
 
 export const LogoCloud = () => {
@@ -47,10 +62,10 @@ export const LogoCloud = () => {
                 {/* First set */}
                 {logos.map((logo, index) => (
                   <div key={index} className="flex-shrink-0">
-                    <img
-                      src={logo.url}
-                      alt={`${logo.name} logo`}
-                      className="h-8 w-auto opacity-60 hover:opacity-100 transition-opacity duration-200 grayscale hover:grayscale-0"
+                    <SimpleLogo
+                      name={logo.name}
+                      bgColor={logo.bgColor}
+                      textColor={logo.textColor}
                     />
                   </div>
                 ))}
@@ -58,10 +73,10 @@ export const LogoCloud = () => {
                 {/* Duplicate set for seamless loop */}
                 {logos.map((logo, index) => (
                   <div key={`duplicate-${index}`} className="flex-shrink-0">
-                    <img
-                      src={logo.url}
-                      alt={`${logo.name} logo`}
-                      className="h-8 w-auto opacity-60 hover:opacity-100 transition-opacity duration-200 grayscale hover:grayscale-0"
+                    <SimpleLogo
+                      name={logo.name}
+                      bgColor={logo.bgColor}
+                      textColor={logo.textColor}
                     />
                   </div>
                 ))}

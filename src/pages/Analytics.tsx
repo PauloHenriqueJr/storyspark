@@ -13,7 +13,9 @@ import {
   Download,
   Filter,
   RefreshCw,
-  GitCompare
+  GitCompare,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import ExportReportModal from '@/components/modals/ExportReportModal';
 import ComparePeriodModal from '@/components/modals/ComparePeriodModal';
@@ -24,95 +26,96 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
-const engagementData = [
-  { name: 'Jan', impressions: 45000, engagements: 3200, reach: 38000 },
-  { name: 'Fev', impressions: 52000, engagements: 4100, reach: 44000 },
-  { name: 'Mar', impressions: 48000, engagements: 3800, reach: 41000 },
-  { name: 'Abr', impressions: 61000, engagements: 4800, reach: 52000 },
-  { name: 'Mai', impressions: 58000, engagements: 4600, reach: 49000 },
-  { name: 'Jun', impressions: 67000, engagements: 5400, reach: 58000 },
-];
-
-const platformData = [
-  { name: 'Instagram', value: 45, color: '#E4405F' },
-  { name: 'Facebook', value: 30, color: '#1877F2' },
-  { name: 'LinkedIn', value: 15, color: '#0A66C2' },
-  { name: 'Twitter', value: 7, color: '#1DA1F2' },
-  { name: 'YouTube', value: 3, color: '#FF0000' },
-];
-
-const topContent = [
-  {
-    id: 1,
-    title: 'Tutorial: Como usar IA no Marketing',
-    platform: 'Instagram',
-    impressions: '23.5K',
-    engagements: '1.8K',
-    engagement_rate: '7.6%',
-    date: '2024-11-15'
-  },
-  {
-    id: 2,
-    title: 'Dicas de Copywriting para E-commerce',
-    platform: 'LinkedIn',
-    impressions: '18.2K',
-    engagements: '1.4K',
-    engagement_rate: '7.7%',
-    date: '2024-11-10'
-  },
-  {
-    id: 3,
-    title: 'Black Friday: Estratégias que Funcionam',
-    platform: 'Facebook',
-    impressions: '31.8K',
-    engagements: '2.1K',
-    engagement_rate: '6.6%',
-    date: '2024-11-08'
-  }
-];
-
-const metrics = [
-  {
-    title: 'Total de Impressões',
-    value: '847.3K',
-    change: '+18.2%',
-    trend: 'up',
-    icon: Eye,
-    color: 'text-blue-500'
-  },
-  {
-    title: 'Engajamento Total',
-    value: '65.4K',
-    change: '+12.7%',
-    trend: 'up',
-    icon: Heart,
-    color: 'text-red-500'
-  },
-  {
-    title: 'Taxa de Engajamento',
-    value: '7.7%',
-    change: '+0.8%',
-    trend: 'up',
-    icon: TrendingUp,
-    color: 'text-emerald-500'
-  },
-  {
-    title: 'Novo Seguidores',
-    value: '2.1K',
-    change: '-3.2%',
-    trend: 'down',
-    icon: Users,
-    color: 'text-purple-500'
-  }
-];
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Analytics = () => {
-  const [timeRange, setTimeRange] = useState('6m');
-  const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [showDrillDown, setShowDrillDown] = useState(false);
+  
+  const {
+    workspaceStats,
+    usageData,
+    platformDistribution,
+    contentPerformance,
+    loading,
+    error,
+    timeRange,
+    setTimeRange,
+    refreshData
+  } = useAnalytics(false);
+
+  // Transform usage data for charts
+  const engagementData = usageData.map(item => ({
+    name: item.period,
+    impressions: item.copies * 10, // Mock conversion
+    engagements: item.copies,
+    reach: item.users * 50 // Mock conversion
+  }));
+
+  const metrics = [
+    {
+      title: 'Total de Copies',
+      value: workspaceStats?.totalCopies?.toLocaleString() || '0',
+      change: '+18.2%',
+      trend: 'up',
+      icon: Eye,
+      color: 'text-blue-500'
+    },
+    {
+      title: 'Taxa de Engajamento',
+      value: `${workspaceStats?.averageEngagement || 0}%`,
+      change: '+12.7%',
+      trend: 'up',
+      icon: Heart,
+      color: 'text-red-500'
+    },
+    {
+      title: 'Taxa de Conversão',
+      value: `${workspaceStats?.conversionRate || 0}%`,
+      change: '+0.8%',
+      trend: 'up',
+      icon: TrendingUp,
+      color: 'text-emerald-500'
+    },
+    {
+      title: 'Templates Ativos',
+      value: contentPerformance.length.toString(),
+      change: '-3.2%',
+      trend: 'down',
+      icon: Users,
+      color: 'text-purple-500'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Carregando analytics...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">Erro ao carregar analytics</h3>
+            <p className="text-muted-foreground">{error}</p>
+            <Button className="mt-4" onClick={() => refreshData()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar Novamente
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -139,8 +142,7 @@ const Analytics = () => {
             <SelectContent>
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
-              <SelectItem value="3m">Últimos 3 meses</SelectItem>
-              <SelectItem value="6m">Últimos 6 meses</SelectItem>
+              <SelectItem value="90d">Últimos 3 meses</SelectItem>
               <SelectItem value="1y">Último ano</SelectItem>
             </SelectContent>
           </Select>
@@ -152,7 +154,7 @@ const Analytics = () => {
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => refreshData()}>
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
@@ -282,7 +284,7 @@ const Analytics = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={platformData}
+                      data={platformDistribution}
                       cx="50%"
                       cy="50%"
                       innerRadius={40}
@@ -290,7 +292,7 @@ const Analytics = () => {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {platformData.map((entry, index) => (
+                      {platformDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -299,7 +301,7 @@ const Analytics = () => {
                 </ResponsiveContainer>
               </div>
               <div className="space-y-2 mt-4">
-                {platformData.map((platform, index) => (
+                {platformDistribution.map((platform, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div 
@@ -332,7 +334,7 @@ const Analytics = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topContent.map((content, index) => (
+              {contentPerformance.map((content, index) => (
                 <div key={content.id} className="flex items-center gap-4 p-4 rounded-lg bg-muted/20 border border-border/40">
                   <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center text-white font-bold">
                     {index + 1}
@@ -356,7 +358,7 @@ const Analytics = () => {
                       <div className="text-xs text-muted-foreground">Engajamentos</div>
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-emerald-500">{content.engagement_rate}</div>
+                      <div className="text-lg font-bold text-emerald-500">{content.engagementRate}</div>
                       <div className="text-xs text-muted-foreground">Taxa Eng.</div>
                     </div>
                   </div>

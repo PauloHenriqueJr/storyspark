@@ -1,6 +1,7 @@
 import React from 'react';
-import { Bell, Search, User, LogOut } from 'lucide-react';
+import { Bell, Search, User, LogOut, Clock, X, CheckCheck } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +20,27 @@ import { GlobalSearch } from '@/components/search/GlobalSearch';
 
 export const AppHeader = () => {
   const { user, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+
+  const formatTimeAgo = (timestamp: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Agora';
+    if (diffInMinutes < 60) return `${diffInMinutes} min atrás`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} h atrás`;
+    return `${Math.floor(diffInMinutes / 1440)} d atrás`;
+  };
+
+  const getNotificationTypeColor = (type: string) => {
+    switch (type) {
+      case 'success': return 'text-green-600';
+      case 'error': return 'text-red-600';
+      case 'warning': return 'text-yellow-600';
+      case 'info': return 'text-blue-600';
+      default: return 'text-muted-foreground';
+    }
+  };
   
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-smooth border-b border-border/40">
@@ -50,28 +72,104 @@ export const AppHeader = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="relative">
                 <Bell className="h-4 w-4" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-primary text-primary-foreground border-2 border-background">
-                  3
-                </Badge>
+                {unreadCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-primary text-primary-foreground border-2 border-background">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-96 max-h-[500px] overflow-y-auto">
+              <DropdownMenuLabel className="flex items-center justify-between">
+                <span>Notificações</span>
+                {unreadCount > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={markAllAsRead}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <CheckCheck className="h-3 w-3 mr-1" />
+                    Marcar todas como lidas
+                  </Button>
+                )}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-4">
-                <div className="font-medium">Nova campanha criada</div>
-                <div className="text-sm text-muted-foreground">
-                  Sua campanha "Black Friday 2024" foi criada com sucesso
+              
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Nenhuma notificação
                 </div>
-                <div className="text-xs text-muted-foreground">2 min atrás</div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-4">
-                <div className="font-medium">Analytics disponível</div>
-                <div className="text-sm text-muted-foreground">
-                  Relatório semanal de performance está pronto
-                </div>
-                <div className="text-xs text-muted-foreground">1 hora atrás</div>
-              </DropdownMenuItem>
+              ) : (
+                notifications.map((notification) => (
+                  <DropdownMenuItem 
+                    key={notification.id} 
+                    className={`flex flex-col items-start gap-2 p-4 cursor-pointer ${
+                      !notification.read ? 'bg-muted/50' : ''
+                    }`}
+                    onClick={() => {
+                      if (!notification.read) {
+                        markAsRead(notification.id);
+                      }
+                      notification.action?.onClick();
+                    }}
+                  >
+                    <div className="w-full flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className={`font-medium text-sm ${
+                          !notification.read ? 'font-semibold' : ''
+                        }`}>
+                          {notification.title}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {notification.message}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2">
+                        {!notification.read && (
+                          <div className="w-2 h-2 bg-primary rounded-full" />
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeNotification(notification.id);
+                          }}
+                          className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <Clock className="h-3 w-3" />
+                      <span className="text-muted-foreground">
+                        {formatTimeAgo(notification.timestamp)}
+                      </span>
+                      <span className={`font-medium ${getNotificationTypeColor(notification.type)}`}>
+                        {notification.type === 'success' && '✓'}
+                        {notification.type === 'error' && '✗'}
+                        {notification.type === 'warning' && '⚠'}
+                        {notification.type === 'info' && 'ℹ'}
+                      </span>
+                    </div>
+                    {notification.action && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-1 h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          notification.action?.onClick();
+                        }}
+                      >
+                        {notification.action.label}
+                      </Button>
+                    )}
+                  </DropdownMenuItem>
+                ))
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

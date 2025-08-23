@@ -18,21 +18,22 @@ import {
   Hash,
   Plus
 } from 'lucide-react';
+import type { CalendarEventWithStats } from '@/services/calendarService';
 
 interface CreateEventModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
-  onCreateEvent?: (event: any) => void;
+  onCreateEvent?: (event: Omit<CalendarEventWithStats, 'id' | 'created_at' | 'updated_at' | 'workspace_id' | 'user_id' | 'formattedDate' | 'formattedTime' | 'statusBadge' | 'platformIcon'>) => void;
 }
 
 const platforms = [
-  { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
-  { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
-  { id: 'twitter', name: 'Twitter/X', icon: Twitter, color: 'bg-blue-400' },
-  { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
-  { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'bg-red-500' },
-  { id: 'tiktok', name: 'TikTok', icon: Hash, color: 'bg-black' }
+  { id: 'Instagram', name: 'Instagram', icon: Instagram, color: '#E1306C' },
+  { id: 'Facebook', name: 'Facebook', icon: Facebook, color: '#1877F2' },
+  { id: 'Twitter', name: 'Twitter/X', icon: Twitter, color: '#1DA1F2' },
+  { id: 'LinkedIn', name: 'LinkedIn', icon: Linkedin, color: '#0A66C2' },
+  { id: 'YouTube', name: 'YouTube', icon: Youtube, color: '#FF0000' },
+  { id: 'TikTok', name: 'TikTok', icon: Hash, color: '#000000' }
 ];
 
 const contentTypes = [
@@ -67,13 +68,23 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
     
     const platform = platforms.find(p => p.id === formData.platform);
     
+    // Formatar data no formato YYYY-MM-DD para o banco
+    const eventDate = formData.date.toISOString().split('T')[0];
+    
+    // Criar o objeto no formato esperado pelo service
     const newEvent = {
-      ...formData,
-      id: Date.now(),
-      status: 'Agendado',
-      color: platform?.color || 'bg-gray-500',
-      icon: platform?.icon || Calendar,
-      createdAt: new Date()
+      title: formData.title,
+      description: formData.description || null,
+      platform: formData.platform,
+      event_date: eventDate,
+      event_time: formData.time + ':00', // Adicionar segundos
+      color: platform?.color || '#8B5CF6',
+      status: 'SCHEDULED', // Status do banco de dados
+      metadata: {
+        content_type: formData.contentType,
+        content: formData.content,
+        hashtags: formData.hashtags
+      }
     };
 
     onCreateEvent?.(newEvent);

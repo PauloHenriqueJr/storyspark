@@ -11,16 +11,19 @@ import {
   Calendar,
   BarChart3,
   Bot,
-  Sparkles
+  Sparkles,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateCampaignModal from '@/components/modals/CreateCampaignModal';
-import { useStats } from '@/hooks/useStats';
-import { useRecentActivities } from '@/hooks/useRecentActivities';
+import { NotificationDemo } from '@/components/notifications/NotificationDemo';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useWorkspace } from '@/hooks/useWorkspace';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const quickActions = [
   {
@@ -70,11 +73,16 @@ const staggerContainer = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [showCreateCampaign, setShowCreateCampaign] = useState(false);
-  const { stats, loading: statsLoading } = useStats();
-  const { activities, loading: activitiesLoading } = useRecentActivities();
+  const {
+    stats,
+    recentActivities,
+    loading,
+    error
+  } = useDashboardStats();
   const { workspace, loading: workspaceLoading } = useWorkspace();
+  const { addNotification } = useNotifications();
 
-  const handleQuickAction = (href: string) => {
+  const handleQuickAction = async (href: string) => {
     if (href === '/campaigns') {
       setShowCreateCampaign(true);
     } else {
@@ -82,45 +90,82 @@ const Dashboard = () => {
     }
   };
 
-  const handleCreateCampaign = (campaign: any) => {
+  const handleCreateCampaign = async (campaign: unknown) => {
     console.log('Nova campanha criada:', campaign);
+    
+    // Exemplo de notificação de sucesso
+    addNotification({
+      title: 'Campanha criada com sucesso!',
+      message: 'Sua nova campanha foi criada e está pronta para ser configurada.',
+      type: 'success',
+      action: {
+        label: 'Ver campanha',
+        onClick: () => navigate('/campaigns')
+      }
+    });
+    
     navigate('/campaigns');
   };
 
   const statsCards = [
     {
       title: 'Campanhas Ativas',
-      value: statsLoading ? '...' : stats.totalCampaigns.toString(),
-      change: '+12%',
+      value: loading ? '...' : (stats?.activeCampaigns || 0).toString(),
+      change: stats?.monthlyGrowth.campaigns || '+0%',
       trend: 'up',
       icon: Target,
       color: 'text-primary'
     },
     {
-      title: 'Engagement Rate',
-      value: statsLoading ? '...' : stats.engagementRate,
-      change: '+2.4%',
+      title: 'Taxa de Engajamento',
+      value: loading ? '...' : `${stats?.averageEngagement || 0}%`,
+      change: stats?.monthlyGrowth.engagement || '+0%',
       trend: 'up',
       icon: TrendingUp,
       color: 'text-emerald-500'
     },
     {
-      title: 'Alcance Total',
-      value: statsLoading ? '...' : stats.totalReach,
-      change: '+18%',
+      title: 'Taxa de Conversão',
+      value: loading ? '...' : `${stats?.conversionRate || 0}%`,
+      change: stats?.monthlyGrowth.conversion || '+0%',
       trend: 'up',
       icon: Users,
       color: 'text-blue-500'
     },
     {
       title: 'Copies Geradas',
-      value: statsLoading ? '...' : stats.copiesGenerated.toString(),
-      change: '+34%',
+      value: loading ? '...' : (stats?.totalCopies || 0).toString(),
+      change: stats?.monthlyGrowth.copies || '+0%',
       trend: 'up',
       icon: Zap,
       color: 'text-purple-500'
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Carregando dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">Erro ao carregar dashboard</h3>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -242,15 +287,15 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {activitiesLoading ? (
+              {loading ? (
                 <div className="text-sm text-muted-foreground">Carregando atividades...</div>
-              ) : activities.length === 0 ? (
+              ) : recentActivities.length === 0 ? (
                 <div className="text-sm text-muted-foreground">Nenhuma atividade recente</div>
               ) : (
-                activities.map((activity, index) => (
+                recentActivities.map((activity, index) => (
                   <div key={activity.id} className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                      <Sparkles className="h-4 w-4" />
+                      <span className="text-lg">{activity.icon}</span>
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{activity.title}</p>
@@ -258,7 +303,7 @@ const Dashboard = () => {
                         {activity.description}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(activity.created_at).toLocaleDateString('pt-BR')}
+                        {activity.timestamp}
                       </p>
                     </div>
                   </div>
@@ -268,6 +313,16 @@ const Dashboard = () => {
           </Card>
         </motion.div>
       </div>
+
+      {/* Notification System Demo */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.35 }}
+        className="flex justify-center"
+      >
+        <NotificationDemo />
+      </motion.div>
 
       {/* Performance Overview */}
       <motion.div
@@ -291,17 +346,17 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Meta de Engagement</span>
-                  <span>82%</span>
+                  <span>Engagement Alcançado</span>
+                  <span>{stats?.averageEngagement || 0}%</span>
                 </div>
-                <Progress value={82} className="h-2" />
+                <Progress value={stats?.averageEngagement || 0} className="h-2" />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Alcance Meta</span>
-                  <span>67%</span>
+                  <span>Taxa de Conversão</span>
+                  <span>{stats?.conversionRate || 0}%</span>
                 </div>
-                <Progress value={67} className="h-2" />
+                <Progress value={stats?.conversionRate || 0} className="h-2" />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">

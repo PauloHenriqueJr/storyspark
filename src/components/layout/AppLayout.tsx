@@ -3,12 +3,15 @@ import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/toaster';
+import { useSystemNotifications } from '@/hooks/useSystemNotifications';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
+  // Inicializar monitoramento automático de notificações
+  useSystemNotifications();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-subtle">

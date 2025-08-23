@@ -35,12 +35,12 @@ const AdminPermissions = () => {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
 
-  // Mock data for roles
+  // Roles do sistema - separando roles administrativos de clientes
   const roles = [
     {
       id: 1,
       name: 'Super Admin',
-      description: 'Acesso total ao sistema',
+      description: 'Acesso total ao sistema (apenas para administradores)',
       userCount: 2,
       color: 'bg-red-500',
       permissions: ['all']
@@ -48,43 +48,27 @@ const AdminPermissions = () => {
     {
       id: 2,
       name: 'Admin',
-      description: 'Administrador da plataforma',
-      userCount: 5,
+      description: 'Administrador da plataforma (apenas para administradores)',
+      userCount: 3,
       color: 'bg-orange-500',
       permissions: ['users.read', 'users.write', 'campaigns.read', 'campaigns.write', 'analytics.read']
     },
     {
       id: 3,
-      name: 'Manager',
-      description: 'Gerente de equipe',
-      userCount: 12,
+      name: 'User',
+      description: 'Cliente padrão da plataforma',
+      userCount: 1247,
       color: 'bg-blue-500',
-      permissions: ['campaigns.read', 'campaigns.write', 'team.read', 'analytics.read']
-    },
-    {
-      id: 4,
-      name: 'Editor',
-      description: 'Editor de conteúdo',
-      userCount: 28,
-      color: 'bg-green-500',
       permissions: ['campaigns.read', 'campaigns.write', 'templates.read', 'templates.write']
-    },
-    {
-      id: 5,
-      name: 'Viewer',
-      description: 'Visualização apenas',
-      userCount: 45,
-      color: 'bg-gray-500',
-      permissions: ['campaigns.read', 'analytics.read']
     }
   ];
 
-  // Mock data for users with roles
+  // Exemplos de clientes (role 'User') e alguns administradores
   const usersWithRoles = [
     {
       id: 1,
-      name: 'João Silva',
-      email: 'joao@empresa.com',
+      name: 'Paulo Jack',
+      email: 'paulojack2011@gmail.com',
       avatar: '',
       role: 'Super Admin',
       status: 'active',
@@ -92,28 +76,28 @@ const AdminPermissions = () => {
     },
     {
       id: 2,
-      name: 'Maria Santos',
-      email: 'maria@empresa.com',
+      name: 'Ana Silva',
+      email: 'ana@techcorp.com',
       avatar: '',
-      role: 'Admin',
+      role: 'User',
       status: 'active',
       lastLogin: '2024-01-20 09:15'
     },
     {
       id: 3,
-      name: 'Pedro Costa',
-      email: 'pedro@empresa.com',
+      name: 'Carlos Santos',
+      email: 'carlos@marketpro.com',
       avatar: '',
-      role: 'Manager',
+      role: 'User',
       status: 'active',
       lastLogin: '2024-01-19 16:45'
     },
     {
       id: 4,
-      name: 'Ana Oliveira',
-      email: 'ana@empresa.com',
+      name: 'Maria Oliveira',
+      email: 'maria@creative.com',
       avatar: '',
-      role: 'Editor',
+      role: 'User',
       status: 'inactive',
       lastLogin: '2024-01-18 11:20'
     }
@@ -122,12 +106,12 @@ const AdminPermissions = () => {
   // Permission categories and their permissions
   const permissionCategories = [
     {
-      category: 'Usuários',
+      category: 'Clientes',
       icon: Users,
       permissions: [
-        { id: 'users.read', name: 'Visualizar usuários', description: 'Ver lista e detalhes de usuários' },
-        { id: 'users.write', name: 'Gerenciar usuários', description: 'Criar, editar e excluir usuários' },
-        { id: 'users.roles', name: 'Gerenciar roles', description: 'Atribuir e remover roles de usuários' }
+        { id: 'users.read', name: 'Visualizar clientes', description: 'Ver lista e detalhes de clientes' },
+        { id: 'users.write', name: 'Gerenciar clientes', description: 'Criar, editar e excluir clientes' },
+        { id: 'users.roles', name: 'Gerenciar roles', description: 'Atribuir e remover roles de clientes' }
       ]
     },
     {
@@ -275,7 +259,7 @@ const AdminPermissions = () => {
       <Tabs defaultValue="roles" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="users">Clientes</TabsTrigger>
           <TabsTrigger value="permissions">Permissões</TabsTrigger>
         </TabsList>
 

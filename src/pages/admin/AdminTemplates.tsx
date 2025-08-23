@@ -31,134 +31,141 @@ import {
   Users,
   Calendar,
   FileText,
-  Heart
+  Heart,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { useTemplates } from '@/hooks/useTemplates';
+import { toast } from 'sonner';
 
 const AdminTemplates = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  
+  const {
+    publicTemplates,
+    loading,
+    error,
+    stats,
+    duplicateTemplate,
+    deleteTemplate,
+    incrementUsage
+  } = useTemplates();
 
-  // Mock data para templates globais
-  const globalTemplates = [
-    {
-      id: 1,
-      name: 'Post Promocional - Black Friday',
-      category: 'Promoções',
-      platform: 'Instagram',
-      status: 'active',
-      usage: 1247,
-      likes: 89,
-      performance: '12.4%',
-      created: '2024-01-15',
-      lastUsed: '2024-01-21',
-      description: 'Template otimizado para promoções de Black Friday com alta conversão',
-      preview: '🔥 BLACK FRIDAY: {{desconto}}% OFF em {{produto}} por tempo limitado! Corre que é só hoje! 💨 #blackfriday #promocao'
-    },
-    {
-      id: 2,
-      name: 'Lançamento de Produto',
-      category: 'Lançamentos',
-      platform: 'LinkedIn',
-      status: 'active',
-      usage: 834,
-      likes: 67,
-      performance: '15.8%',
-      created: '2024-01-12',
-      lastUsed: '2024-01-20',
-      description: 'Template profissional para anunciar novos produtos no LinkedIn',
-      preview: 'Estamos empolgados em apresentar: {{produto}}! 🚀 Desenvolvido especialmente para {{target_audience}}...'
-    },
-    {
-      id: 3,
-      name: 'Storytelling Pessoal',
-      category: 'Engajamento',
-      platform: 'Facebook',
-      status: 'draft',
-      usage: 456,
-      likes: 34,
-      performance: '8.9%',
-      created: '2024-01-10',
-      lastUsed: '2024-01-18',
-      description: 'Template para compartilhar histórias pessoais e criar conexão',
-      preview: 'Hoje quero compartilhar com vocês uma história que mudou minha perspectiva sobre {{tema}}...'
-    },
-    {
-      id: 4,
-      name: 'Dicas e Tutoriais',
-      category: 'Educativo',
-      platform: 'Instagram',
-      status: 'active',
-      usage: 2103,
-      likes: 156,
-      performance: '18.7%',
-      created: '2024-01-08',
-      lastUsed: '2024-01-21',
-      description: 'Template para compartilhar conhecimento e educar a audiência',
-      preview: '📚 DICA DO DIA: Como {{acao}} em apenas {{tempo}} minutos! Salve este post para não esquecer 👆'
+  const handleDuplicate = async (templateId: string) => {
+    try {
+      await duplicateTemplate(templateId);
+      toast.success('Template duplicado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao duplicar template');
+      console.error('Erro:', error);
     }
-  ];
+  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'archived': return 'bg-gray-100 text-gray-800';
+  const handleDelete = async (templateId: string) => {
+    try {
+      await deleteTemplate(templateId);
+      toast.success('Template excluído com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir template');
+      console.error('Erro:', error);
+    }
+  };
+
+  const handlePreview = async (templateId: string) => {
+    try {
+      await incrementUsage(templateId);
+    } catch (error) {
+      console.error('Erro ao registrar visualização:', error);
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'SOCIAL_MEDIA': return 'bg-pink-100 text-pink-800';
+      case 'EMAIL': return 'bg-blue-100 text-blue-800';
+      case 'AD_COPY': return 'bg-purple-100 text-purple-800';
+      case 'BLOG_POST': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active': return 'Ativo';
-      case 'draft': return 'Rascunho';
-      case 'archived': return 'Arquivado';
-      default: return 'Desconhecido';
+  const getTypeText = (type: string) => {
+    switch (type) {
+      case 'SOCIAL_MEDIA': return 'Rede Social';
+      case 'EMAIL': return 'E-mail';
+      case 'AD_COPY': return 'Anúncio';
+      case 'BLOG_POST': return 'Blog Post';
+      default: return type;
     }
   };
 
-  const getPlatformColor = (platform: string) => {
-    switch (platform) {
-      case 'Instagram': return 'bg-pink-100 text-pink-800';
-      case 'Facebook': return 'bg-blue-100 text-blue-800';
-      case 'LinkedIn': return 'bg-blue-100 text-blue-900';
-      case 'Twitter': return 'bg-sky-100 text-sky-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const filteredTemplates = globalTemplates.filter(template => {
+  const filteredTemplates = publicTemplates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTab = activeTab === 'all' || template.status === activeTab;
+                         (template.category?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    
+    if (activeTab === 'all') return matchesSearch;
+    
+    // Filter by type for tabs
+    const matchesTab = activeTab === 'social' ? template.type === 'SOCIAL_MEDIA' :
+                      activeTab === 'email' ? template.type === 'EMAIL' :
+                      activeTab === 'ads' ? template.type === 'AD_COPY' :
+                      activeTab === 'blog' ? template.type === 'BLOG_POST' : true;
+    
     return matchesSearch && matchesTab;
   });
 
-  const stats = [
+  const statsCards = [
     {
       title: 'Total Templates',
-      value: '156',
-      change: '+12 esta semana',
+      value: stats?.totalTemplates?.toString() || '0',
+      change: `${stats?.categories || 0} categorias`,
       icon: FileText
     },
     {
       title: 'Uso Total',
-      value: '45.2K',
-      change: '+23% este mês',
+      value: stats?.totalUsage?.toLocaleString() || '0',
+      change: `${stats?.averageUsage || 0} média por template`,
       icon: Users
     },
     {
       title: 'Média de Likes',
-      value: '87',
+      value: Math.round(stats?.averageLikes || 0).toString(),
       change: '+5.4 por template',
       icon: Heart
     },
     {
       title: 'Performance Média',
-      value: '13.9%',
+      value: stats?.averagePerformance || '0%',
       change: '+1.8% este mês',
       icon: TrendingUp
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Carregando templates...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">Erro ao carregar templates</h3>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -231,7 +238,7 @@ const AdminTemplates = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -264,95 +271,115 @@ const AdminTemplates = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="all">Todos</TabsTrigger>
-          <TabsTrigger value="active">Ativos</TabsTrigger>
-          <TabsTrigger value="draft">Rascunhos</TabsTrigger>
-          <TabsTrigger value="archived">Arquivados</TabsTrigger>
+          <TabsTrigger value="social">Redes Sociais</TabsTrigger>
+          <TabsTrigger value="email">E-mail</TabsTrigger>
+          <TabsTrigger value="ads">Anúncios</TabsTrigger>
+          <TabsTrigger value="blog">Blog Posts</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
           <div className="grid gap-4">
-            {filteredTemplates.map((template) => (
-              <Card key={template.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex gap-6">
-                    {/* Template Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-foreground">{template.name}</h3>
-                        <Badge className={getStatusColor(template.status)}>
-                          {getStatusText(template.status)}
-                        </Badge>
-                        <Badge className={getPlatformColor(template.platform)}>
-                          {template.platform}
-                        </Badge>
-                        <Badge variant="outline">{template.category}</Badge>
+            {filteredTemplates.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum template encontrado</h3>
+                <p className="text-muted-foreground">
+                  {searchTerm ? 'Tente ajustar os filtros de busca.' : 'Ainda não há templates nesta categoria.'}
+                </p>
+              </div>
+            ) : (
+              filteredTemplates.map((template) => (
+                <Card key={template.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex gap-6">
+                      {/* Template Info */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">{template.name}</h3>
+                          <Badge className={getTypeColor(template.type)}>
+                            {getTypeText(template.type)}
+                          </Badge>
+                          {template.category && (
+                            <Badge variant="outline">{template.category}</Badge>
+                          )}
+                          {template.is_public && (
+                            <Badge className="bg-blue-100 text-blue-800">Público</Badge>
+                          )}
+                        </div>
+                        
+                        <p className="text-muted-foreground mb-3">{template.description}</p>
+                        
+                        {/* Preview */}
+                        <div className="bg-muted/30 p-3 rounded-lg mb-3">
+                          <p className="text-sm text-muted-foreground mb-1">Preview:</p>
+                          <p className="text-sm italic line-clamp-2">{template.content.substring(0, 200)}...</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            <span>{template.usage_count || 0} usos</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Heart className="w-4 h-4" />
+                            <span>{template.likes || 0} likes</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="w-4 h-4" />
+                            <span>{template.performance || 'N/A'} performance</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>Criado em {new Date(template.created_at || '').toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        </div>
                       </div>
                       
-                      <p className="text-muted-foreground mb-3">{template.description}</p>
-                      
-                      {/* Preview */}
-                      <div className="bg-muted/30 p-3 rounded-lg mb-3">
-                        <p className="text-sm text-muted-foreground mb-1">Preview:</p>
-                        <p className="text-sm italic">{template.preview}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          <span>{template.usage} usos</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-4 h-4" />
-                          <span>{template.likes} likes</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <TrendingUp className="w-4 h-4" />
-                          <span>{template.performance} performance</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>Criado em {template.created}</span>
-                        </div>
+                      {/* Actions */}
+                      <div className="flex items-start gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handlePreview(template.id)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Preview
+                        </Button>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDuplicate(template.id)}>
+                              <Copy className="w-4 h-4 mr-2" />
+                              Duplicar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <FileText className="w-4 h-4 mr-2" />
+                              Exportar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDelete(template.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
-                    
-                    {/* Actions */}
-                    <div className="flex items-start gap-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" />
-                        Preview
-                      </Button>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Duplicar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <FileText className="w-4 h-4 mr-2" />
-                            Exportar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

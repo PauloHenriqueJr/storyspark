@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import {
   Calendar as CalendarIcon
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarEvent } from '@/types/calendar';
 
@@ -27,6 +27,8 @@ interface DraggableCalendarProps {
   filterPlatform: string;
   viewMode: 'month' | 'week' | 'list';
   onCreateEvent: (date: Date) => void;
+  currentDate?: Date; // Nova prop para sincronizar com a página principal
+  onDateChange?: (date: Date) => void; // Callback para mudanças de mês
 }
 
 const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
@@ -36,13 +38,33 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
   onDateSelect,
   filterPlatform,
   viewMode,
-  onCreateEvent
+  onCreateEvent,
+  currentDate: propCurrentDate,
+  onDateChange
 }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(propCurrentDate || new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null);
+  const [dayEventsOpen, setDayEventsOpen] = useState(false);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<CalendarEvent[]>([]);
+  const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+  const [weekStartDate, setWeekStartDate] = useState(new Date()); // Estado para navegação semanal
   const { toast } = useToast();
+
+  // Sincronizar com a prop currentDate quando ela mudar
+  React.useEffect(() => {
+    if (propCurrentDate) {
+      setCurrentDate(propCurrentDate);
+    }
+  }, [propCurrentDate]);
+
+  // Inicializar semana baseada na data selecionada
+  React.useEffect(() => {
+    const startOfWeek = new Date(selectedDate);
+    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+    setWeekStartDate(startOfWeek);
+  }, [selectedDate]);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -72,23 +94,50 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
 
   const getEventsForDate = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
     return events.filter(event => {
-      const matchesDate = event.date.toDateString() === date.toDateString();
+      // Comparar usando o formato de data do evento (pode ser Date object ou string)
+      let eventDateString: string;
+      if (event.date instanceof Date) {
+        eventDateString = event.date.toISOString().split('T')[0];
+      } else {
+        // Se for string, assumir que já está no formato correto
+        eventDateString = String(event.date).split('T')[0];
+      }
+      
+      const matchesDate = eventDateString === dateString;
       const matchesPlatform = filterPlatform === 'all' || event.platform.toLowerCase() === filterPlatform;
       return matchesDate && matchesPlatform;
     });
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      if (direction === 'prev') {
-        newDate.setMonth(prev.getMonth() - 1);
-      } else {
-        newDate.setMonth(prev.getMonth() + 1);
-      }
-      return newDate;
-    });
+    const newDate = new Date(currentDate);
+    if (direction === 'prev') {
+      newDate.setMonth(currentDate.getMonth() - 1);
+    } else {
+      newDate.setMonth(currentDate.getMonth() + 1);
+    }
+    setCurrentDate(newDate);
+    
+    // Notificar a página principal sobre a mudança
+    if (onDateChange) {
+      onDateChange(newDate);
+    }
+  };
+
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const newWeekStart = new Date(weekStartDate);
+    if (direction === 'prev') {
+      newWeekStart.setDate(weekStartDate.getDate() - 7);
+    } else {
+      newWeekStart.setDate(weekStartDate.getDate() + 7);
+    }
+    setWeekStartDate(newWeekStart);
+    
+    // Atualizar também a data selecionada para o primeiro dia da nova semana
+    onDateSelect(newWeekStart);
   };
 
   // Drag and drop handlers
@@ -152,7 +201,7 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
       <div className="grid grid-cols-7 gap-1">
         {getDaysArray().map((day, index) => {
           if (!day) {
-            return <div key={index} className="p-2 min-h-[80px]" />;
+            return <div key={`empty-${index}`} className="p-2 min-h-[80px]" />;
           }
 
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
@@ -162,13 +211,24 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
 
           return (
             <motion.div
-              key={day}
+              key={`day-${day}`}
               className={`
                 min-h-[80px] p-2 border rounded-lg cursor-pointer transition-all duration-200 relative group
                 ${isToday ? 'border-primary bg-primary/5' : 'border-border/40'}
                 ${isSelected ? 'bg-primary/10 border-primary' : 'hover:bg-muted/50'}
               `}
-              onClick={() => onDateSelect(date)}
+              onClick={() => {
+                onDateSelect(date);
+                // Se o dia tem eventos, mostrar lista de eventos
+                if (dayEvents.length > 0) {
+                  setSelectedDayEvents(dayEvents);
+                  setSelectedDayDate(date);
+                  setDayEventsOpen(true);
+                } else {
+                  // Se não tem eventos, abrir modal de criar
+                  onCreateEvent(date);
+                }
+              }}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, day)}
             >
@@ -179,36 +239,44 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
                 {day}
               </div>
               
-              {/* Event indicators */}
+              {/* Event indicators - agora com ícones das redes sociais */}
               <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
+                {dayEvents.slice(0, 3).map((event, eventIndex) => (
                   <div
-                    key={event.id}
-                    className={`w-full h-1.5 rounded-full ${event.color} cursor-pointer hover:h-2 transition-all`}
-                    title={`${event.title} - ${event.time}`}
+                    key={`event-${day}-${event.id}-${eventIndex}`}
+                    className="flex items-center gap-1 p-1 rounded cursor-pointer hover:bg-muted/50 transition-all"
+                    title={`${event.title} - ${event.time} (${event.platform})`}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEventClick(event);
                     }}
-                  />
+                  >
+                    <event.icon 
+                      className="w-3 h-3 text-white p-0.5 rounded" 
+                      style={{ backgroundColor: event.color || '#8B5CF6' }}
+                    />
+                    <div className="text-xs truncate flex-1">{event.title}</div>
+                  </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-xs text-muted-foreground text-center">
-                    +{dayEvents.length - 3}
+                  <div className="text-xs text-muted-foreground text-center mt-1">
+                    +{dayEvents.length - 3} mais
                   </div>
                 )}
               </div>
 
-              {/* Add button - appears on hover */}
-              <button
-                className="absolute inset-0 flex items-center justify-center bg-muted/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCreateEvent(date);
-                }}
-              >
-                <Plus className="w-6 h-6 text-primary" />
-              </button>
+              {/* Add button - appears on hover only when no events */}
+              {dayEvents.length === 0 && (
+                <button
+                  className="absolute inset-0 flex items-center justify-center bg-muted/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCreateEvent(date);
+                  }}
+                >
+                  <Plus className="w-6 h-6 text-primary" />
+                </button>
+              )}
             </motion.div>
           );
         })}
@@ -217,8 +285,8 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
   );
 
   const renderWeekView = () => {
-    const startOfWeek = new Date(selectedDate);
-    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+    // Usar weekStartDate para navegação independente
+    const startOfWeek = new Date(weekStartDate);
     
     const weekDays = Array.from({ length: 7 }, (_, i) => {
       const day = new Date(startOfWeek);
@@ -228,10 +296,47 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
 
     return (
       <div>
+        {/* Navegação da semana */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">
+            Semana de {startOfWeek.toLocaleDateString('pt-BR', { 
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            })}
+          </h3>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigateWeek('prev')}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigateWeek('next')}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-7 gap-4">
           {weekDays.map((day, index) => {
             const dayEvents = events.filter(event => {
-              const matchesDate = event.date.toDateString() === day.toDateString();
+              const dayString = day.toISOString().split('T')[0];
+              
+              // Comparar usando o formato de data do evento
+              let eventDateString: string;
+              if (event.date instanceof Date) {
+                eventDateString = event.date.toISOString().split('T')[0];
+              } else {
+                eventDateString = String(event.date).split('T')[0];
+              }
+              
+              const matchesDate = eventDateString === dayString;
               const matchesPlatform = filterPlatform === 'all' || event.platform.toLowerCase() === filterPlatform;
               return matchesDate && matchesPlatform;
             });
@@ -263,7 +368,7 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
                       onClick={() => handleEventClick(event)}
                     >
                       <div className="flex items-center gap-1 mb-1">
-                        <event.icon className={`w-3 h-3 text-white p-0.5 rounded ${event.color}`} />
+                        <event.icon className={`w-3 h-3 text-white p-0.5 rounded`} style={{ backgroundColor: event.color }} />
                         <span className="text-xs font-medium">{event.time}</span>
                       </div>
                       <div className="text-xs truncate">{event.title}</div>
@@ -337,28 +442,28 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
               month: 'long', 
               year: 'numeric' 
             })}
-            {viewMode === 'week' && `Semana de ${selectedDate.toLocaleDateString('pt-BR', { 
-              day: '2-digit',
-              month: 'short' 
-            })}`}
+            {viewMode === 'week' && 'Visualização Semanal'}
             {viewMode === 'list' && 'Lista de Eventos'}
           </CardTitle>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigateMonth('prev')}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigateMonth('next')}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+          {/* Navegação apenas para o modo mês */}
+          {viewMode === 'month' && (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigateMonth('prev')}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigateMonth('next')}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -367,11 +472,72 @@ const DraggableCalendar: React.FC<DraggableCalendarProps> = ({
         {viewMode === 'list' && renderListView()}
       </CardContent>
 
+      {/* Day Events Modal */}
+      <Dialog open={dayEventsOpen} onOpenChange={setDayEventsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Eventos de {selectedDayDate?.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              Selecione um evento para ver os detalhes ou adicione um novo evento para este dia.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {selectedDayEvents.map((event) => (
+              <div
+                key={event.id}
+                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                onClick={() => {
+                  setSelectedEvent(event);
+                  setDetailsOpen(true);
+                  setDayEventsOpen(false);
+                }}
+              >
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: event.color || '#8B5CF6' }}></div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{event.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {event.time} • {event.platform}
+                  </p>
+                </div>
+                <Badge variant={getStatusBadge(event.status)} className="text-xs">
+                  {event.status}
+                </Badge>
+              </div>
+            ))}
+            
+            <div className="pt-2 border-t">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  setDayEventsOpen(false);
+                  if (selectedDayDate) {
+                    onCreateEvent(selectedDayDate);
+                  }
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Novo Evento
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Event Details Modal */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detalhes do Evento</DialogTitle>
+            <DialogDescription>
+              Visualize, edite ou remova este evento do seu calendário.
+            </DialogDescription>
           </DialogHeader>
           {selectedEvent && (
             <div className="space-y-4">
