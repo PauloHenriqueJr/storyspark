@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bell, Search, User, LogOut, Clock, X, CheckCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Search, User, LogOut, Clock, X, CheckCheck, Settings } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,15 @@ import { GlobalSearch } from '@/components/search/GlobalSearch';
 export const AppHeader = () => {
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+  const navigate = useNavigate();
+
+  const handleProfileClick = () => {
+    navigate('/settings');
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
 
   const formatTimeAgo = (timestamp: Date) => {
     const now = new Date();
@@ -196,11 +206,12 @@ export const AppHeader = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleProfileClick}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSettingsClick}>
+                <Settings className="mr-2 h-4 w-4" />
                 <span>Configurações</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
