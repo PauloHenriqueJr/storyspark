@@ -16,20 +16,22 @@ import { useTemplates } from '@/hooks/useTemplates';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { templatesService } from '@/services/templatesService';
 import { toast } from 'sonner';
+import type { TemplateWithStats } from '@/services/templatesService';
+import type { Database } from '@/integrations/supabase/types';
 
 const Templates = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [editingTemplate, setEditingTemplate] = useState<TemplateWithStats | null>(null);
   const [favoriteTemplates, setFavoriteTemplates] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Meus Templates');
   const [showShareModal, setShowShareModal] = useState(false);
-  const [templateToShare, setTemplateToShare] = useState(null);
+  const [templateToShare, setTemplateToShare] = useState<TemplateWithStats | null>(null);
   const [showUseModal, setShowUseModal] = useState(false);
-  const [templateToUse, setTemplateToUse] = useState(null);
+  const [templateToUse, setTemplateToUse] = useState<TemplateWithStats | null>(null);
   const [publicStatusOverrides, setPublicStatusOverrides] = useState<Record<string, boolean>>({});
   const [showCommunityTemplates, setShowCommunityTemplates] = useState(false);
-  const [communityTemplates, setCommunityTemplates] = useState([]);
+  const [communityTemplates, setCommunityTemplates] = useState<TemplateWithStats[]>([]);
   
   const {
     templates,
@@ -101,12 +103,12 @@ const Templates = () => {
     }
   };
 
-  const handleShareTemplate = (template: any) => {
+  const handleShareTemplate = (template: TemplateWithStats) => {
     setTemplateToShare(template);
     setShowShareModal(true);
   };
 
-  const handleTogglePublic = async (template: any) => {
+  const handleTogglePublic = async (template: TemplateWithStats) => {
     const currentStatus = publicStatusOverrides[template.id] ?? template.is_public;
     const newStatus = !currentStatus;
     
@@ -157,13 +159,13 @@ const Templates = () => {
   };
   
   // Função helper para obter o status público atual (com override local)
-  const getPublicStatus = (template: any) => {
+  const getPublicStatus = (template: TemplateWithStats) => {
     return publicStatusOverrides[template.id] ?? template.is_public;
   };
 
   const categories = ['Meus Templates', 'Favoritos', 'Comunidade', 'SOCIAL', 'EMAIL', 'AD', 'BLOG', 'LANDING'];
 
-  const handleCreateTemplate = async (newTemplate: any) => {
+  const handleCreateTemplate = async (newTemplate: Omit<Database['public']['Tables']['templates']['Insert'], 'workspace_id' | 'user_id'>) => {
     try {
       await createTemplate(newTemplate);
       toast.success('Template criado com sucesso!');
@@ -174,12 +176,12 @@ const Templates = () => {
     }
   };
 
-  const handleEditTemplate = (template: any) => {
+  const handleEditTemplate = (template: TemplateWithStats) => {
     setEditingTemplate(template);
     setShowCreateModal(true);
   };
 
-  const handleUpdateTemplate = async (id: string, updates: any) => {
+  const handleUpdateTemplate = async (id: string, updates: Database['public']['Tables']['templates']['Update']) => {
     try {
       await updateTemplate(id, updates);
       toast.success('Template atualizado com sucesso!');
@@ -211,7 +213,7 @@ const Templates = () => {
     }
   };
 
-  const handleTemplateUsed = async (template: any) => {
+  const handleTemplateUsed = async (template: TemplateWithStats) => {
     try {
       // Incrementa o uso
       await incrementUsage(template.id);
@@ -226,10 +228,10 @@ const Templates = () => {
     }
   };
 
-  const handleTemplateProcessed = (processedContent: string, template: any) => {
+  const handleTemplateProcessed = (processedContent: string, template: TemplateWithStats | null) => {
     // Redireciona automaticamente para o composer com o conteúdo processado
     const encodedContent = encodeURIComponent(processedContent);
-    const encodedName = encodeURIComponent(template.name);
+    const encodedName = encodeURIComponent(template?.name || 'Template');
     window.location.href = `/composer?content=${encodedContent}&name=${encodedName}&from=template`;
   };
 

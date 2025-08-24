@@ -15,7 +15,7 @@ interface CreatePersonaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (persona: Omit<Database['public']['Tables']['target_personas']['Insert'], 'workspace_id' | 'user_id'>) => void;
-  initialData?: any;
+  initialData?: Database['public']['Tables']['target_personas']['Row'];
   mode?: 'create' | 'edit';
 }
 

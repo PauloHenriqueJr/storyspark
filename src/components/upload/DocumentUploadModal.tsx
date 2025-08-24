@@ -32,6 +32,9 @@ import { useToast } from '@/hooks/use-toast';
 import { documentProcessingService, type ExtractedData, type ProcessingProgress } from '@/services/documentProcessingService';
 import { dataApplicationService } from '@/services/dataApplicationService';
 import { useAuth } from '@/components/auth/AuthProvider';
+import TestUpload from './TestUpload';
+import UploadTestButton from './UploadTestButton';
+import DocumentProcessingTest from './DocumentProcessingTest';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -271,6 +274,19 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Test Upload Section - Apenas para desenvolvimento */}
+          {import.meta.env.DEV && (
+            <div className="border border-dashed border-yellow-500 rounded-lg p-4 bg-yellow-50 dark:bg-yellow-900/10">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                Área de Teste (Apenas Desenvolvimento)
+              </h3>
+              <div className="space-y-4">
+                <UploadTestButton />
+                <DocumentProcessingTest />
+              </div>
+            </div>
+          )}
+          
           {/* Upload Area */}
           {!isAnalyzing && !extractedData && (
             <div className="space-y-4">

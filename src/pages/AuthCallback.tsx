@@ -90,12 +90,12 @@ const AuthCallback = () => {
           navigate('/auth', { replace: true });
           return;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Auth callback error:', error);
         setStatus('error');
         toast({
           title: "Erro na autenticação",
-          description: error.message || "Erro ao processar login. Tente novamente.",
+          description: error instanceof Error ? error.message : "Erro ao processar login. Tente novamente.",
           variant: "destructive",
         });
         

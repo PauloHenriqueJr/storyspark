@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { AIContingencyService } from "./aiContingencyService";
+import { aiContingencyService } from "./aiContingencyService";
 
 // Tipos para processamento de documentos
 interface DocumentProcessingJob {
@@ -8,7 +8,7 @@ interface DocumentProcessingJob {
   file_path: string;
   file_name: string;
   file_type: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   extracted_data?: ExtractedData;
   error_message?: string;
   created_at: string;
@@ -56,10 +56,10 @@ interface ProcessingProgress {
 }
 
 class DocumentProcessingService {
-  private aiService: AIContingencyService;
+  private aiService: typeof aiContingencyService;
 
   constructor() {
-    this.aiService = new AIContingencyService();
+    this.aiService = aiContingencyService;
   }
 
   /**
@@ -72,15 +72,15 @@ class DocumentProcessingService {
     fileType: string
   ): Promise<string> {
     const { data, error } = await supabase
-      .from('ai_processing_jobs')
+      .from("ai_processing_jobs")
       .insert({
         user_id: userId,
         file_path: filePath,
         file_name: fileName,
         file_type: fileType,
-        status: 'pending'
+        status: "pending",
       })
-      .select('id')
+      .select("id")
       .single();
 
     if (error) {
@@ -95,13 +95,13 @@ class DocumentProcessingService {
    */
   private async updateJobStatus(
     jobId: string,
-    status: DocumentProcessingJob['status'],
+    status: DocumentProcessingJob["status"],
     extractedData?: ExtractedData,
     errorMessage?: string
   ): Promise<void> {
-    const updateData: any = {
+    const updateData: Partial<DocumentProcessingJob> = {
       status,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (extractedData) {
@@ -113,12 +113,12 @@ class DocumentProcessingService {
     }
 
     const { error } = await supabase
-      .from('ai_processing_jobs')
+      .from("ai_processing_jobs")
       .update(updateData)
-      .eq('id', jobId);
+      .eq("id", jobId);
 
     if (error) {
-      console.error('Erro ao atualizar status do job:', error);
+      console.error("Erro ao atualizar status do job:", error);
     }
   }
 
@@ -126,17 +126,20 @@ class DocumentProcessingService {
    * Extrai texto de diferentes tipos de arquivo
    */
   private async extractTextFromFile(file: File): Promise<string> {
-    if (file.type === 'text/plain') {
+    if (file.type === "text/plain") {
       return await file.text();
     }
 
-    if (file.type === 'application/pdf') {
+    if (file.type === "application/pdf") {
       // Para PDFs, usamos uma biblioteca de extração
       // Em produção, você pode usar pdf-parse ou similar
       return await this.extractTextFromPDF(file);
     }
 
-    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    if (
+      file.type ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
       // Para DOCX, usamos uma biblioteca de extração
       // Em produção, você pode usar mammoth ou similar
       return await this.extractTextFromDOCX(file);
@@ -154,7 +157,9 @@ class DocumentProcessingService {
       const reader = new FileReader();
       reader.onload = () => {
         // Simulação de extração de texto
-        resolve(`Texto extraído do PDF: ${file.name}\n\nConteúdo simulado do documento...`);
+        resolve(
+          `Texto extraído do PDF: ${file.name}\n\nConteúdo simulado do documento...`
+        );
       };
       reader.readAsArrayBuffer(file);
     });
@@ -169,7 +174,9 @@ class DocumentProcessingService {
       const reader = new FileReader();
       reader.onload = () => {
         // Simulação de extração de texto
-        resolve(`Texto extraído do DOCX: ${file.name}\n\nConteúdo simulado do documento...`);
+        resolve(
+          `Texto extraído do DOCX: ${file.name}\n\nConteúdo simulado do documento...`
+        );
       };
       reader.readAsArrayBuffer(file);
     });
@@ -233,15 +240,17 @@ Se alguma informação não estiver disponível no documento, retorne null para 
     userId: string,
     onProgress?: (progress: ProcessingProgress) => void
   ): Promise<ExtractedData> {
+    let jobId: string | undefined;
+
     try {
       // 1. Upload do arquivo para o storage
-      onProgress?.({ step: 'Fazendo upload do arquivo...', progress: 10 });
-      
+      onProgress?.({ step: "Fazendo upload do arquivo...", progress: 10 });
+
       const fileName = `${Date.now()}-${file.name}`;
-      const filePath = `document-uploads/${userId}/${fileName}`;
-      
+      const filePath = `${userId}/${fileName}`;
+
       const { error: uploadError } = await supabase.storage
-        .from('document-uploads')
+        .from("document-uploads")
         .upload(filePath, file);
 
       if (uploadError) {
@@ -249,31 +258,50 @@ Se alguma informação não estiver disponível no documento, retorne null para 
       }
 
       // 2. Criar job de processamento
-      onProgress?.({ step: 'Criando job de processamento...', progress: 20 });
-      const jobId = await this.createProcessingJob(userId, filePath, file.name, file.type);
-      await this.updateJobStatus(jobId, 'processing');
+      onProgress?.({ step: "Criando job de processamento...", progress: 20 });
+      jobId = await this.createProcessingJob(
+        userId,
+        filePath,
+        file.name,
+        file.type
+      );
+      await this.updateJobStatus(jobId, "processing");
 
       // 3. Extrair texto do arquivo
-      onProgress?.({ step: 'Extraindo texto do documento...', progress: 30, currentFile: file.name });
+      onProgress?.({
+        step: "Extraindo texto do documento...",
+        progress: 30,
+        currentFile: file.name,
+      });
       const documentText = await this.extractTextFromFile(file);
 
       // 4. Processar com IA
-      onProgress?.({ step: 'Analisando com IA...', progress: 50, currentFile: file.name });
+      onProgress?.({
+        step: "Analisando com IA...",
+        progress: 50,
+        currentFile: file.name,
+      });
       const prompt = this.generateExtractionPrompt(documentText);
-      
-      const aiResponse = await this.aiService.generateResponse({
+
+      const aiResponse = await this.aiService.executeRequest({
         prompt,
         maxTokens: 2000,
-        temperature: 0.3
+        temperature: 0.3,
       });
 
       if (!aiResponse.success || !aiResponse.content) {
-        throw new Error(`Erro na análise com IA: ${aiResponse.error || 'Resposta vazia'}`);
+        throw new Error(
+          `Erro na análise com IA: ${aiResponse.error || "Resposta vazia"}`
+        );
       }
 
       // 5. Parsear resposta da IA
-      onProgress?.({ step: 'Processando dados extraídos...', progress: 80, currentFile: file.name });
-      
+      onProgress?.({
+        step: "Processando dados extraídos...",
+        progress: 80,
+        currentFile: file.name,
+      });
+
       let extractedData: ExtractedData;
       try {
         // Tentar extrair JSON da resposta
@@ -281,32 +309,39 @@ Se alguma informação não estiver disponível no documento, retorne null para 
         if (jsonMatch) {
           extractedData = JSON.parse(jsonMatch[0]);
         } else {
-          throw new Error('Resposta da IA não contém JSON válido');
+          throw new Error("Resposta da IA não contém JSON válido");
         }
       } catch (parseError) {
-        console.error('Erro ao parsear resposta da IA:', parseError);
+        console.error("Erro ao parsear resposta da IA:", parseError);
         // Fallback: usar dados mockados se a IA falhar
         extractedData = this.getFallbackData(file.name);
       }
 
       // 6. Validar e limpar dados
-      onProgress?.({ step: 'Validando dados...', progress: 90, currentFile: file.name });
+      onProgress?.({
+        step: "Validando dados...",
+        progress: 90,
+        currentFile: file.name,
+      });
       extractedData = this.validateAndCleanData(extractedData);
 
       // 7. Finalizar job
-      onProgress?.({ step: 'Finalizando processamento...', progress: 100, currentFile: file.name });
-      await this.updateJobStatus(jobId, 'completed', extractedData);
+      onProgress?.({
+        step: "Finalizando processamento...",
+        progress: 100,
+        currentFile: file.name,
+      });
+      await this.updateJobStatus(jobId, "completed", extractedData);
 
       return extractedData;
-
     } catch (error) {
-      console.error('Erro no processamento do documento:', error);
-      
+      console.error("Erro no processamento do documento:", error);
+
       // Atualizar job com erro
-      if (error instanceof Error) {
-        await this.updateJobStatus(jobId, 'failed', undefined, error.message);
+      if (jobId && error instanceof Error) {
+        await this.updateJobStatus(jobId, "failed", undefined, error.message);
       }
-      
+
       throw error;
     }
   }
@@ -318,14 +353,21 @@ Se alguma informação não estiver disponível no documento, retorne null para 
     return {
       brandVoice: {
         name: "Voz Empresarial Profissional",
-        description: "Tom de voz profissional, confiável e inovador, focado em resultados e valor agregado.",
+        description:
+          "Tom de voz profissional, confiável e inovador, focado em resultados e valor agregado.",
         tone: "Profissional e Confiável",
-        characteristics: ["Inovador", "Confiável", "Resultado-orientado", "Valor agregado"],
-        targetAudience: "Profissionais e empresas que buscam soluções eficientes",
+        characteristics: [
+          "Inovador",
+          "Confiável",
+          "Resultado-orientado",
+          "Valor agregado",
+        ],
+        targetAudience:
+          "Profissionais e empresas que buscam soluções eficientes",
         examples: [
           "Transformamos desafios em oportunidades de crescimento",
-          "Soluções inteligentes para resultados extraordinários"
-        ]
+          "Soluções inteligentes para resultados extraordinários",
+        ],
       },
       personas: [
         {
@@ -333,10 +375,15 @@ Se alguma informação não estiver disponível no documento, retorne null para 
           age: 35,
           profession: "Diretor de Marketing",
           interests: ["Tecnologia", "Inovação", "Resultados"],
-          painPoints: ["Falta de tempo", "Pressão por resultados", "Orçamento limitado"],
+          painPoints: [
+            "Falta de tempo",
+            "Pressão por resultados",
+            "Orçamento limitado",
+          ],
           goals: ["Aumentar conversões", "Otimizar campanhas", "ROI positivo"],
-          description: "Profissional experiente que busca soluções eficientes e resultados mensuráveis."
-        }
+          description:
+            "Profissional experiente que busca soluções eficientes e resultados mensuráveis.",
+        },
       ],
       companyInfo: {
         name: "Empresa Extraída",
@@ -344,14 +391,14 @@ Se alguma informação não estiver disponível no documento, retorne null para 
         description: "Empresa de soluções tecnológicas inovadoras",
         mission: "Transformar negócios através da tecnologia",
         vision: "Ser referência em soluções digitais",
-        values: ["Inovação", "Qualidade", "Confiança", "Resultados"]
+        values: ["Inovação", "Qualidade", "Confiança", "Resultados"],
       },
       marketingData: {
         targetAudience: ["Profissionais", "Empresas", "Empreendedores"],
         channels: ["LinkedIn", "Email", "Web"],
         campaigns: ["Lançamento", "Educativo", "Conversão"],
-        goals: ["Awareness", "Leads", "Conversões"]
-      }
+        goals: ["Awareness", "Leads", "Conversões"],
+      },
     };
   }
 
@@ -365,30 +412,38 @@ Se alguma informação não estiver disponível no documento, retorne null para 
     if (data.brandVoice && data.brandVoice.name) {
       cleaned.brandVoice = {
         name: data.brandVoice.name.trim(),
-        description: data.brandVoice.description?.trim() || "Descrição da voz da marca",
+        description:
+          data.brandVoice.description?.trim() || "Descrição da voz da marca",
         tone: data.brandVoice.tone?.trim() || "Profissional",
-        characteristics: Array.isArray(data.brandVoice.characteristics) 
-          ? data.brandVoice.characteristics.filter(c => c && c.trim())
+        characteristics: Array.isArray(data.brandVoice.characteristics)
+          ? data.brandVoice.characteristics.filter((c) => c && c.trim())
           : ["Profissional", "Confiável"],
-        targetAudience: data.brandVoice.targetAudience?.trim() || "Público-alvo",
+        targetAudience:
+          data.brandVoice.targetAudience?.trim() || "Público-alvo",
         examples: Array.isArray(data.brandVoice.examples)
-          ? data.brandVoice.examples.filter(e => e && e.trim())
-          : ["Exemplo de comunicação"]
+          ? data.brandVoice.examples.filter((e) => e && e.trim())
+          : ["Exemplo de comunicação"],
       };
     }
 
     // Validar personas
     if (data.personas && Array.isArray(data.personas)) {
       cleaned.personas = data.personas
-        .filter(p => p && p.name)
-        .map(p => ({
+        .filter((p) => p && p.name)
+        .map((p) => ({
           name: p.name.trim(),
           age: p.age && p.age > 0 ? p.age : 30,
           profession: p.profession?.trim() || "Profissional",
-          interests: Array.isArray(p.interests) ? p.interests.filter(i => i && i.trim()) : [],
-          painPoints: Array.isArray(p.painPoints) ? p.painPoints.filter(p => p && p.trim()) : [],
-          goals: Array.isArray(p.goals) ? p.goals.filter(g => g && g.trim()) : [],
-          description: p.description?.trim() || "Descrição da persona"
+          interests: Array.isArray(p.interests)
+            ? p.interests.filter((i) => i && i.trim())
+            : [],
+          painPoints: Array.isArray(p.painPoints)
+            ? p.painPoints.filter((p) => p && p.trim())
+            : [],
+          goals: Array.isArray(p.goals)
+            ? p.goals.filter((g) => g && g.trim())
+            : [],
+          description: p.description?.trim() || "Descrição da persona",
         }));
     }
 
@@ -397,12 +452,13 @@ Se alguma informação não estiver disponível no documento, retorne null para 
       cleaned.companyInfo = {
         name: data.companyInfo.name.trim(),
         industry: data.companyInfo.industry?.trim() || "Tecnologia",
-        description: data.companyInfo.description?.trim() || "Descrição da empresa",
+        description:
+          data.companyInfo.description?.trim() || "Descrição da empresa",
         mission: data.companyInfo.mission?.trim() || "Missão da empresa",
         vision: data.companyInfo.vision?.trim() || "Visão da empresa",
-        values: Array.isArray(data.companyInfo.values) 
-          ? data.companyInfo.values.filter(v => v && v.trim())
-          : ["Qualidade", "Inovação"]
+        values: Array.isArray(data.companyInfo.values)
+          ? data.companyInfo.values.filter((v) => v && v.trim())
+          : ["Qualidade", "Inovação"],
       };
     }
 
@@ -410,17 +466,17 @@ Se alguma informação não estiver disponível no documento, retorne null para 
     if (data.marketingData) {
       cleaned.marketingData = {
         targetAudience: Array.isArray(data.marketingData.targetAudience)
-          ? data.marketingData.targetAudience.filter(a => a && a.trim())
+          ? data.marketingData.targetAudience.filter((a) => a && a.trim())
           : ["Público-alvo"],
         channels: Array.isArray(data.marketingData.channels)
-          ? data.marketingData.channels.filter(c => c && c.trim())
+          ? data.marketingData.channels.filter((c) => c && c.trim())
           : ["Digital"],
         campaigns: Array.isArray(data.marketingData.campaigns)
-          ? data.marketingData.campaigns.filter(c => c && c.trim())
+          ? data.marketingData.campaigns.filter((c) => c && c.trim())
           : ["Campanha"],
         goals: Array.isArray(data.marketingData.goals)
-          ? data.marketingData.goals.filter(g => g && g.trim())
-          : ["Crescimento"]
+          ? data.marketingData.goals.filter((g) => g && g.trim())
+          : ["Crescimento"],
       };
     }
 
@@ -432,14 +488,14 @@ Se alguma informação não estiver disponível no documento, retorne null para 
    */
   async getProcessingHistory(userId: string): Promise<DocumentProcessingJob[]> {
     const { data, error } = await supabase
-      .from('ai_processing_jobs')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("ai_processing_jobs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(10);
 
     if (error) {
-      console.error('Erro ao buscar histórico:', error);
+      console.error("Erro ao buscar histórico:", error);
       return [];
     }
 
@@ -453,25 +509,25 @@ Se alguma informação não estiver disponível no documento, retorne null para 
     try {
       // Remover do storage
       const { error: storageError } = await supabase.storage
-        .from('document-uploads')
+        .from("document-uploads")
         .remove([filePath]);
 
       if (storageError) {
-        console.error('Erro ao remover arquivo do storage:', storageError);
+        console.error("Erro ao remover arquivo do storage:", storageError);
       }
 
       // Remover job do banco
       const { error: dbError } = await supabase
-        .from('ai_processing_jobs')
+        .from("ai_processing_jobs")
         .delete()
-        .eq('user_id', userId)
-        .eq('file_path', filePath);
+        .eq("user_id", userId)
+        .eq("file_path", filePath);
 
       if (dbError) {
-        console.error('Erro ao remover job do banco:', dbError);
+        console.error("Erro ao remover job do banco:", dbError);
       }
     } catch (error) {
-      console.error('Erro ao deletar arquivo processado:', error);
+      console.error("Erro ao deletar arquivo processado:", error);
     }
   }
 }

@@ -9,12 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles, Mic, Target, Users } from 'lucide-react';
+import type { BrandVoice } from '@/services/brandVoicesService';
 
 interface CreateBrandVoiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateVoice?: (voice: any) => void;
-  editingVoice?: any;
+  onCreateVoice?: (voice: Partial<BrandVoice>) => void;
+  editingVoice?: BrandVoice;
 }
 
 interface FormData {
@@ -58,15 +59,15 @@ const CreateBrandVoiceModal = ({ open, onOpenChange, onCreateVoice, editingVoice
         description: editingVoice.description || '',
         tone: editingVoice.tone || '',
         style: editingVoice.style || '',
-        personalityTraits: editingVoice.personality_traits || [],
-        audience: editingVoice.audience || [],
+        personalityTraits: Array.isArray(editingVoice.personality_traits) ? editingVoice.personality_traits : [],
+        audience: Array.isArray(editingVoice.audience) ? editingVoice.audience : [],
         platform: editingVoice.platform || '',
         context: editingVoice.context || '',
         writingStyle: editingVoice.writing_style || '',
         avoid: editingVoice.avoid || '',
         goodExample: editingVoice.good_example || '',
         badExample: editingVoice.bad_example || '',
-        keywords: editingVoice.keywords || ''
+        keywords: typeof editingVoice.keywords === 'string' ? editingVoice.keywords : ''
       });
     } else {
       setFormData({
@@ -93,21 +94,21 @@ const CreateBrandVoiceModal = ({ open, onOpenChange, onCreateVoice, editingVoice
       return;
     }
 
-    const voiceData = {
+    const voiceData: Partial<BrandVoice> = {
       name: formData.name,
       description: formData.description,
       tone: formData.tone,
       style: formData.style || formData.writingStyle,
       examples: [], // Garantir que seja um array vazio se não fornecido
       personality_traits: formData.personalityTraits,
-      audience: formData.audience,
+      audience: formData.audience.join(', '), // Converter array para string conforme a interface
       platform: formData.platform,
       context: formData.context,
       writing_style: formData.writingStyle,
       avoid: formData.avoid,
       good_example: formData.goodExample,
       bad_example: formData.badExample,
-      keywords: formData.keywords
+      keywords: formData.keywords.split(',').map(k => k.trim()).filter(k => k) // Converter string para array
     };
 
     onCreateVoice?.(voiceData);

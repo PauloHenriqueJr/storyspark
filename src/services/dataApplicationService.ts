@@ -37,7 +37,7 @@ class DataApplicationService {
       // 1. Aplicar Brand Voice
       if (data.brandVoice) {
         try {
-          await brandVoicesService.createBrandVoice({
+          await brandVoicesService.create({
             name: data.brandVoice.name,
             description: data.brandVoice.description,
             tone: data.brandVoice.tone,
@@ -57,7 +57,7 @@ class DataApplicationService {
       if (data.personas && data.personas.length > 0) {
         for (const persona of data.personas) {
           try {
-            await personasService.createPersona({
+            await personasService.create({
               name: persona.name,
               age_range: `${persona.age - 5}-${persona.age + 5}`,
               occupation: persona.profession,
@@ -80,7 +80,7 @@ class DataApplicationService {
       if (data.marketingData?.campaigns && data.marketingData.campaigns.length > 0) {
         for (const campaignName of data.marketingData.campaigns) {
           try {
-            await campaignsService.createCampaign({
+            await campaignsService.create({
               name: campaignName,
               description: `Campanha criada automaticamente a partir de análise de documento`,
               status: "DRAFT",
@@ -106,7 +106,7 @@ class DataApplicationService {
       // 4. Se não houver campanhas específicas, criar uma campanha padrão
       if (result.created.campaigns === 0 && data.companyInfo) {
         try {
-          await campaignsService.createCampaign({
+          await campaignsService.create({
             name: `Campanha ${data.companyInfo.name}`,
             description: `Campanha principal para ${data.companyInfo.name}`,
             status: "DRAFT",

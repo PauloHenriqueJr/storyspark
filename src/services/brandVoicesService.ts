@@ -33,7 +33,7 @@ export interface BrandVoice {
 }
 
 export interface BrandVoiceWithStats extends BrandVoice {
-  personality: any;
+  personality: string[];
   campaigns?: number;
   avgEngagement?: number;
 }
@@ -145,7 +145,7 @@ export const brandVoicesService = {
   ): Promise<BrandVoice> {
     try {
       // Garantir que campos array estejam no formato correto
-      const sanitizedUpdates: any = {
+      const sanitizedUpdates: Record<string, unknown> = {
         ...updates,
         updated_at: new Date().toISOString(),
       };
@@ -158,14 +158,14 @@ export const brandVoicesService = {
       }
       if ("personality_traits" in updates) {
         sanitizedUpdates.personality_traits = Array.isArray(
-          (updates as any).personality_traits
+          updates.personality_traits
         )
-          ? (updates as any).personality_traits
+          ? updates.personality_traits
           : [];
       }
       if ("audience" in updates) {
-        sanitizedUpdates.audience = Array.isArray((updates as any).audience)
-          ? (updates as any).audience
+        sanitizedUpdates.audience = Array.isArray(updates.audience)
+          ? updates.audience
           : [];
       }
 

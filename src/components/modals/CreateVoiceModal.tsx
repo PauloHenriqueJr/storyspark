@@ -2,31 +2,22 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Mic, 
-  Brain, 
-  Target, 
-  MessageSquare, 
-  Plus,
-  X,
-  Wand2,
-  Settings,
-  TestTube,
-  Save
-} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Mic, Plus, Trash2, MoveUp, MoveDown, Play, Brain, Target, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { BrandVoice } from '@/services/brandVoicesService';
 
 interface CreateVoiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateVoice?: (voice: any) => void;
-  editingVoice?: any;
+  onCreateVoice?: (voice: Partial<BrandVoice>) => void;
+  editingVoice?: BrandVoice;
 }
 
 const voiceCategories = [

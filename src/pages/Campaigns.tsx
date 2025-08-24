@@ -110,7 +110,7 @@ const Campaigns = () => {
       const fbUserId = window.prompt('Informe o Facebook User ID (opcional):') || undefined;
 
       // Chamar service para salvar credenciais de integração
-      // @ts-ignore - método existente no service
+      // @ts-expect-error - método existente no service
       await (await import('@/services/campaignsService')).campaignsService.linkFacebookAccount(
         workspace.id,
         user.id,
@@ -130,7 +130,7 @@ const Campaigns = () => {
         toast({ title: 'Sessão inválida', description: 'Selecione um workspace.', variant: 'destructive' });
         return;
       }
-      // @ts-ignore - método existente no service
+      // @ts-expect-error - método existente no service
       await (await import('@/services/campaignsService')).campaignsService.syncFromFacebook(workspace.id);
       await refetch();
       toast({ title: 'Sincronização iniciada', description: 'Dados sendo atualizados a partir do Facebook.' });

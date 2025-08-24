@@ -14,6 +14,17 @@ import { getRealConfidence } from '@/utils/realDataService';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { aiIdeasService, type IdeaPayload } from '@/services/aiIdeasService';
 
+interface GeneratedIdea extends IdeaPayload {
+  id: number | string;
+  content: string[];
+  confidence: number;
+  category: string;
+  topic?: string;
+  audience?: string;
+  keywords?: string[];
+  trends?: string[];
+}
+
 interface GenerateIdeasModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,7 +33,7 @@ interface GenerateIdeasModalProps {
 const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => {
   const [activeTab, setActiveTab] = useState('quick');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedIdeas, setGeneratedIdeas] = useState<any[]>([]);
+  const [generatedIdeas, setGeneratedIdeas] = useState<GeneratedIdea[]>([]);
   const [saving, setSaving] = useState(false);
   const { workspace, user } = useWorkspace();
   const [formData, setFormData] = useState({
@@ -179,7 +190,7 @@ const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => 
 
    try {
      setSaving(true);
-     const payload: IdeaPayload[] = (generatedIdeas || []).map((idea: any) => ({
+     const payload: IdeaPayload[] = (generatedIdeas || []).map((idea) => ({
        category: idea.category,
        confidence: idea.confidence,
        content: Array.isArray(idea.content) ? idea.content : [],
@@ -198,10 +209,10 @@ const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => 
        title: 'Ideias salvas',
        description: `${inserted} ideias foram salvas na sua biblioteca.`
      });
-   } catch (err: any) {
+   } catch (err) {
      toast({
        title: 'Erro ao salvar ideias',
-       description: err?.message || 'Ocorreu um erro ao salvar.',
+       description: (err as Error)?.message || 'Ocorreu um erro ao salvar.',
        variant: 'destructive'
      });
    } finally {
@@ -415,7 +426,7 @@ const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => 
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {idea.content.map((item: string, index: number) => (
+                    {idea.content.map((item, index) => (
                       <div key={index} className="p-3 bg-muted/50 rounded-lg">
                         <p className="text-sm">{item}</p>
                       </div>
@@ -425,7 +436,7 @@ const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => 
                     <div className="mt-3">
                       <p className="text-sm font-medium mb-1">Palavras-chave usadas:</p>
                       <div className="flex flex-wrap gap-1">
-                        {idea.keywords.map((keyword: string) => (
+                        {idea.keywords.map((keyword) => (
                           <Badge key={keyword} variant="outline" className="text-xs">
                             #{keyword}
                           </Badge>

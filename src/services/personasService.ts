@@ -146,28 +146,31 @@ export const personasService = {
       console.log("🔄 Atualizando persona:", id);
 
       // Garantir que campos array estejam no formato correto
-      const sanitizedUpdates: any = {
+      const sanitizedUpdates: UpdatePersonaInput & { updated_at?: string } = {
         ...updates,
         updated_at: new Date().toISOString(),
       };
 
       // Sanitizar arrays se existirem
-      if ("goals" in updates) {
+      if ("goals" in updates && updates.goals !== undefined) {
         sanitizedUpdates.goals = Array.isArray(updates.goals)
           ? updates.goals
           : [];
       }
-      if ("pain_points" in updates) {
+      if ("pain_points" in updates && updates.pain_points !== undefined) {
         sanitizedUpdates.pain_points = Array.isArray(updates.pain_points)
           ? updates.pain_points
           : [];
       }
-      if ("interests" in updates) {
+      if ("interests" in updates && updates.interests !== undefined) {
         sanitizedUpdates.interests = Array.isArray(updates.interests)
           ? updates.interests
           : [];
       }
-      if ("preferred_channels" in updates) {
+      if (
+        "preferred_channels" in updates &&
+        updates.preferred_channels !== undefined
+      ) {
         sanitizedUpdates.preferred_channels = Array.isArray(
           updates.preferred_channels
         )

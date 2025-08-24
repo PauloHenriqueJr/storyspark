@@ -9,8 +9,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Supabase configuration - should come from environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || "";
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
@@ -51,7 +51,7 @@ interface CampaignWithStats {
   start_date: string;
   end_date: string;
   tags: string[];
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   // Stats from campaign_stats table

@@ -49,6 +49,7 @@ const AIIdeas = React.lazy(() => import('./pages/AIIdeas'));
 const TrendingHooks = React.lazy(() => import('./pages/TrendingHooks'));
 const CRM = React.lazy(() => import('./pages/CRM'));
 const Feedback = React.lazy(() => import('./pages/Feedback'));
+const TestUploadPage = React.lazy(() => import('./pages/TestUploadPage'));
 
 // Lazy load admin pages
 const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard'));
@@ -98,8 +99,17 @@ const App = () => (
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPost />} />
       
-      {/* Test Route */}
+      {/* Test Routes */}
       <Route path="/test-calendar" element={<TestCalendar />} />
+      <Route path="/test-upload" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <TestUploadPage />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
       
   {/* Auth Routes - Apenas /auth */}
   <Route path="/auth" element={<Auth />} />

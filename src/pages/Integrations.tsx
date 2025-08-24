@@ -20,10 +20,24 @@ import {
   Plus
 } from 'lucide-react';
 
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  connected: boolean;
+  status: string;
+  accounts?: string[];
+  features?: string[];
+  workflows?: number;
+  properties?: number;
+  endpoints?: number;
+}
+
 const Integrations = () => {
   const [connectModalOpen, setConnectModalOpen] = useState(false);
-  const [selectedIntegration, setSelectedIntegration] = useState<any>(null);
-  const socialIntegrations = [
+  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const socialIntegrations: Integration[] = [
     {
       id: 'instagram',
       name: 'Instagram',
@@ -66,7 +80,7 @@ const Integrations = () => {
     }
   ];
 
-  const toolIntegrations = [
+  const toolIntegrations: Integration[] = [
     {
       id: 'zapier',
       name: 'Zapier',
@@ -204,7 +218,7 @@ const Integrations = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold text-foreground">{integration.name}</h3>
-                          <Badge variant={getStatusColor(integration.status) as any}>
+                          <Badge variant={getStatusColor(integration.status) as "default" | "destructive" | "outline" | "secondary"}>
                             <div className="flex items-center gap-1">
                               {getStatusIcon(integration.status)}
                               {integration.status}
@@ -288,7 +302,7 @@ const Integrations = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold text-foreground">{tool.name}</h3>
-                          <Badge variant={getStatusColor(tool.status) as any}>
+                          <Badge variant={getStatusColor(tool.status) as "default" | "destructive" | "outline" | "secondary"}>
                             <div className="flex items-center gap-1">
                               {getStatusIcon(tool.status)}
                               {tool.status}

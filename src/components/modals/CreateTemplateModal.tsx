@@ -8,13 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Wand2, Instagram, Facebook, Twitter, Linkedin, Youtube } from 'lucide-react';
+import type { TemplateWithStats } from '@/services/templatesService';
+import type { Database } from '@/integrations/supabase/types';
+
+type CreateTemplateInput = Database['public']['Tables']['templates']['Insert'];
+type UpdateTemplateInput = Database['public']['Tables']['templates']['Update'];
 
 interface CreateTemplateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateTemplate?: (template: any) => void;
-  onUpdateTemplate?: (id: string, updates: any) => void;
-  editingTemplate?: any;
+  onCreateTemplate?: (template: Omit<CreateTemplateInput, 'workspace_id' | 'user_id'>) => void;
+  onUpdateTemplate?: (id: string, updates: UpdateTemplateInput) => void;
+  editingTemplate?: TemplateWithStats;
 }
 
 const platforms = [
@@ -39,11 +44,11 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: '',
+    type: '' as Database['public']['Enums']['TemplateType'] | '',
     category: '',
     platform: '',
     content: '',
-    tags: []
+    tags: [] as string[]
   });
 
   // Atualizar dados do formulário quando editingTemplate mudar

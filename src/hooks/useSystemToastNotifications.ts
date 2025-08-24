@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { SystemToastNotification } from '@/components/ui/system-toast-notifications';
 
 export const useSystemToastNotifications = () => {
@@ -40,7 +40,7 @@ export const useSystemToastNotifications = () => {
     return addNotification({ type: 'info', title, description, duration });
   }, [addNotification]);
 
-  return {
+  return useMemo(() => ({
     notifications,
     addNotification,
     removeNotification,
@@ -49,5 +49,5 @@ export const useSystemToastNotifications = () => {
     showError,
     showWarning,
     showInfo,
-  };
+  }), [notifications, addNotification, removeNotification, clearAll, showSuccess, showError, showWarning, showInfo]);
 };

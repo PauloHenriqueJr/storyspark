@@ -6,7 +6,7 @@ import { ArrowLeft, TrendingUp } from 'lucide-react';
 
 interface DrillDownChartProps {
   title: string;
-  data: any[];
+  data: Array<{ name: string; impressions: number; engagements: number; reach: number }>;
   onBack?: () => void;
 }
 
@@ -47,7 +47,7 @@ export const DrillDownChart = ({ title, data, onBack }: DrillDownChartProps) => 
     return monthlyData;
   };
 
-  const handleBarClick = (data: any) => {
+  const handleBarClick = (data: { name: string; impressions: number; engagements: number; reach: number }) => {
     if (currentLevel === 'monthly') {
       setSelectedMonth(data.name);
       setCurrentLevel('weekly');
