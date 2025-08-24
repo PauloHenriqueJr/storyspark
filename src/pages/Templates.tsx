@@ -1,14 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Search, Filter, Heart, Copy, Edit3, Instagram, Facebook, Linkedin, Twitter, Plus, Share2, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Search, Filter, Heart, Copy, Edit3, Instagram, Facebook, Linkedin, Twitter, Plus, Share2, Loader2, AlertCircle, Wand2, Sparkles, Zap } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import CreateTemplateModal from '@/components/modals/CreateTemplateModal';
 import ShareTemplateModal from '@/components/templates/ShareTemplateModal';
+import UseTemplateModal from '@/components/templates/UseTemplateModal';
 import { useTemplates } from '@/hooks/useTemplates';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { templatesService } from '@/services/templatesService';
 import { toast } from 'sonner';
 
 const Templates = () => {
@@ -16,9 +22,14 @@ const Templates = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [favoriteTemplates, setFavoriteTemplates] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [selectedCategory, setSelectedCategory] = useState('Meus Templates');
   const [showShareModal, setShowShareModal] = useState(false);
   const [templateToShare, setTemplateToShare] = useState(null);
+  const [showUseModal, setShowUseModal] = useState(false);
+  const [templateToUse, setTemplateToUse] = useState(null);
+  const [publicStatusOverrides, setPublicStatusOverrides] = useState<Record<string, boolean>>({});
+  const [showCommunityTemplates, setShowCommunityTemplates] = useState(false);
+  const [communityTemplates, setCommunityTemplates] = useState([]);
   
   const {
     templates,
@@ -30,10 +41,127 @@ const Templates = () => {
     updateTemplate,
     deleteTemplate,
     duplicateTemplate,
-    incrementUsage
+    incrementUsage,
+    refetch
   } = useTemplates();
 
-  const categories = ['Todos', 'SOCIAL_MEDIA', 'EMAIL', 'AD_COPY', 'BLOG_POST'];
+  const { user } = useWorkspace();
+
+  useEffect(() => {
+    const loadCommunityTemplates = async () => {
+      try {
+        const community = await templatesService.getPublicTemplates();
+        setCommunityTemplates(community);
+      } catch (error) {
+        console.error('Erro ao carregar templates da comunidade:', error);
+      }
+    };
+
+    if (selectedCategory === 'Comunidade') {
+      loadCommunityTemplates();
+    }
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!user?.id) return;
+      try {
+        const favs = await templatesService.getFavorites(user.id);
+        setFavoriteTemplates(favs);
+      } catch (e) {
+        console.error('Erro ao carregar favoritos', e);
+      }
+    };
+    loadFavorites();
+  }, [user?.id]);
+
+  const handleToggleFavorite = async (templateId: string) => {
+    if (!user?.id) {
+      toast.error('Faça login para favoritar templates.');
+      return;
+    }
+    try {
+      const isCurrentlyFavorited = favoriteTemplates.includes(templateId);
+      const added = await templatesService.toggleFavorite(templateId, user.id);
+      
+      setFavoriteTemplates(prev =>
+        added ? Array.from(new Set([...prev, templateId])) : prev.filter(id => id !== templateId)
+      );
+      
+      if (added) {
+        toast.success('⭐ Template adicionado aos favoritos!', {
+          description: 'Agora ele aparece no topo da lista e na aba Favoritos.'
+        });
+      } else {
+        toast.success('💔 Template removido dos favoritos.');
+      }
+    } catch (e) {
+      console.error('Erro ao favoritar', e);
+      toast.error('Não foi possível atualizar favorito.');
+    }
+  };
+
+  const handleShareTemplate = (template: any) => {
+    setTemplateToShare(template);
+    setShowShareModal(true);
+  };
+
+  const handleTogglePublic = async (template: any) => {
+    const currentStatus = publicStatusOverrides[template.id] ?? template.is_public;
+    const newStatus = !currentStatus;
+    
+    try {
+      // Atualiza imediatamente o estado local para feedback visual instantâneo
+      setPublicStatusOverrides(prev => ({
+        ...prev,
+        [template.id]: newStatus
+      }));
+      
+      await templatesService.share(template.id, newStatus);
+      
+      if (newStatus) {
+        toast.success('🌐 Template tornado público!', {
+          description: 'Agora outros usuários da plataforma podem ver e usar este template na seção Comunidade.'
+        });
+      } else {
+        toast.success('🔒 Template tornado privado.', {
+          description: 'Apenas você pode ver e usar este template agora.'
+        });
+      }
+      
+      // Limpa cache para forçar recarregamento
+      templatesService.clearCache();
+      
+      // Recarrega os dados sem limpar o override ainda (evita flickering)
+      await refetch();
+      
+      // Remove o override após um delay para garantir que o refetch completou
+      setTimeout(() => {
+        setPublicStatusOverrides(prev => {
+          const newOverrides = { ...prev };
+          delete newOverrides[template.id];
+          return newOverrides;
+        });
+      }, 500);
+      
+    } catch (e) {
+      // Reverte a mudança local se houver erro
+      setPublicStatusOverrides(prev => {
+        const newOverrides = { ...prev };
+        delete newOverrides[template.id];
+        return newOverrides;
+      });
+      console.error('Erro ao atualizar visibilidade', e);
+      toast.error('Não foi possível atualizar visibilidade.');
+    }
+  };
+  
+  // Função helper para obter o status público atual (com override local)
+  const getPublicStatus = (template: any) => {
+    return publicStatusOverrides[template.id] ?? template.is_public;
+  };
+
+  const categories = ['Meus Templates', 'Favoritos', 'Comunidade', 'SOCIAL', 'EMAIL', 'AD', 'BLOG', 'LANDING'];
 
   const handleCreateTemplate = async (newTemplate: any) => {
     try {
@@ -83,38 +211,102 @@ const Templates = () => {
     }
   };
 
-  const handleTemplateUsed = async (id: string) => {
+  const handleTemplateUsed = async (template: any) => {
     try {
-      await incrementUsage(id);
+      // Incrementa o uso
+      await incrementUsage(template.id);
+      
+      // Abre o modal para processar o template
+      setTemplateToUse(template);
+      setShowUseModal(true);
+      
     } catch (error) {
-      console.error('Error incrementing usage:', error);
+      console.error('Error using template:', error);
+      toast.error('Erro ao usar template');
     }
   };
 
+  const handleTemplateProcessed = (processedContent: string, template: any) => {
+    // Redireciona automaticamente para o composer com o conteúdo processado
+    const encodedContent = encodeURIComponent(processedContent);
+    const encodedName = encodeURIComponent(template.name);
+    window.location.href = `/composer?content=${encodedContent}&name=${encodedName}&from=template`;
+  };
+
+
   const getCategoryText = (category: string) => {
     switch (category) {
-      case 'SOCIAL_MEDIA': return 'Redes Sociais';
+      case 'SOCIAL': return 'Redes Sociais';
       case 'EMAIL': return 'E-mail';
-      case 'AD_COPY': return 'Anúncios';
-      case 'BLOG_POST': return 'Blog Posts';
-      case 'Todos': return 'Todos';
+      case 'AD': return 'Anúncios';
+      case 'BLOG': return 'Blog';
+      case 'LANDING': return 'Landing Page';
+      case 'Meus Templates': return 'Meus Templates';
+      case 'Favoritos': return 'Favoritos';
+      case 'Comunidade': return 'Comunidade';
       default: return category;
     }
   };
 
-  const filteredTemplates = templates.filter(template => {
+  // Função para limpar o conteúdo do template para apresentação
+  const cleanTemplatePreview = (content: string): string => {
+    return content
+      // Remover variáveis {parametro} e substituir por placeholder
+      .replace(/\{[^}]+\}/g, '[...]')
+      // Converter \n literal para quebras reais
+      .replace(/\\n/g, '\n')
+      // Normalizar quebras de linha
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      // Limitar múltiplas quebras
+      .replace(/\n{3,}/g, '\n\n')
+      // Limpar espaços excessivos
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+  };
+
+  const filteredTemplates = (selectedCategory === 'Comunidade' ? communityTemplates : templates).filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (template.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'Todos' || template.type === selectedCategory;
+    
+    let matchesCategory = false;
+    if (selectedCategory === 'Meus Templates') {
+      matchesCategory = true;
+    } else if (selectedCategory === 'Favoritos') {
+      matchesCategory = favoriteTemplates.includes(template.id);
+    } else if (selectedCategory === 'Comunidade') {
+      matchesCategory = true; // Todos os templates da comunidade
+    } else {
+      matchesCategory = template.type === selectedCategory;
+    }
+    
     return matchesSearch && matchesCategory;
+  }).sort((a, b) => {
+    // Priorizar favoritos no topo (exceto na comunidade)
+    if (selectedCategory !== 'Comunidade') {
+      const aIsFavorite = favoriteTemplates.includes(a.id);
+      const bIsFavorite = favoriteTemplates.includes(b.id);
+      
+      if (aIsFavorite && !bIsFavorite) return -1;
+      if (!aIsFavorite && bIsFavorite) return 1;
+    }
+    
+    // Na comunidade, ordenar por usage_count
+    if (selectedCategory === 'Comunidade') {
+      return (b.usage_count || 0) - (a.usage_count || 0);
+    }
+    
+    // Se ambos são favoritos ou nenhum é favorito, ordenar por nome
+    return a.name.localeCompare(b.name);
   });
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'SOCIAL_MEDIA': return <Instagram className="w-4 h-4" />;
+      case 'SOCIAL': return <Instagram className="w-4 h-4" />;
       case 'EMAIL': return <FileText className="w-4 h-4" />;
-      case 'AD_COPY': return <Copy className="w-4 h-4" />;
-      case 'BLOG_POST': return <FileText className="w-4 h-4" />;
+      case 'AD': return <Copy className="w-4 h-4" />;
+      case 'BLOG': return <FileText className="w-4 h-4" />;
+      case 'LANDING': return <FileText className="w-4 h-4" />;
       default: return <FileText className="w-4 h-4" />;
     }
   };
@@ -154,13 +346,15 @@ const Templates = () => {
             Biblioteca de templates otimizados para diferentes plataformas
           </p>
         </div>
-        <Button 
-          className="bg-gradient-primary hover:opacity-90"
-          onClick={() => setShowCreateModal(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Criar Template
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            className="bg-gradient-primary hover:opacity-90"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Criar Template
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -237,31 +431,69 @@ const Templates = () => {
 
       {/* Categories Tabs */}
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           {categories.map((category) => (
-            <TabsTrigger key={category} value={category}>
+            <TabsTrigger key={category} value={category} className="relative">
               {getCategoryText(category)}
+              {category === 'Favoritos' && favoriteTemplates.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
+                  {favoriteTemplates.length}
+                </Badge>
+              )}
+              {category === 'Comunidade' && communityTemplates.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
+                  {communityTemplates.length}
+                </Badge>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
 
         <TabsContent value={selectedCategory} className="mt-6">
+          {/* Explicação da seção Comunidade */}
+          {selectedCategory === 'Comunidade' && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  🌐
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Templates da Comunidade</h3>
+                  <p className="text-sm text-blue-700 mb-2">
+                    Aqui você encontra templates públicos criados por outros usuários da plataforma.
+                    Você pode usar qualquer template, favoritar os melhores e se inspirar nas criações da comunidade.
+                  </p>
+                  <div className="text-xs text-blue-600">
+                    💡 <strong>Dica:</strong> Para compartilhar seus próprios templates, torne-os públicos clicando no ícone 🌐 em "Meus Templates"
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTemplates.map((template) => (
-              <Card 
-                key={template.id} 
-                className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02] animate-fade-in group"
+              <Card
+                key={template.id}
+                className={`hover:shadow-lg transition-all duration-200 hover:scale-[1.02] animate-fade-in group ${
+                  selectedCategory === 'Comunidade' ? 'border-blue-200' : ''
+                }`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       {getTypeIcon(template.type)}
                       <Badge variant="outline">{getCategoryText(template.type)}</Badge>
+                      {selectedCategory === 'Comunidade' && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          Comunidade
+                        </Badge>
+                      )}
                     </div>
-                    <Heart 
+                    <Heart
                       className={`w-5 h-5 cursor-pointer transition-colors ${
-                        favoriteTemplates.includes(template.id) 
-                          ? 'text-red-500 fill-red-500' 
+                        favoriteTemplates.includes(template.id)
+                          ? 'text-red-500 fill-red-500'
                           : 'text-muted-foreground hover:text-red-500'
                       }`}
                       onClick={() => handleToggleFavorite(template.id)}
@@ -277,40 +509,65 @@ const Templates = () => {
                 <CardContent>
                   <div className="bg-muted/30 p-3 rounded-md mb-4">
                     <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
-                      {template.content.substring(0, 150)}...
+                      {cleanTemplatePreview(template.content).substring(0, 150)}...
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                     <span>📋 {template.usage_count} usos</span>
-                    <span>{template.is_public ? '🌐 Público' : '🔒 Privado'}</span>
+                    {selectedCategory === 'Comunidade' ? (
+                      <span>👥 Compartilhado</span>
+                    ) : (
+                      <span>{getPublicStatus(template) ? '🌐 Público' : '🔒 Privado'}</span>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
-                    <Button 
-                      className="flex-1" 
+                    <Button
+                      className="flex-1 bg-gradient-primary"
                       size="sm"
-                      onClick={() => handleTemplateUsed(template.id)}
+                      onClick={() => handleTemplateUsed(template)}
                     >
                       <Copy className="w-4 h-4 mr-2" />
                       Usar Template
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEditTemplate(template)}
-                      className="hover:animate-pulse-scale"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDuplicateTemplate(template.id)}
-                      className="hover:animate-bounce-in"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </Button>
+                    
+                    {/* Mostrar botões de edição/compartilhamento apenas para templates próprios */}
+                    {selectedCategory !== 'Comunidade' && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditTemplate(template)}
+                          className="hover:animate-pulse-scale"
+                          title="Editar Template"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleShareTemplate(template)}
+                          className="hover:animate-bounce-in"
+                          title="Compartilhar Template"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleTogglePublic(template)}
+                          className={`hover:scale-105 transition-all duration-200 ${
+                            getPublicStatus(template)
+                              ? 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700'
+                              : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-600'
+                          }`}
+                          title={getPublicStatus(template) ? 'Template Público - Clique para tornar privado' : 'Template Privado - Clique para tornar público'}
+                        >
+                          {getPublicStatus(template) ? '🌐' : '🔒'}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -334,13 +591,14 @@ const Templates = () => {
       </Tabs>
 
       {/* Create Template Modal */}
-      <CreateTemplateModal 
+      <CreateTemplateModal
         open={showCreateModal}
         onOpenChange={(open) => {
           setShowCreateModal(open);
           if (!open) setEditingTemplate(null);
         }}
         onCreateTemplate={handleCreateTemplate}
+        onUpdateTemplate={handleUpdateTemplate}
         editingTemplate={editingTemplate}
       />
 
@@ -353,6 +611,18 @@ const Templates = () => {
         }}
         template={templateToShare}
       />
+
+      {/* Use Template Modal */}
+      <UseTemplateModal
+        open={showUseModal}
+        onOpenChange={(open) => {
+          setShowUseModal(open);
+          if (!open) setTemplateToUse(null);
+        }}
+        template={templateToUse}
+        onTemplateProcessed={handleTemplateProcessed}
+      />
+
     </div>
   );
 };

@@ -54,19 +54,21 @@ export const templatesService = {
     try {
       const { data, error } = await supabase
         .from('templates')
-        .select('*')
+        .select('*, template_stats(performance_rate,total_likes,last_used_date,monthly_usage,engagement_rate,conversion_rate)')
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Transformar dados para incluir estatísticas mockadas por enquanto
-      const result = data.map(template => ({
+      // Enriquecer com estatísticas reais quando disponíveis
+      const result = (data || []).map((template: any) => ({
         ...template,
-        performance: `${(Math.random() * 15 + 5).toFixed(1)}%`,
-        likes: Math.floor(Math.random() * 200 + 20),
-        lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        platform: template.metadata?.platform || 'Instagram'
+        performance: template?.template_stats?.[0]?.performance_rate !== undefined
+          ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
+          : undefined,
+        likes: template?.template_stats?.[0]?.total_likes ?? 0,
+        lastUsed: template?.template_stats?.[0]?.last_used_date ?? null,
+        platform: template?.metadata?.platform || 'Instagram'
       }));
 
       setCachedData(cacheKey, result);
@@ -88,19 +90,21 @@ export const templatesService = {
     try {
       const { data, error } = await supabase
         .from('templates')
-        .select('*')
+        .select('*, template_stats(performance_rate,total_likes,last_used_date,monthly_usage,engagement_rate,conversion_rate)')
         .eq('is_public', true)
         .order('usage_count', { ascending: false })
         .limit(50);
 
       if (error) throw error;
 
-      const result = data.map(template => ({
+      const result = (data || []).map((template: any) => ({
         ...template,
-        performance: `${(Math.random() * 15 + 5).toFixed(1)}%`,
-        likes: Math.floor(Math.random() * 500 + 100),
-        lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        platform: template.metadata?.platform || 'Instagram'
+        performance: template?.template_stats?.[0]?.performance_rate !== undefined
+          ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
+          : undefined,
+        likes: template?.template_stats?.[0]?.total_likes ?? 0,
+        lastUsed: template?.template_stats?.[0]?.last_used_date ?? null,
+        platform: template?.metadata?.platform || 'Instagram'
       }));
 
       setCachedData(cacheKey, result, CACHE_TTL * 2); // Cache público por mais tempo
@@ -200,11 +204,20 @@ export const templatesService = {
   // Incrementar usage count
   async incrementUsage(id: string): Promise<void> {
     try {
+      // Buscar uso atual e incrementar localmente (sem RPC)
+      const { data: current, error: fetchError } = await supabase
+        .from('templates')
+        .select('usage_count')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const next = ((current?.usage_count as number | null) || 0) + 1;
+
       const { error } = await supabase
         .from('templates')
-        .update({ 
-          usage_count: supabase.rpc('increment', { template_id: id })
-        })
+        .update({ usage_count: next, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
@@ -219,19 +232,21 @@ export const templatesService = {
     try {
       const { data, error } = await supabase
         .from('templates')
-        .select('*')
+        .select('*, template_stats(performance_rate,total_likes,last_used_date,monthly_usage,engagement_rate,conversion_rate)')
         .eq('workspace_id', workspaceId)
         .eq('category', category)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      return data.map(template => ({
+      return (data || []).map((template: any) => ({
         ...template,
-        performance: `${(Math.random() * 15 + 5).toFixed(1)}%`,
-        likes: Math.floor(Math.random() * 200 + 20),
-        lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        platform: template.metadata?.platform || 'Instagram'
+        performance: template?.template_stats?.[0]?.performance_rate !== undefined
+          ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
+          : undefined,
+        likes: template?.template_stats?.[0]?.total_likes ?? 0,
+        lastUsed: template?.template_stats?.[0]?.last_used_date ?? null,
+        platform: template?.metadata?.platform || 'Instagram'
       }));
     } catch (error) {
       console.error('Erro ao buscar templates por categoria:', error);
@@ -244,19 +259,21 @@ export const templatesService = {
     try {
       const { data, error } = await supabase
         .from('templates')
-        .select('*')
+        .select('*, template_stats(performance_rate,total_likes,last_used_date,monthly_usage,engagement_rate,conversion_rate)')
         .eq('workspace_id', workspaceId)
         .eq('type', type)
         .order('usage_count', { ascending: false });
 
       if (error) throw error;
 
-      return data.map(template => ({
+      return (data || []).map((template: any) => ({
         ...template,
-        performance: `${(Math.random() * 15 + 5).toFixed(1)}%`,
-        likes: Math.floor(Math.random() * 200 + 20),
-        lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        platform: template.metadata?.platform || 'Instagram'
+        performance: template?.template_stats?.[0]?.performance_rate !== undefined
+          ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
+          : undefined,
+        likes: template?.template_stats?.[0]?.total_likes ?? 0,
+        lastUsed: template?.template_stats?.[0]?.last_used_date ?? null,
+        platform: template?.metadata?.platform || 'Instagram'
       }));
     } catch (error) {
       console.error('Erro ao buscar templates por tipo:', error);
@@ -299,7 +316,7 @@ export const templatesService = {
     }
   },
 
-  // Obter estatísticas dos templates
+  // Obter estatísticas dos templates (dados reais via template_stats)
   async getStats(workspaceId: string) {
     const cacheKey = `template_stats_${workspaceId}`;
     const cached = getCachedData(cacheKey);
@@ -308,25 +325,47 @@ export const templatesService = {
     }
 
     try {
+      // Buscar templates do workspace (para ids, categorias e uso)
       const { data, error } = await supabase
         .from('templates')
-        .select('category, usage_count, type')
+        .select('id, category, usage_count, type')
         .eq('workspace_id', workspaceId);
 
       if (error) throw error;
 
-      const totalTemplates = data.length;
-      const totalUsage = data.reduce((acc, t) => acc + (t.usage_count || 0), 0);
-      const categories = [...new Set(data.map(t => t.category).filter(Boolean))].length;
-      
+      const totalTemplates = data?.length || 0;
+      const totalUsage = (data || []).reduce((acc, t) => acc + (t.usage_count || 0), 0);
+      const categories = [...new Set((data || []).map(t => t.category).filter(Boolean))].length;
+
+      // Agregar estatísticas reais
+      let averageLikes = 0;
+      let averagePerformance = '0.0%';
+
+      const ids = (data || []).map(t => t.id);
+      if (ids.length > 0) {
+        const { data: statsData, error: statsError } = await supabase
+          .from('template_stats')
+          .select('template_id, total_likes, performance_rate')
+          .in('template_id', ids);
+
+        if (statsError) {
+          // Não quebrar a página por falha secundária
+          console.warn('Aviso: falha ao buscar template_stats:', statsError);
+        } else if (statsData && statsData.length > 0) {
+          const sumLikes = statsData.reduce((acc: number, s: any) => acc + (s.total_likes || 0), 0);
+          const sumPerf = statsData.reduce((acc: number, s: any) => acc + (Number(s.performance_rate) || 0), 0);
+          averageLikes = Math.round(sumLikes / statsData.length);
+          averagePerformance = `${(sumPerf / statsData.length).toFixed(1)}%`;
+        }
+      }
+
       const result = {
         totalTemplates,
         totalUsage,
         categories,
         averageUsage: totalTemplates > 0 ? Math.round(totalUsage / totalTemplates) : 0,
-        // Mock data para outras métricas
-        averageLikes: Math.floor(Math.random() * 100 + 50),
-        averagePerformance: `${(Math.random() * 10 + 10).toFixed(1)}%`
+        averageLikes,
+        averagePerformance
       };
 
       setCachedData(cacheKey, result);
@@ -335,6 +374,54 @@ export const templatesService = {
       console.error('Erro ao buscar estatísticas dos templates:', error);
       throw error;
     }
+  },
+
+  // Favoritos (persistente)
+  async toggleFavorite(templateId: string, userId: string): Promise<boolean> {
+    // retorna true se favoritou, false se removeu
+    const { data: exists } = await supabase
+      .from('template_favorites')
+      .select('template_id')
+      .eq('template_id', templateId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (exists) {
+      const { error } = await supabase
+        .from('template_favorites')
+        .delete()
+        .eq('template_id', templateId)
+        .eq('user_id', userId);
+      if (error) throw error;
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('template_favorites')
+      .insert({ template_id: templateId, user_id: userId });
+    if (error) throw error;
+    return true;
+  },
+
+  async getFavorites(userId: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('template_favorites')
+      .select('template_id')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return (data || []).map((r: any) => r.template_id as string);
+  },
+
+  async share(templateId: string, isPublic: boolean = true) {
+    const { data, error } = await supabase
+      .from('templates')
+      .update({ is_public: isPublic, updated_at: new Date().toISOString() })
+      .eq('id', templateId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   // Limpar cache (útil para debugging)

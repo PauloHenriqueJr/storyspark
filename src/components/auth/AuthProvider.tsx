@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase, authHelpers, SignInData, SignUpData } from '@/lib/supabase';
-import { toast } from '@/hooks/use-toast';
+import { useSystemToastNotifications } from '@/hooks/useSystemToastNotifications';
 
 interface User {
   id: string;
@@ -31,6 +31,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Usar notificações de sistema (efeito visual) apenas se estiver disponível
+  let systemNotifications: ReturnType<typeof useSystemToastNotifications> | null = null;
+  try {
+    systemNotifications = useSystemToastNotifications();
+  } catch {
+    // Hook não disponível ainda
+  }
 
   // Sistema de monitoramento simplificado
   const trackAuthEvent = (event: string, data?: Record<string, unknown>) => {
@@ -78,12 +86,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (Math.abs(skew) > 30) {
             trackAuthEvent('CLOCK_SKEW_CORRECTION_ATTEMPT', { skew });
             
-            // Mostrar warning amigável ao usuário
-            toast({
-              title: "Ajuste de Relógio Detectado",
-              description: "Sincronizando com o servidor...",
-              variant: "default",
-            });
+            // Mostrar warning amigável ao usuário usando sistema de notificações visuais
+            if (systemNotifications) {
+              systemNotifications.showInfo(
+                "Ajuste de Relógio Detectado",
+                "Sincronizando com o servidor..."
+              );
+            }
           }
         }
         
@@ -156,12 +165,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userId: currentUser.id
       });
       
-      // Forçar logout por segurança
-      toast({
-        title: "Erro de Segurança",
-        description: "Inconsistência detectada. Faça login novamente.",
-        variant: "destructive",
-      });
+      // Forçar logout por segurança usando sistema visual
+      if (systemNotifications) {
+        systemNotifications.showError(
+          "Erro de Segurança",
+          "Inconsistência detectada. Faça login novamente."
+        );
+      }
       
       await logout();
       return false;
@@ -299,13 +309,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             startRoleValidation(userProfile);
             
             // Toast de boas-vindas somente se não for carregamento inicial
-            if (sessionChecked) {
-              toast({
-                title: `Bem-vindo, ${userProfile.name}!`,
-                description: userProfile.role === 'super_admin' 
-                  ? "Você tem acesso administrativo completo." 
-                  : "Login realizado com sucesso.",
-              });
+            if (sessionChecked && systemNotifications) {
+              systemNotifications.showSuccess(
+                `Bem-vindo, ${userProfile.name}!`,
+                userProfile.role === 'super_admin'
+                  ? "Você tem acesso administrativo completo."
+                  : "Login realizado com sucesso."
+              );
             }
           }
         } else if (event === 'SIGNED_OUT') {
@@ -381,16 +391,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await authHelpers.signIn(data);
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta ao StorySpark.",
-      });
+      if (systemNotifications) {
+        systemNotifications.showSuccess(
+          "Login realizado com sucesso!",
+          "Bem-vindo de volta ao StorySpark."
+        );
+      }
     } catch (error: unknown) {
-      toast({
-        title: "Erro no login",
-        description: error instanceof Error ? error.message : "Verifique suas credenciais e tente novamente.",
-        variant: "destructive",
-      });
+      if (systemNotifications) {
+        systemNotifications.showError(
+          "Erro no login",
+          error instanceof Error ? error.message : "Verifique suas credenciais e tente novamente."
+        );
+      }
       throw error;
     } finally {
       setLoading(false);
@@ -403,11 +416,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await authHelpers.signInWithGoogle();
       // O toast será mostrado quando o auth state change for triggered
     } catch (error: unknown) {
-      toast({
-        title: "Erro no login com Google",
-        description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
-        variant: "destructive",
-      });
+      if (systemNotifications) {
+        systemNotifications.showError(
+          "Erro no login com Google",
+          error instanceof Error ? error.message : "Tente novamente mais tarde."
+        );
+      }
       throw error;
     } finally {
       setLoading(false);
@@ -418,16 +432,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await authHelpers.signUp(data);
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Verifique seu email para confirmar a conta.",
-      });
+      if (systemNotifications) {
+        systemNotifications.showSuccess(
+          "Conta criada com sucesso!",
+          "Verifique seu email para confirmar a conta."
+        );
+      }
     } catch (error: unknown) {
-      toast({
-        title: "Erro no registro",
-        description: error instanceof Error ? error.message : "Erro ao criar conta. Tente novamente.",
-        variant: "destructive",
-      });
+      if (systemNotifications) {
+        systemNotifications.showError(
+          "Erro no registro",
+          error instanceof Error ? error.message : "Erro ao criar conta. Tente novamente."
+        );
+      }
       throw error;
     } finally {
       setLoading(false);
@@ -438,16 +455,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await authHelpers.resetPassword(email);
-      toast({
-        title: "Email enviado!",
-        description: "Verifique sua caixa de entrada para redefinir a senha.",
-      });
+      if (systemNotifications) {
+        systemNotifications.showSuccess(
+          "Email enviado!",
+          "Verifique sua caixa de entrada para redefinir a senha."
+        );
+      }
     } catch (error: unknown) {
-      toast({
-        title: "Erro ao enviar email",
-        description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
-        variant: "destructive",
-      });
+      if (systemNotifications) {
+        systemNotifications.showError(
+          "Erro ao enviar email",
+          error instanceof Error ? error.message : "Tente novamente mais tarde."
+        );
+      }
       throw error;
     } finally {
       setLoading(false);
@@ -458,16 +478,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await authHelpers.signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso.",
-      });
+      if (systemNotifications) {
+        systemNotifications.showSuccess(
+          "Logout realizado",
+          "Você foi desconectado com sucesso."
+        );
+      }
     } catch (error: unknown) {
-      toast({
-        title: "Erro no logout",
-        description: error instanceof Error ? error.message : "Erro ao desconectar.",
-        variant: "destructive",
-      });
+      if (systemNotifications) {
+        systemNotifications.showError(
+          "Erro no logout",
+          error instanceof Error ? error.message : "Erro ao desconectar."
+        );
+      }
     } finally {
       setLoading(false);
     }

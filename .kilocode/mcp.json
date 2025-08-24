@@ -1,0 +1,97 @@
+{
+  "mcpServers": {
+    "memory-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {
+        "MEMORY_FILE_PATH": "C:\\Users\\pauli\\Videos\\mcp-memory"
+      },
+      "type": "stdio"
+    },
+    "sequential-thinking-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {},
+      "type": "stdio"
+    },
+    "supabase-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--project-ref=qgtgvqfikqfjbeixzbyb"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_512c63fe9e431e117975a09145c6de95ffa7403e"
+      },
+      "disabled": false,
+      "type": "stdio",
+      "alwaysAllow": [
+        "list_tables",
+        "execute_sql"
+      ]
+    },
+    "mcp-playwright-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@executeautomation/playwright-mcp-server"
+      ],
+      "env": {},
+      "disabled": false,
+      "type": "stdio"
+    },
+    "github-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
+      },
+      "disabled": false,
+      "type": "stdio",
+      "alwaysAllow": []
+    },
+    "context7-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "env": {
+        "DEFAULT_MINIMUM_TOKENS": "10000"
+      },
+      "disabled": false,
+      "type": "stdio"
+    },
+    "neon-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.neon.tech/sse"
+      ],
+      "env": {},
+      "disabled": true,
+      "type": "stdio",
+      "alwaysAllow": []
+    },
+    "mongodb-kilocode": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server"
+      ],
+      "disabled": true,
+      "alwaysAllow": []
+    }
+  }
+}

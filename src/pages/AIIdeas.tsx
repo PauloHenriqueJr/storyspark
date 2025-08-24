@@ -3,78 +3,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Lightbulb, Sparkles, TrendingUp, Target, Clock, Zap, Brain, BookOpen } from 'lucide-react';
+import { Plus, Lightbulb, Sparkles, TrendingUp, Target, Clock, Zap, Brain, BookOpen, Loader2 } from 'lucide-react';
 import GenerateIdeasModal from '@/components/modals/GenerateIdeasModal';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { useToast } from '@/hooks/use-toast';
+import { aiIdeasService } from '@/services/aiIdeasService';
+import { useNavigate } from 'react-router-dom';
 
 const AIIdeas = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { workspace, user } = useWorkspace();
+
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
-  const [ideas] = useState([
-    {
-      id: 1,
-      title: '5 Headlines para Landing Page de Curso',
-      category: 'headlines',
-      type: 'sugestao',
-      confidence: 92,
-      trends: ['educacao-online', 'ia', 'marketing'],
-      generated: '2024-01-19T10:30:00',
-      used: false,
-      content: [
-        'Domine Copy com IA em 30 Dias (Garantido)',
-        'O Curso que 2.000+ Marketers Usam para Vender Mais',
-        'De Zero a Copy Expert: Seu Primeiro Cliente em 15 Dias',
-        'Copy + IA = Resultados 10x Maiores (Prova Real)',
-        'Pare de Quebrar a Cabeça: Copy que Converte no Automático'
-      ]
-    },
-    {
-      id: 2,
-      title: 'Sequência de Email para Black Friday',
-      category: 'email-sequence',
-      type: 'campanha',
-      confidence: 88,
-      trends: ['black-friday', 'urgencia', 'desconto'],
-      generated: '2024-01-18T14:15:00',
-      used: true,
-      content: [
-        'Email 1: Prévia Exclusiva - Black Friday Chegando',
-        'Email 2: AGORA! 50% OFF Por Tempo Limitado',
-        'Email 3: Últimas 6 Horas - Não Perca',
-        'Email 4: ACABOU! Obrigado + Próximas Oportunidades'
-      ]
-    },
-    {
-      id: 3,
-      title: 'Posts Virais para LinkedIn B2B',
-      category: 'social-media',
-      type: 'conteudo',
-      confidence: 85,
-      trends: ['linkedin', 'b2b', 'storytelling'],
-      generated: '2024-01-17T09:45:00',
-      used: false,
-      content: [
-        'A reunião que mudou minha carreira...',
-        'CEO me demitiu. Melhor coisa que aconteceu.',
-        '3 erros que custaram R$100k (e como evitá-los)',
-        'Li 47 livros de negócios. Estes 3 mudaram tudo.'
-      ]
-    },
-    {
-      id: 4,
-      title: 'Scripts de Vendas por WhatsApp',
-      category: 'sales-script',
-      type: 'conversao',
-      confidence: 90,
-      trends: ['whatsapp', 'vendas', 'conversational'],
-      generated: '2024-01-16T16:20:00',
-      used: false,
-      content: [
-        'Abordagem: Oi [Nome], vi seu interesse no [produto]...',
-        'Qualificação: Me conta, qual seu maior desafio com [problema]?',
-        'Apresentação: Deixa eu te mostrar como resolvi isso para +200 clientes',
-        'Fechamento: Que tal agendar 15min para ver se faz sentido?'
-      ]
-    },
-  ]);
+  const [ideas, setIdeas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadIdeas = async () => {
+    if (!workspace?.id) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = await aiIdeasService.fetchIdeas(workspace.id, 50);
+      setIdeas(data);
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao carregar ideias');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadIdeas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace?.id]);
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -106,6 +71,108 @@ const AIIdeas = () => {
     }
   };
 
+  const deriveType = (category?: string) => {
+    switch ((category || '').toLowerCase()) {
+      case 'email-sequence':
+        return 'campanha';
+      case 'social-media':
+        return 'conteudo';
+      case 'sales-script':
+        return 'conversao';
+      default:
+        return 'sugestao';
+    }
+  };
+
+  const handleUseIdea = (idea: any) => {
+    const text = idea.content?.[0] || '';
+    navigate('/composer', {
+      state: {
+        initialContent: text,
+        meta: {
+          category: idea.category,
+          topic: idea.topic,
+          tone: idea.tone,
+        },
+      },
+    });
+  };
+
+  const handleSaveIdea = async (idea: any) => {
+    if (!workspace?.id || !user?.id) {
+      toast({
+        title: 'Autenticação necessária',
+        description: 'Faça login para salvar a ideia.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      await aiIdeasService.saveIdeas(workspace.id, user.id, [
+        {
+          category: idea.category,
+          confidence: idea.confidence,
+          content: idea.content || [idea.title || ''],
+          topic: idea.topic,
+          audience: idea.audience,
+          goal: idea.goal,
+          tone: idea.tone,
+          platform: idea.platform,
+          keywords: idea.keywords,
+          trends: idea.trends,
+        },
+      ]);
+      toast({
+        title: 'Ideia salva',
+        description: 'Esta ideia foi salva na sua biblioteca.',
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Erro ao salvar',
+        description: e?.message || 'Falha ao salvar ideia.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const totalIdeas = ideas.length;
+  const usedCount = ideas.filter((i: any) => i.used).length;
+  const avgConfidence =
+    totalIdeas > 0
+      ? Math.round(ideas.reduce((a: number, i: any) => a + (i.confidence || 0), 0) / totalIdeas)
+      : 0;
+  const activeTrends = Array.from(
+    new Set<string>(ideas.flatMap((i: any) => (i.trends as string[] | undefined) || []))
+  ).length;
+
+  if (loading) {
+    return (
+      <div className="space-y-8 p-4 sm:p-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Carregando ideias...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8 p-4 sm:p-6">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <Lightbulb className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">Erro ao carregar ideias</h3>
+            <p className="text-muted-foreground">{error}</p>
+            <Button className="mt-4" onClick={loadIdeas}>
+              Tentar Novamente
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 p-4 sm:p-6">
       {/* Header */}
@@ -131,7 +198,7 @@ const AIIdeas = () => {
             <Lightbulb className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">127</div>
+            <div className="text-2xl font-bold">{totalIdeas}</div>
             <p className="text-xs text-muted-foreground">
               +23 esta semana
             </p>
@@ -143,9 +210,9 @@ const AIIdeas = () => {
             <Sparkles className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">34</div>
+            <div className="text-2xl font-bold">{usedCount}</div>
             <p className="text-xs text-muted-foreground">
-              Taxa de uso: 27%
+              {totalIdeas > 0 ? `Taxa de uso: ${Math.round((usedCount / totalIdeas) * 100)}%` : 'Taxa de uso: 0%'}
             </p>
           </CardContent>
         </Card>
@@ -155,7 +222,7 @@ const AIIdeas = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">89%</div>
+            <div className="text-2xl font-bold">{avgConfidence}%</div>
             <p className="text-xs text-muted-foreground">
               +2% vs mês anterior
             </p>
@@ -167,7 +234,7 @@ const AIIdeas = () => {
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{activeTrends}</div>
             <p className="text-xs text-muted-foreground">
               Sendo monitoradas
             </p>
@@ -204,8 +271,8 @@ const AIIdeas = () => {
                           {getCategoryIcon(idea.category)}
                           <span className="ml-1">{idea.category}</span>
                         </Badge>
-                        <Badge className={getTypeColor(idea.type)}>
-                          {idea.type}
+                        <Badge className={getTypeColor(idea.type || deriveType(idea.category))}>
+                          {idea.type || deriveType(idea.category)}
                         </Badge>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
@@ -252,10 +319,10 @@ const AIIdeas = () => {
                       </Button>
                       {!idea.used && (
                         <>
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => handleUseIdea(idea)}>
                             Usar Agora
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleSaveIdea(idea)}>
                             Salvar
                           </Button>
                         </>
@@ -522,9 +589,14 @@ const AIIdeas = () => {
         </TabsContent>
       </Tabs>
       
-      <GenerateIdeasModal 
+      <GenerateIdeasModal
         open={generateModalOpen}
-        onOpenChange={setGenerateModalOpen}
+        onOpenChange={(open) => {
+          setGenerateModalOpen(open);
+          if (!open) {
+            loadIdeas();
+          }
+        }}
       />
     </div>
   );

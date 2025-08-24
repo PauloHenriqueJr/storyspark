@@ -1,372 +1,434 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import CreateVoiceModal from '@/components/modals/CreateVoiceModal';
+import { motion } from 'framer-motion';
 import {
+  Mic,
   Search,
   Plus,
-  Play,
-  Settings,
-  Star,
   Copy,
   Edit,
-  Trash2,
-  Mic,
-  Brain,
-  Target,
-  MessageSquare,
-  Send,
-  Megaphone,
-  Phone,
+  Play,
+  Pause,
+  Eye,
+  BarChart3,
+  Heart,
   Users,
-  TrendingUp
+  Loader2,
+  MoreVertical,
 } from 'lucide-react';
 
-const voices = [
-  {
-    id: 1,
-    name: 'Sofia - Copy Persuasiva',
-    description: 'Especialista em copies para anúncios curtos e persuasivos',
-    avatar: '👩‍💼',
-    category: 'ads',
-    specialty: 'Facebook/Instagram Ads',
-    tone: 'Persuasivo, Direto',
-    usage: 89,
-    rating: 4.8,
-    isActive: true,
-    isPremium: false,
-    tags: ['ads', 'persuasão', 'conversão']
-  },
-  {
-    id: 2,
-    name: 'Carlos - WhatsApp Closer',
-    description: 'Expert em mensagens de vendas para WhatsApp',
-    avatar: '👨‍💼',
-    category: 'sales',
-    specialty: 'WhatsApp Business',
-    tone: 'Conversacional, Próximo',
-    usage: 67,
-    rating: 4.9,
-    isActive: true,
-    isPremium: true,
-    tags: ['whatsapp', 'vendas', 'conversão']
-  },
-  {
-    id: 3,
-    name: 'Ana - Email Expert',
-    description: 'Criação de campanhas de email marketing',
-    avatar: '👩‍🎨',
-    category: 'email',
-    specialty: 'Email Marketing',
-    tone: 'Profissional, Envolvente',
-    usage: 125,
-    rating: 4.7,
-    isActive: true,
-    isPremium: false,
-    tags: ['email', 'marketing', 'engagement']
-  },
-  {
-    id: 4,
-    name: 'Pedro - Social Media',
-    description: 'Posts criativos para redes sociais',
-    avatar: '👨‍🎨',
-    category: 'social',
-    specialty: 'Redes Sociais',
-    tone: 'Criativo, Casual',
-    usage: 201,
-    rating: 4.6,
-    isActive: true,
-    isPremium: false,
-    tags: ['social', 'criativo', 'engagement']
-  },
-  {
-    id: 5,
-    name: 'Laura - Report Master',
-    description: 'Gera relatórios e análises detalhadas',
-    avatar: '👩‍📊',
-    category: 'analytics',
-    specialty: 'Relatórios e Métricas',
-    tone: 'Analítico, Preciso',
-    usage: 43,
-    rating: 4.5,
-    isActive: false,
-    isPremium: true,
-    tags: ['relatórios', 'analytics', 'dados']
-  },
-  {
-    id: 6,
-    name: 'Roberto - Pitch Pro',
-    description: 'Apresentações e pitches de vendas',
-    avatar: '👨‍💻',
-    category: 'sales',
-    specialty: 'Pitches e Apresentações',
-    tone: 'Convincente, Estruturado',
-    usage: 78,
-    rating: 4.8,
-    isActive: true,
-    isPremium: true,
-    tags: ['pitch', 'vendas', 'apresentação']
-  }
-];
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Progress } from '@/components/ui/progress';
+
+import { useToast } from '@/hooks/use-toast';
+import { useBrandVoices } from '@/hooks/useBrandVoices';
+import CreateBrandVoiceModal from '@/components/modals/CreateBrandVoiceModal';
+import type { Database } from '@/integrations/supabase/types';
+import type { BrandVoiceWithStats } from '@/services/brandVoicesService';
+
+type CreateBrandVoiceInput = Database['public']['Tables']['brand_voices']['Insert'];
 
 const Voices = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [voicesList, setVoicesList] = useState(voices);
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleUseVoice = (voice: typeof voices[0]) => {
-    toast({
-      title: "Voice Selecionado",
-      description: `Redirecionando para o Composer com ${voice.name}...`,
-    });
-    // Redireciona para o composer com o voice selecionado
-    setTimeout(() => {
-      navigate('/composer', { state: { selectedVoice: voice } });
-    }, 1000);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'inactive'>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingVoice, setEditingVoice] = useState<BrandVoiceWithStats | null>(null);
+
+  const {
+    voices,
+    loading,
+    error,
+    createVoice,
+    updateVoice,
+    duplicateVoice,
+    toggleVoiceStatus,
+    deleteVoice,
+  } = useBrandVoices();
+
+  const handleUseVoice = (voice: BrandVoiceWithStats) => {
+    // Navega para o Composer com a voice selecionada
+    navigate('/composer', { state: { selectedVoice: voice } });
   };
 
-  const handleCopyVoice = (voice: typeof voices[0]) => {
-    toast({
-      title: "Voice Copiado",
-      description: `${voice.name} foi adicionado aos seus voices pessoais.`,
-    });
+  const handleDuplicate = async (id: string) => {
+    try {
+      await duplicateVoice(id);
+      toast({
+        title: 'Voice duplicada',
+        description: 'A voice foi duplicada com sucesso.',
+      });
+    } catch {
+      toast({
+        title: 'Erro ao duplicar',
+        description: 'Não foi possível duplicar a voice.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleEditVoice = (voice: typeof voices[0]) => {
-    toast({
-      title: "Editando Voice",
-      description: `Abrindo editor para ${voice.name}...`,
-    });
-  };
-
-  const handleCreateNewVoice = () => {
+  const handleEdit = (voice: BrandVoiceWithStats) => {
+    setEditingVoice(voice);
     setShowCreateModal(true);
   };
 
-  const handleCreateVoice = (newVoice: any) => {
-    setVoicesList(prev => [newVoice, ...prev]);
-    toast({
-      title: "Voice Criado",
-      description: `${newVoice.name} foi criado com sucesso!`,
-    });
+  const handleToggleStatus = async (id: string) => {
+    try {
+      await toggleVoiceStatus(id);
+      toast({
+        title: 'Status alterado',
+        description: 'O status da voice foi alterado.',
+      });
+    } catch {
+      toast({
+        title: 'Erro ao alterar status',
+        description: 'Não foi possível alterar o status.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const categories = [
-    { id: 'all', label: 'Todos', icon: Users, count: voices.length },
-    { id: 'ads', label: 'Anúncios', icon: Target, count: voices.filter(v => v.category === 'ads').length },
-    { id: 'sales', label: 'Vendas', icon: TrendingUp, count: voices.filter(v => v.category === 'sales').length },
-    { id: 'email', label: 'Email', icon: Send, count: voices.filter(v => v.category === 'email').length },
-    { id: 'social', label: 'Social', icon: MessageSquare, count: voices.filter(v => v.category === 'social').length },
-    { id: 'analytics', label: 'Analytics', icon: Brain, count: voices.filter(v => v.category === 'analytics').length },
-  ];
+  const handleCreateOrUpdate = async (payload: Omit<CreateBrandVoiceInput, 'workspace_id' | 'user_id'>) => {
+    try {
+      if (editingVoice) {
+        await updateVoice(editingVoice.id, payload);
+        toast({
+          title: 'Voice atualizada',
+          description: 'As alterações foram salvas com sucesso.',
+        });
+      } else {
+        await createVoice(payload);
+        toast({
+          title: 'Voice criada',
+          description: 'A nova voice foi criada com sucesso.',
+        });
+      }
+      setShowCreateModal(false);
+      setEditingVoice(null);
+    } catch {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível salvar a voice. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
 
-  const filteredVoices = voicesList.filter(voice => {
-    const matchesSearch = voice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         voice.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         voice.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    if (activeTab === 'all') return matchesSearch;
-    return matchesSearch && voice.category === activeTab;
-  });
+  const filtered = useMemo(() => {
+    const bySearch = voices.filter((v) => {
+      const s = searchTerm.toLowerCase();
+      return (
+        v.name.toLowerCase().includes(s) ||
+        (v.description || '').toLowerCase().includes(s) ||
+        (v.tone || '').toLowerCase().includes(s) ||
+        (v.style || '').toLowerCase().includes(s)
+      );
+    });
 
-  const VoiceCard = ({ voice }: { voice: typeof voices[0] }) => (
-    <Card className="group hover:shadow-lg transition-all duration-200">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">{voice.avatar}</div>
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                {voice.name}
-                {voice.isPremium && <Badge variant="secondary" className="text-xs">Premium</Badge>}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">{voice.specialty}</p>
-            </div>
+    const byTab =
+      activeTab === 'all'
+        ? bySearch
+        : activeTab === 'active'
+        ? bySearch.filter((v) => v.is_active)
+        : bySearch.filter((v) => !v.is_active);
+
+    return byTab;
+  }, [voices, searchTerm, activeTab]);
+
+  const totalVoices = voices.length;
+  const activeVoices = voices.filter((v) => v.is_active).length;
+  const totalUsage = voices.reduce((acc, v) => acc + (v.usage_count || 0), 0);
+  const avgEngagement = voices.length > 0 ? voices.reduce((acc, v) => acc + (v.avgEngagement || 0), 0) / voices.length : 0;
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Carregando voices...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <Mic className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-foreground mb-1">Erro ao carregar voices</h3>
+            <p className="text-muted-foreground">{error}</p>
           </div>
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-yellow-500 fill-current" />
-            <span className="text-sm font-medium">{voice.rating}</span>
-          </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-foreground">{voice.description}</p>
-        
-        <div className="flex flex-wrap gap-1">
-          {voice.tags.map(tag => (
-            <Badge key={tag} variant="outline" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Tom: {voice.tone}</span>
-          <span>{voice.usage} usos</span>
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <Button className="flex-1" size="sm" onClick={() => handleUseVoice(voice)}>
-            <Play className="w-4 h-4 mr-2" />
-            Usar Agora
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handleCopyVoice(voice)}>
-            <Copy className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handleEditVoice(voice)}>
-            <Edit className="w-4 h-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+      >
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
             <Mic className="w-8 h-8 text-primary" />
             Voices IA
           </h1>
-          <p className="text-muted-foreground">Seus assistentes especializados em criação de conteúdo</p>
+          <p className="text-muted-foreground">
+            Suas voices conectadas ao backend. Crie, edite, duplique e use no Composer.
+          </p>
         </div>
-        <Button onClick={handleCreateNewVoice}>
+        <Button onClick={() => setShowCreateModal(true)} className="bg-gradient-primary">
           <Plus className="w-4 h-4 mr-2" />
-          Criar Novo Voice
+          Nova Voice
         </Button>
-      </div>
+      </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
+      >
         <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-foreground">{voicesList.length}</div>
-            <p className="text-sm text-muted-foreground">Total de Voices</p>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Voices</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalVoices}</div>
+            <div className="text-xs text-emerald-500">{activeVoices} ativas</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{voicesList.filter(v => v.isActive).length}</div>
-            <p className="text-sm text-muted-foreground">Voices Ativos</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-purple-600">{voicesList.filter(v => v.isPremium).length}</div>
-            <p className="text-sm text-muted-foreground">Premium</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{voicesList.reduce((sum, v) => sum + v.usage, 0)}</div>
-            <p className="text-sm text-muted-foreground">Total de Usos</p>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Search and Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-          <Input
-            placeholder="Buscar voices..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Uso Total</CardTitle>
+            <BarChart3 className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalUsage.toLocaleString()}</div>
+            <div className="text-xs text-blue-500">últimos 30 dias</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Engajamento Médio</CardTitle>
+            <Heart className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{avgEngagement.toFixed(1)}%</div>
+            <div className="text-xs text-red-500">média ponderada</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ativação</CardTitle>
+            <Eye className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{Math.round((activeVoices / Math.max(1, totalVoices)) * 100)}%</div>
+            <div className="text-xs text-purple-500">voices ativas</div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Search + Tabs */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="space-y-4"
+      >
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar voices..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
-        <Button variant="outline" size="sm">
-          <Settings className="w-4 h-4 mr-2" />
-          Filtros
-        </Button>
-      </div>
 
-      {/* Categories and Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
-          {categories.map(category => (
-            <TabsTrigger key={category.id} value={category.id} className="flex items-center gap-2">
-              <category.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{category.label}</span>
-              <Badge variant="secondary" className="ml-1">{
-                category.id === 'all' ? voicesList.length : voicesList.filter(v => v.category === category.id).length
-              }</Badge>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+          <TabsList>
+            <TabsTrigger value="all">Todas ({totalVoices})</TabsTrigger>
+            <TabsTrigger value="active">Ativas ({activeVoices})</TabsTrigger>
+            <TabsTrigger value="inactive">Inativas ({totalVoices - activeVoices})</TabsTrigger>
+          </TabsList>
+          <TabsContent value={activeTab} />
+        </Tabs>
+      </motion.div>
 
-        <TabsContent value={activeTab} className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVoices.map(voice => (
-              <VoiceCard key={voice.id} voice={voice} />
-            ))}
+      {/* Voices grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {filtered.length === 0 ? (
+          <div className="col-span-full text-center py-16">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mic className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Nenhuma voice encontrada</h3>
+            <p className="text-muted-foreground mb-4">Crie sua primeira voice para começar a usar no Composer.</p>
+            <Button className="bg-gradient-primary" onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Voice
+            </Button>
           </div>
+        ) : (
+          filtered.map((voice, index) => (
+            <motion.div
+              key={voice.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card className="border-0 bg-card/50 backdrop-blur-sm hover:shadow-elegant transition-all duration-300">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white">
+                        <Mic className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{voice.name}</CardTitle>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={voice.is_active ? 'default' : 'destructive'}>
+                            {voice.is_active ? 'Ativa' : 'Inativa'}
+                          </Badge>
+                          {voice.tone && <Badge variant="outline">{voice.tone}</Badge>}
+                          {voice.style && <Badge variant="outline">{voice.style}</Badge>}
+                        </div>
+                      </div>
+                    </div>
 
-          {filteredVoices.length === 0 && (
-            <div className="text-center py-12">
-              <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum voice encontrado</h3>
-              <p className="text-muted-foreground mb-4">Tente ajustar sua busca ou filtros</p>
-              <Button onClick={handleCreateNewVoice}>
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Novo Voice
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleUseVoice(voice)}>
+                          <Play className="w-4 h-4 mr-2" />
+                          Usar no Composer
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(voice)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleStatus(voice.id)}>
+                          {voice.is_active ? (
+                            <>
+                              <Pause className="w-4 h-4 mr-2" />
+                              Desativar
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              Ativar
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicate(voice.id)}>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Duplicar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={async () => {
+                            try {
+                              await deleteVoice(voice.id);
+                              toast({
+                                title: 'Voice removida',
+                                description: 'A voice foi removida com sucesso.',
+                              });
+                            } catch {
+                              toast({
+                                title: 'Erro ao remover',
+                                description: 'Não foi possível remover a voice.',
+                                variant: 'destructive',
+                              });
+                            }
+                          }}
+                        >
+                          Remover
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
 
-      {/* Quick Start Guide */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Megaphone className="w-5 h-5" />
-            Como usar os Voices
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Target className="w-6 h-6 text-primary" />
-              </div>
-              <h4 className="font-semibold mb-2">1. Escolha o Voice</h4>
-              <p className="text-sm text-muted-foreground">Selecione o assistente especializado para sua necessidade</p>
-            </div>
-            <div className="text-center p-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Edit className="w-6 h-6 text-primary" />
-              </div>
-              <h4 className="font-semibold mb-2">2. Customize</h4>
-              <p className="text-sm text-muted-foreground">Ajuste o tom e configurações para sua marca</p>
-            </div>
-            <div className="text-center p-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Play className="w-6 h-6 text-primary" />
-              </div>
-              <h4 className="font-semibold mb-2">3. Gere Conteúdo</h4>
-              <p className="text-sm text-muted-foreground">Crie conteúdo otimizado com expertise especializada</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  {voice.description && <CardDescription>{voice.description}</CardDescription>}
+                </CardHeader>
 
-      {/* Create Voice Modal */}
-      <CreateVoiceModal 
+                <CardContent className="space-y-4">
+                  {/* Métricas */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span>Uso em campanhas</span>
+                      <span className="font-medium">{voice.usage_count || 0} vezes</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span>Engajamento</span>
+                        <span className="font-medium">{voice.avgEngagement || 0}%</span>
+                      </div>
+                      <Progress value={(voice.avgEngagement || 0) * 5} className="h-1" />
+                    </div>
+                  </div>
+
+                  {/* Ações rápidas */}
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button className="flex-1" size="sm" onClick={() => handleUseVoice(voice)}>
+                      <Play className="w-4 h-4 mr-2" />
+                      Usar Agora
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDuplicate(voice.id)}>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Duplicar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(voice)}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Editar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))
+        )}
+      </motion.div>
+
+      {/* Modal - Criar/Editar Brand Voice */}
+      <CreateBrandVoiceModal
         open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        onCreateVoice={handleCreateVoice}
+        onOpenChange={(open) => {
+          setShowCreateModal(open);
+          if (!open) setEditingVoice(null);
+        }}
+        onCreateVoice={handleCreateOrUpdate}
+        editingVoice={editingVoice}
       />
     </div>
   );

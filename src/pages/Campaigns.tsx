@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Target, 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  Target,
+  Plus,
+  Search,
+  Filter,
   MoreVertical,
   Play,
   Pause,
@@ -15,7 +15,9 @@ import {
   Users,
   TrendingUp,
   Eye,
-  Loader2
+  Loader2,
+  Link2,
+  RefreshCcw
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +30,7 @@ import EditCampaignModal from '@/components/modals/EditCampaignModal';
 import type { Database } from '@/integrations/supabase/types';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
+import { useWorkspace } from '@/hooks/useWorkspace';
 
 // Dados agora vêm do hook useCampaigns conectado ao Supabase
 
@@ -38,8 +41,9 @@ const Campaigns = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Database['public']['Tables']['campaigns']['Row'] | null>(null);
   
-  const { campaigns, loading, error, stats, createCampaign, updateCampaign, deleteCampaign, updateCampaignStatus } = useCampaigns();
+  const { campaigns, loading, error, stats, createCampaign, updateCampaign, deleteCampaign, updateCampaignStatus, refetch } = useCampaigns();
   const { toast } = useToast();
+  const { workspace, user } = useWorkspace();
 
   const handleCreateCampaign = async (newCampaign: Omit<Database['public']['Tables']['campaigns']['Insert'], 'workspace_id' | 'user_id'>) => {
     try {
@@ -87,6 +91,52 @@ const Campaigns = () => {
         description: 'Não foi possível alterar o status. Tente novamente.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleLinkFacebook = async () => {
+    try {
+      if (!workspace?.id || !user?.id) {
+        toast({ title: 'Sessão inválida', description: 'Entre e selecione um workspace.', variant: 'destructive' });
+        return;
+      }
+      const accessToken = window.prompt('Cole o Access Token do Facebook (Marketing API):');
+      if (!accessToken) return;
+      const adAccountId = window.prompt('Informe o Ad Account ID (ex: act_1234567890):');
+      if (!adAccountId) return;
+
+      // Opcional: businessId e fbUserId
+      const businessId = window.prompt('Informe o Business ID (opcional):') || undefined;
+      const fbUserId = window.prompt('Informe o Facebook User ID (opcional):') || undefined;
+
+      // Chamar service para salvar credenciais de integração
+      // @ts-ignore - método existente no service
+      await (await import('@/services/campaignsService')).campaignsService.linkFacebookAccount(
+        workspace.id,
+        user.id,
+        { accessToken, adAccountId, businessId, fbUserId }
+      );
+
+      toast({ title: 'Facebook vinculado', description: 'Conta de anúncios vinculada com sucesso.' });
+    } catch (error) {
+      console.error('Erro ao vincular Facebook:', error);
+      toast({ title: 'Erro ao vincular Facebook', description: 'Verifique o token e o Ad Account ID.', variant: 'destructive' });
+    }
+  };
+
+  const handleSyncFacebook = async () => {
+    try {
+      if (!workspace?.id) {
+        toast({ title: 'Sessão inválida', description: 'Selecione um workspace.', variant: 'destructive' });
+        return;
+      }
+      // @ts-ignore - método existente no service
+      await (await import('@/services/campaignsService')).campaignsService.syncFromFacebook(workspace.id);
+      await refetch();
+      toast({ title: 'Sincronização iniciada', description: 'Dados sendo atualizados a partir do Facebook.' });
+    } catch (error) {
+      console.error('Erro ao sincronizar Facebook:', error);
+      toast({ title: 'Erro na sincronização', description: 'Confira se a conta foi vinculada corretamente.', variant: 'destructive' });
     }
   };
 
@@ -200,13 +250,23 @@ const Campaigns = () => {
             Gerencie e monitore suas campanhas publicitárias
           </p>
         </div>
-        <Button 
-          className="bg-gradient-primary"
-          onClick={() => setShowCreateModal(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Campanha
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleLinkFacebook}>
+            <Link2 className="w-4 h-4 mr-2" />
+            Vincular Facebook
+          </Button>
+          <Button variant="outline" onClick={handleSyncFacebook}>
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            Sincronizar
+          </Button>
+          <Button
+            className="bg-gradient-primary"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Campanha
+          </Button>
+        </div>
       </motion.div>
 
       {/* Stats */}

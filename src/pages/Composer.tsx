@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Bot, 
@@ -33,6 +34,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { copyGenerationService } from '@/services/copyGenerationService';
+import { templatesService } from '@/services/templatesService';
 
 const platforms = [
   { name: 'Instagram', icon: Instagram, color: 'text-pink-500' },
@@ -94,20 +96,99 @@ const Composer = () => {
     return () => clearInterval(interval);
   }, [projects]);
 
-  // Load projects from localStorage on mount
+  const [searchParams] = useSearchParams();
+
+  // Load projects from localStorage on mount and handle template URL parameters
   useEffect(() => {
-    const saved = localStorage.getItem('composer-projects');
-    if (saved) {
-      const parsedProjects = JSON.parse(saved);
-      setProjects(parsedProjects);
-      if (parsedProjects.length > 0) {
-        setActiveProjectId(parsedProjects[0].id);
+    const loadTemplate = async () => {
+      const templateId = searchParams.get('template');
+      const templateName = searchParams.get('name');
+      const content = searchParams.get('content');
+      const fromTemplate = searchParams.get('from');
+      
+      // Prioridade para conteúdo processado do template
+      if (content && templateName && fromTemplate === 'template') {
+        const processedProject: Project = {
+          id: `processed_template_${Date.now()}`,
+          name: `${decodeURIComponent(templateName)} - Personalizado`,
+          briefing: decodeURIComponent(content),
+          platform: '',
+          copyType: '',
+          tone: '',
+          generatedCopy: '',
+          versions: [],
+          lastModified: new Date()
+        };
+
+        setProjects([processedProject]);
+        setActiveProjectId(processedProject.id);
+        
+        toast({
+          title: "✅ Template carregado no briefing!",
+          description: `Template "${decodeURIComponent(templateName)}" está pronto para você configurar plataforma e gerar a copy.`,
+        });
+        return;
       }
-    } else {
-      // Create initial project
-      createNewProject();
-    }
-  }, []);
+      
+      // Fallback para template original (compatibilidade)
+      if (templateId) {
+        try {
+          // Buscar template específico
+          const template = await templatesService.getById(templateId);
+          if (template) {
+            // Criar projeto baseado no template
+            const templateProject: Project = {
+              id: `template_project_${Date.now()}`,
+              name: templateName ? decodeURIComponent(templateName) : template.name,
+              briefing: template.description || 'Template importado',
+              platform: (template.metadata && typeof template.metadata === 'object' && template.metadata !== null && 'platform' in template.metadata)
+                ? String((template.metadata as any).platform) : '',
+              copyType: template.type || '',
+              tone: '',
+              generatedCopy: template.content,
+              versions: [{
+                id: `template_version_${Date.now()}`,
+                copy: template.content,
+                timestamp: new Date()
+              }],
+              lastModified: new Date()
+            };
+
+            setProjects([templateProject]);
+            setActiveProjectId(templateProject.id);
+            
+            toast({
+              title: "Template carregado!",
+              description: `Template "${template.name}" está pronto para usar no Composer.`,
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Erro ao carregar template:', error);
+          toast({
+            title: "Erro ao carregar template",
+            description: "Não foi possível carregar o template. Iniciando projeto vazio.",
+            variant: "destructive"
+          });
+        }
+      }
+      
+      // Carregar projetos normalmente se não houver template na URL
+      const saved = localStorage.getItem('composer-projects');
+      if (saved) {
+        const parsedProjects = JSON.parse(saved);
+        setProjects(parsedProjects);
+        if (parsedProjects.length > 0) {
+          setActiveProjectId(parsedProjects[0].id);
+        }
+      } else {
+        // Create initial project
+        createNewProject();
+      }
+    };
+    
+    loadTemplate();
+  }, [searchParams, toast]);
 
   const createNewProject = () => {
     const newProject: Project = {
@@ -539,8 +620,25 @@ ${activeProject.briefing}
                 <Textarea
                   placeholder="Descreva o que você quer comunicar, o objetivo da campanha, público-alvo, produto/serviço..."
                   value={activeProject.briefing}
-                  onChange={(e) => updateActiveProject({ briefing: e.target.value })}
-                  className="min-h-[120px] resize-none"
+                  onChange={(e) => {
+                    updateActiveProject({ briefing: e.target.value });
+                    // Auto-resize
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 400) + 'px';
+                  }}
+                  className="min-h-[120px] resize-none overflow-hidden leading-relaxed focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                  style={{
+                    height: activeProject.briefing ? 'auto' : '120px',
+                    minHeight: '120px',
+                    maxHeight: '400px'
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    const newHeight = Math.min(Math.max(target.scrollHeight, 120), 400);
+                    target.style.height = newHeight + 'px';
+                  }}
                 />
               </div>
 

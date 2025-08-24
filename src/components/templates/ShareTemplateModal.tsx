@@ -31,7 +31,7 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
   onOpenChange,
   template
 }) => {
-  const [shareUrl] = useState(`https://storyspark.app/templates/${template?.id}`);
+  const [shareUrl] = useState(`https://storyspark.app/templates/${template?.id || 'preview'}`);
   const [customMessage, setCustomMessage] = useState('');
   const [shareMethod, setShareMethod] = useState<'link' | 'embed' | 'export'>('link');
   const { toast } = useToast();
@@ -56,16 +56,16 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
     return `<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; max-width: 400px; font-family: system-ui;">
   <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
     <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #ff6b35, #f7931e); border-radius: 4px;"></div>
-    <strong style="color: #374151;">${template?.title}</strong>
+    <strong style="color: #374151;">${template?.name || 'Template'}</strong>
   </div>
-  <p style="color: #6b7280; font-size: 14px; margin-bottom: 12px;">${template?.description}</p>
+  <p style="color: #6b7280; font-size: 14px; margin-bottom: 12px;">${template?.description || 'Descrição não disponível'}</p>
   <div style="background: #f9fafb; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
-    <p style="font-size: 12px; line-height: 1.4; color: #374151; white-space: pre-line;">${template?.preview?.substring(0, 100)}...</p>
+    <p style="font-size: 12px; line-height: 1.4; color: #374151; white-space: pre-line;">${template?.content?.substring(0, 100) || 'Conteúdo não disponível'}...</p>
   </div>
   <div style="display: flex; justify-content: space-between; align-items: center;">
     <div style="display: flex; gap: 8px;">
-      <span style="background: #f3f4f6; padding: 2px 8px; border-radius: 12px; font-size: 12px; color: #6b7280;">${template?.platform}</span>
-      <span style="background: #f3f4f6; padding: 2px 8px; border-radius: 12px; font-size: 12px; color: #6b7280;">${template?.category}</span>
+      <span style="background: #f3f4f6; padding: 2px 8px; border-radius: 12px; font-size: 12px; color: #6b7280;">${template?.metadata?.platform || template?.type || 'Geral'}</span>
+      <span style="background: #f3f4f6; padding: 2px 8px; border-radius: 12px; font-size: 12px; color: #6b7280;">${template?.category || 'Categoria'}</span>
     </div>
     <a href="${shareUrl}" style="color: #3b82f6; text-decoration: none; font-size: 12px;">Ver template →</a>
   </div>
@@ -73,7 +73,7 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
   };
 
   const shareToSocial = (platform: string) => {
-    const text = customMessage || `Confira este template incrível: "${template?.title}" - ${template?.description}`;
+    const text = customMessage || `Confira este template incrível: "${template?.name}" - ${template?.description}`;
     const url = shareUrl;
     
     const shareUrls = {
@@ -88,12 +88,16 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
 
   const exportTemplate = () => {
     const templateData = {
-      title: template?.title,
+      name: template?.name,
       description: template?.description,
       category: template?.category,
-      platform: template?.platform,
-      content: template?.preview,
+      type: template?.type,
+      platform: template?.metadata?.platform,
+      content: template?.content,
       tags: template?.tags || [],
+      variables: template?.variables || [],
+      is_public: template?.is_public,
+      usage_count: template?.usage_count,
       exportedAt: new Date().toISOString(),
       exportedFrom: 'StorySpark'
     };
@@ -102,7 +106,7 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${template?.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_template.json`;
+    a.download = `${template?.name?.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_template.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -135,21 +139,21 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
             <div className="flex items-start gap-3 mb-3">
               <FileText className="w-5 h-5 text-primary mt-1" />
               <div className="flex-1">
-                <h3 className="font-semibold">{template.title}</h3>
+                <h3 className="font-semibold">{template.name}</h3>
                 <p className="text-sm text-muted-foreground">{template.description}</p>
                 <div className="flex gap-2 mt-2">
-                  <Badge variant="outline">{template.platform}</Badge>
+                  <Badge variant="outline">{template.metadata?.platform || template.type}</Badge>
                   <Badge variant="secondary">{template.category}</Badge>
                 </div>
               </div>
               <div className="text-right text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Heart className="w-3 h-3" />
-                  {template.likes || 0}
+                  0
                 </div>
                 <div className="flex items-center gap-1 mt-1">
                   <Eye className="w-3 h-3" />
-                  {template.uses || 0}
+                  {template.usage_count || 0}
                 </div>
               </div>
             </div>
@@ -213,22 +217,38 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Compartilhar em:</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" onClick={() => shareToSocial('whatsapp')} className="bg-green-50 hover:bg-green-100">
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Compartilhar em redes sociais:</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => shareToSocial('whatsapp')}
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+                  >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     WhatsApp
                   </Button>
-                  <Button variant="outline" onClick={() => shareToSocial('telegram')} className="bg-blue-50 hover:bg-blue-100">
+                  <Button
+                    variant="outline"
+                    onClick={() => shareToSocial('telegram')}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+                  >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Telegram
                   </Button>
-                  <Button variant="outline" onClick={() => shareToSocial('twitter')} className="bg-blue-50 hover:bg-blue-100">
+                  <Button
+                    variant="outline"
+                    onClick={() => shareToSocial('twitter')}
+                    className="bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+                  >
                     <Share2 className="w-4 h-4 mr-2" />
                     Twitter
                   </Button>
-                  <Button variant="outline" onClick={() => shareToSocial('linkedin')} className="bg-blue-50 hover:bg-blue-100">
+                  <Button
+                    variant="outline"
+                    onClick={() => shareToSocial('linkedin')}
+                    className="bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-900 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+                  >
                     <Share2 className="w-4 h-4 mr-2" />
                     LinkedIn
                   </Button>
@@ -275,7 +295,10 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
                 <p className="text-muted-foreground mb-4">
                   Baixe o template como arquivo JSON para usar em outras ferramentas
                 </p>
-                <Button onClick={exportTemplate} className="bg-gradient-primary">
+                <Button
+                  onClick={exportTemplate}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 font-semibold px-6"
+                >
                   <Download className="w-4 h-4 mr-2" />
                   Baixar Template
                 </Button>

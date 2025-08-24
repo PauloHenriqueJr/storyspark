@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Sparkles, Target, Zap, TrendingUp, Brain, Loader2, Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getRealConfidence } from '@/utils/realDataService';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { aiIdeasService, type IdeaPayload } from '@/services/aiIdeasService';
 
 interface GenerateIdeasModalProps {
   open: boolean;
@@ -21,6 +23,8 @@ const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => 
   const [activeTab, setActiveTab] = useState('quick');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedIdeas, setGeneratedIdeas] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const { workspace, user } = useWorkspace();
   const [formData, setFormData] = useState({
     topic: '',
     audience: '',
@@ -163,7 +167,49 @@ const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => 
     }, 3000);
   };
 
-  return (
+ const handleSaveAll = async () => {
+   if (!workspace?.id || !user?.id) {
+     toast({
+       title: 'Autenticação necessária',
+       description: 'Faça login para salvar suas ideias.',
+       variant: 'destructive'
+     });
+     return;
+   }
+
+   try {
+     setSaving(true);
+     const payload: IdeaPayload[] = (generatedIdeas || []).map((idea: any) => ({
+       category: idea.category,
+       confidence: idea.confidence,
+       content: Array.isArray(idea.content) ? idea.content : [],
+       topic: idea.topic,
+       audience: idea.audience,
+       goal: idea.goal,
+       tone: idea.tone,
+       platform: idea.platform,
+       keywords: idea.keywords,
+       trends: idea.trends
+     }));
+
+     const { inserted } = await aiIdeasService.saveIdeas(workspace.id, user.id, payload);
+
+     toast({
+       title: 'Ideias salvas',
+       description: `${inserted} ideias foram salvas na sua biblioteca.`
+     });
+   } catch (err: any) {
+     toast({
+       title: 'Erro ao salvar ideias',
+       description: err?.message || 'Ocorreu um erro ao salvar.',
+       variant: 'destructive'
+     });
+   } finally {
+     setSaving(false);
+   }
+ };
+
+ return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -399,8 +445,8 @@ const GenerateIdeasModal = ({ open, onOpenChange }: GenerateIdeasModalProps) => 
           </Button>
           {generatedIdeas.length > 0 && (
             <div className="flex gap-2">
-              <Button variant="outline">
-                Salvar Todas
+              <Button variant="outline" onClick={handleSaveAll} disabled={saving || generatedIdeas.length === 0}>
+                {saving ? 'Salvando...' : 'Salvar Todas'}
               </Button>
               <Button>
                 Usar no Composer
