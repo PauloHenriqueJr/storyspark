@@ -37,6 +37,8 @@ import { Badge } from '@/components/ui/badge';
 import { copyGenerationService } from '@/services/copyGenerationService';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useCalendar } from '@/hooks/useCalendar';
+import { useBrandVoices } from '@/hooks/useBrandVoices';
+import { usePersonas } from '@/hooks/usePersonas';
 import { Separator } from '@/components/ui/separator';
 
 interface FloatingCopyButtonProps {
@@ -448,6 +450,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const navigate = useNavigate();
   const { user } = useAuth();
   const { events } = useCalendar();
+  const { voices } = useBrandVoices();
+  const { personas } = usePersonas();
 
   // Detectar contexto baseado na rota atual
   const currentContext = contextConfigs[location.pathname] || contextConfigs['default'];
@@ -462,11 +466,11 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
       setShowEventSelector(true);
     }
     
-    // Se estiver em páginas com dados contextuais, mostrar seletor
-    if (['/personas', '/brand-voices', '/voices', '/ai-ideas', '/trending-hooks'].includes(location.pathname)) {
+    // Se estiver em páginas com dados contextuais ou funcionalidades especiais, mostrar seletor
+    if (['/personas', '/brand-voices', '/voices', '/ai-ideas', '/trending-hooks', '/landing-pages', '/funnels', '/analytics'].includes(location.pathname)) {
       setShowItemSelector(true);
     }
-  }, [location.pathname, currentContext, events]);
+  }, [location.pathname, currentContext, events, voices, personas]);
 
   const handleGenerate = async () => {
     if (!briefing.trim()) {
@@ -641,6 +645,135 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setShowItemSelector(false);
   };
 
+  // Função para detectar dados disponíveis e funcionalidades específicas
+  const getPageSpecificData = () => {
+    switch (location.pathname) {
+      case '/brand-voices':
+        return {
+          hasData: voices.length > 0,
+          data: voices,
+          type: 'brand-voice',
+          title: 'Brand Voices',
+          icon: Mic,
+          color: 'bg-gradient-to-r from-teal-500 to-cyan-500',
+          emptyMessage: 'Nenhuma brand voice criada ainda',
+          createMessage: 'Criar nova brand voice com IA',
+          suggestions: [
+            'Brand voice para empresa de tecnologia',
+            'Brand voice para e-commerce',
+            'Brand voice para consultoria',
+            'Brand voice para educação'
+          ]
+        };
+      case '/personas':
+        return {
+          hasData: personas.length > 0,
+          data: personas,
+          type: 'persona',
+          title: 'Personas',
+          icon: Users,
+          color: 'bg-gradient-to-r from-purple-500 to-pink-500',
+          emptyMessage: 'Nenhuma persona criada ainda',
+          createMessage: 'Criar nova persona com IA',
+          suggestions: [
+            'Persona empreendedor iniciante',
+            'Persona profissional experiente',
+            'Persona estudante universitário',
+            'Persona dona de casa'
+          ]
+        };
+      case '/ai-ideas':
+        return {
+          hasData: false, // Placeholder para ideias
+          data: [],
+          type: 'idea',
+          title: 'Ideias IA',
+          icon: Lightbulb,
+          color: 'bg-gradient-to-r from-yellow-500 to-orange-500',
+          emptyMessage: 'Nenhuma ideia gerada ainda',
+          createMessage: 'Gerar novas ideias com IA',
+          suggestions: [
+            'Ideia para campanha de lançamento',
+            'Ideia para conteúdo educativo',
+            'Ideia para promoção sazonal',
+            'Ideia para engajamento'
+          ]
+        };
+      case '/trending-hooks':
+        return {
+          hasData: false, // Placeholder para hooks
+          data: [],
+          type: 'hook',
+          title: 'Trending Hooks',
+          icon: TrendingUp,
+          color: 'bg-gradient-to-r from-red-500 to-pink-500',
+          emptyMessage: 'Nenhum hook disponível',
+          createMessage: 'Criar copy com hook viral',
+          suggestions: [
+            'Hook de transformação pessoal',
+            'Hook de contraste surpreendente',
+            'Hook de experiência compartilhada',
+            'Hook de paradoxo intrigante'
+          ]
+        };
+      case '/landing-pages':
+        return {
+          hasData: false,
+          data: [],
+          type: 'landing',
+          title: 'Landing Pages',
+          icon: Globe,
+          color: 'bg-gradient-to-r from-orange-500 to-red-500',
+          emptyMessage: 'Nenhuma landing page criada',
+          createMessage: 'Criar copy para landing page',
+          suggestions: [
+            'Headline principal de alta conversão',
+            'Copy do formulário de captura',
+            'Copy dos benefícios do produto',
+            'Copy do call-to-action'
+          ]
+        };
+      case '/funnels':
+        return {
+          hasData: false,
+          data: [],
+          type: 'funnel',
+          title: 'Funnels',
+          icon: TrendingUp,
+          color: 'bg-gradient-to-r from-indigo-500 to-purple-500',
+          emptyMessage: 'Nenhum funil criado',
+          createMessage: 'Criar copy para funil',
+          suggestions: [
+            'Copy da página de entrada',
+            'Copy do upsell',
+            'Copy de fechamento',
+            'Copy de retenção'
+          ]
+        };
+      case '/analytics':
+        return {
+          hasData: false,
+          data: [],
+          type: 'analytics',
+          title: 'Analytics',
+          icon: BarChart3,
+          color: 'bg-gradient-to-r from-slate-500 to-gray-500',
+          emptyMessage: 'Nenhum dado disponível',
+          createMessage: 'Criar copy baseada em dados',
+          suggestions: [
+            'Copy sobre métricas de sucesso',
+            'Copy sobre otimizações',
+            'Copy sobre resultados',
+            'Copy sobre insights'
+          ]
+        };
+      default:
+        return null;
+    }
+  };
+
+  const pageData = getPageSpecificData();
+
   const IconComponent = currentContext.icon;
 
   return (
@@ -749,27 +882,103 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
               </div>
             )}
 
-            {/* Contextual Item Selector */}
-            {showItemSelector && (
-              <div className="space-y-3">
-                <label className="text-sm font-medium">
-                  {location.pathname === '/personas' && '👥 Selecionar Persona:'}
-                  {location.pathname === '/brand-voices' && '🎤 Selecionar Brand Voice:'}
-                  {location.pathname === '/voices' && '🎙️ Selecionar Voice:'}
-                  {location.pathname === '/ai-ideas' && '💡 Selecionar Ideia IA:'}
-                  {location.pathname === '/trending-hooks' && '📈 Selecionar Hook:'}
-                </label>
-                <div className="max-h-40 overflow-y-auto space-y-2 border rounded-lg p-3">
-                  {/* Placeholder para itens contextuais - será implementado com dados reais */}
-                  <div className="text-sm text-muted-foreground text-center py-4">
-                    {location.pathname === '/personas' && 'Personas disponíveis serão carregadas aqui'}
-                    {location.pathname === '/brand-voices' && 'Brand voices disponíveis serão carregadas aqui'}
-                    {location.pathname === '/voices' && 'Voices disponíveis serão carregadas aqui'}
-                    {location.pathname === '/ai-ideas' && 'Ideias IA disponíveis serão carregadas aqui'}
-                    {location.pathname === '/trending-hooks' && 'Hooks disponíveis serão carregados aqui'}
+            {/* Contextual Assistant - Sistema Inteligente */}
+            {pageData && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full ${pageData.color} flex items-center justify-center`}>
+                    <pageData.icon className="w-3 h-3 text-white" />
                   </div>
+                  <label className="text-sm font-semibold text-gray-900">
+                    Assistente IA - {pageData.title}
+                  </label>
                 </div>
-                <Separator />
+
+                {pageData.hasData ? (
+                  // Se há dados, mostrar seletor
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Selecionar existente:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {pageData.data.length} disponível{pageData.data.length !== 1 ? 'is' : ''}
+                      </Badge>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 rounded-xl p-4 bg-white">
+                      {pageData.data.slice(0, 5).map((item: any) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleItemSelect(item)}
+                          className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 cursor-pointer transition-all duration-200 group"
+                        >
+                          <div className={`w-10 h-10 rounded-full ${pageData.color} flex items-center justify-center shadow-sm`}>
+                            <pageData.icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                              {item.name || item.title}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {item.description || item.tone || 'Sem descrição'}
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Edit3 className="w-4 h-4 text-blue-600" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  // Se não há dados, oferecer criação com IA ou funcionalidades específicas
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <pageData.icon className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-blue-900 mb-2">
+                          {pageData.emptyMessage}
+                        </h3>
+                        <p className="text-sm text-blue-700 mb-4">
+                          {pageData.type === 'brand-voice' || pageData.type === 'persona' ? (
+                            `Que tal criar sua primeira ${pageData.title.toLowerCase()} com a ajuda da IA? Ela vai te ajudar a definir características, tom de voz e personalidade.`
+                          ) : pageData.type === 'idea' ? (
+                            'Que tal gerar ideias criativas com IA? Ela vai te ajudar a criar conceitos inovadores para suas campanhas.'
+                          ) : (
+                            `Que tal criar copy otimizada para ${pageData.title.toLowerCase()}? A IA vai te ajudar a criar conteúdo que converte.`
+                          )}
+                        </p>
+                        <div className="flex gap-3">
+                          <Button 
+                            onClick={() => {
+                              setBriefing(pageData.createMessage);
+                              setShowItemSelector(false);
+                            }}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                          >
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            {pageData.createMessage}
+                          </Button>
+                          {pageData.type === 'brand-voice' && (
+                            <Button 
+                              variant="outline"
+                              onClick={() => {
+                                setBriefing('Criar brand voice completa com IA: definir nome, descrição, tom de voz, características, público-alvo e exemplos de uso');
+                                setShowItemSelector(false);
+                              }}
+                              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                            >
+                              <Mic className="w-4 h-4 mr-2" />
+                              Brand Voice Completa
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <Separator className="bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
               </div>
             )}
 
@@ -779,10 +988,17 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                 <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
                   <Lightbulb className="w-3 h-3 text-yellow-600" />
                 </div>
-                <label className="text-sm font-semibold text-gray-900">Sugestões Rápidas</label>
+                <label className="text-sm font-semibold text-gray-900">
+                  Sugestões Rápidas
+                  {pageData && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      • {pageData.title}
+                    </span>
+                  )}
+                </label>
               </div>
               <div className="grid grid-cols-1 gap-3">
-                {currentContext.suggestions.map((suggestion, index) => (
+                {(pageData?.suggestions || currentContext.suggestions).map((suggestion, index) => (
                   <Button
                     key={suggestion}
                     variant="outline"
