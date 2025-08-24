@@ -29,6 +29,9 @@ import {
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useToast } from '@/hooks/use-toast';
+import { documentProcessingService, type ExtractedData, type ProcessingProgress } from '@/services/documentProcessingService';
+import { dataApplicationService } from '@/services/dataApplicationService';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -36,39 +39,7 @@ interface DocumentUploadModalProps {
   onDataExtracted: (data: ExtractedData) => void;
 }
 
-interface ExtractedData {
-  brandVoice?: {
-    name: string;
-    description: string;
-    tone: string;
-    characteristics: string[];
-    targetAudience: string;
-    examples: string[];
-  };
-  personas?: Array<{
-    name: string;
-    age: number;
-    profession: string;
-    interests: string[];
-    painPoints: string[];
-    goals: string[];
-    description: string;
-  }>;
-  companyInfo?: {
-    name: string;
-    industry: string;
-    description: string;
-    mission: string;
-    vision: string;
-    values: string[];
-  };
-  marketingData?: {
-    targetAudience: string[];
-    channels: string[];
-    campaigns: string[];
-    goals: string[];
-  };
-}
+
 
 const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   isOpen,
@@ -81,6 +52,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [analysisStep, setAnalysisStep] = useState<string>('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(file => {
@@ -133,89 +105,53 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Usuário não autenticado",
+        description: "Faça login para processar documentos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisProgress(0);
     setAnalysisStep('Iniciando análise...');
 
     try {
-      // Simular processo de análise com IA
-      const steps = [
-        'Lendo documentos...',
-        'Extraindo informações da empresa...',
-        'Identificando brand voice...',
-        'Analisando personas...',
-        'Processando dados de marketing...',
-        'Organizando informações...',
-        'Finalizando análise...'
-      ];
-
-      for (let i = 0; i < steps.length; i++) {
-        setAnalysisStep(steps[i]);
-        setAnalysisProgress((i + 1) * (100 / steps.length));
-        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
-      }
-
-      // Simular dados extraídos (em produção, isso viria da IA)
-      const mockExtractedData: ExtractedData = {
-        brandVoice: {
-          name: "Voz Empresarial Profissional",
-          description: "Tom de voz profissional, confiável e inovador, focado em resultados e valor agregado.",
-          tone: "Profissional e Confiável",
-          characteristics: ["Inovador", "Confiável", "Resultado-orientado", "Valor agregado"],
-          targetAudience: "Profissionais e empresas que buscam soluções eficientes",
-          examples: [
-            "Transformamos desafios em oportunidades de crescimento",
-            "Soluções inteligentes para resultados extraordinários"
-          ]
-        },
-        personas: [
-          {
-            name: "João Silva",
-            age: 35,
-            profession: "Diretor de Marketing",
-            interests: ["Tecnologia", "Inovação", "Resultados"],
-            painPoints: ["Falta de tempo", "Pressão por resultados", "Orçamento limitado"],
-            goals: ["Aumentar conversões", "Otimizar campanhas", "ROI positivo"],
-            description: "Profissional experiente que busca soluções eficientes e resultados mensuráveis."
-          },
-          {
-            name: "Maria Santos",
-            age: 28,
-            profession: "Empreendedora",
-            interests: ["Crescimento", "Autonomia", "Sucesso"],
-            painPoints: ["Recursos limitados", "Concorrência", "Escalabilidade"],
-            goals: ["Crescer o negócio", "Automatizar processos", "Aumentar vendas"],
-            description: "Empreendedora determinada que busca ferramentas para escalar seu negócio."
+      // Processar cada arquivo com IA real
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const file = uploadedFiles[i];
+        
+        const extractedData = await documentProcessingService.processDocument(
+          file,
+          user.id,
+          (progress: ProcessingProgress) => {
+            setAnalysisStep(progress.step);
+            setAnalysisProgress(progress.progress);
           }
-        ],
-        companyInfo: {
-          name: "TechSolutions",
-          industry: "Tecnologia",
-          description: "Empresa de soluções tecnológicas inovadoras",
-          mission: "Transformar negócios através da tecnologia",
-          vision: "Ser referência em soluções digitais",
-          values: ["Inovação", "Qualidade", "Confiança", "Resultados"]
-        },
-        marketingData: {
-          targetAudience: ["Profissionais", "Empresas", "Empreendedores"],
-          channels: ["LinkedIn", "Email", "Web"],
-          campaigns: ["Lançamento", "Educativo", "Conversão"],
-          goals: ["Awareness", "Leads", "Conversões"]
-        }
-      };
+        );
 
-      setExtractedData(mockExtractedData);
+        // Se for o primeiro arquivo, usar seus dados
+        // Se não, mesclar com dados existentes
+        if (i === 0) {
+          setExtractedData(extractedData);
+        } else {
+          setExtractedData(prev => mergeExtractedData(prev, extractedData));
+        }
+      }
       
       toast({
         title: "Análise concluída!",
-        description: "Documentos analisados com sucesso. Revise os dados extraídos.",
+        description: "Documentos analisados com sucesso com IA real. Revise os dados extraídos.",
         variant: "default"
       });
 
     } catch (error) {
+      console.error('Erro no processamento:', error);
       toast({
         title: "Erro na análise",
-        description: "Ocorreu um erro durante a análise dos documentos. Tente novamente.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro durante a análise dos documentos. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -223,15 +159,83 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     }
   };
 
-  const applyExtractedData = () => {
-    if (extractedData) {
-      onDataExtracted(extractedData);
+  // Função para mesclar dados extraídos de múltiplos arquivos
+  const mergeExtractedData = (existing: ExtractedData | null, newData: ExtractedData): ExtractedData => {
+    if (!existing) return newData;
+
+    return {
+      brandVoice: newData.brandVoice || existing.brandVoice,
+      personas: [...(existing.personas || []), ...(newData.personas || [])],
+      companyInfo: newData.companyInfo || existing.companyInfo,
+      marketingData: {
+        targetAudience: [...new Set([...(existing.marketingData?.targetAudience || []), ...(newData.marketingData?.targetAudience || [])])],
+        channels: [...new Set([...(existing.marketingData?.channels || []), ...(newData.marketingData?.channels || [])])],
+        campaigns: [...new Set([...(existing.marketingData?.campaigns || []), ...(newData.marketingData?.campaigns || [])])],
+        goals: [...new Set([...(existing.marketingData?.goals || []), ...(newData.marketingData?.goals || [])])]
+      }
+    };
+  };
+
+  const applyExtractedData = async () => {
+    if (!extractedData || !user?.id) {
       toast({
-        title: "Dados aplicados!",
-        description: "As informações foram aplicadas em sua plataforma.",
-        variant: "default"
+        title: "Erro",
+        description: "Dados não disponíveis ou usuário não autenticado.",
+        variant: "destructive"
       });
-      onClose();
+      return;
+    }
+
+    try {
+      // Validar dados antes de aplicar
+      const validation = dataApplicationService.validateDataForApplication(extractedData);
+      
+      if (!validation.isValid) {
+        toast({
+          title: "Avisos sobre os dados",
+          description: validation.warnings.join(', '),
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Aplicar dados na plataforma
+      const result = await dataApplicationService.applyExtractedData(
+        user.id,
+        user.id, // Usando user.id como workspace_id por enquanto
+        extractedData
+      );
+
+      if (result.success) {
+        const createdItems = [
+          result.created.brandVoices > 0 ? `${result.created.brandVoices} brand voice(s)` : null,
+          result.created.personas > 0 ? `${result.created.personas} persona(s)` : null,
+          result.created.campaigns > 0 ? `${result.created.campaigns} campanha(s)` : null
+        ].filter(Boolean).join(', ');
+
+        toast({
+          title: "Dados aplicados com sucesso!",
+          description: `Criados: ${createdItems}. ${result.errors.length > 0 ? `Alguns erros: ${result.errors.join(', ')}` : ''}`,
+          variant: "default"
+        });
+
+        // Chamar callback original
+        onDataExtracted(extractedData);
+        onClose();
+      } else {
+        toast({
+          title: "Erro ao aplicar dados",
+          description: result.errors.join(', '),
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao aplicar dados:', error);
+      toast({
+        title: "Erro ao aplicar dados",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
     }
   };
 
