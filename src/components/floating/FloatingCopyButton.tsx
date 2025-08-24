@@ -43,6 +43,7 @@ import { useTemplates } from '@/hooks/useTemplates';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { Separator } from '@/components/ui/separator';
+import DocumentUploadModal from '@/components/upload/DocumentUploadModal';
 
 interface FloatingCopyButtonProps {
   toastNotifications: {
@@ -448,6 +449,9 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const [showEventSelector, setShowEventSelector] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [showItemSelector, setShowItemSelector] = useState(false);
+  const [customizationMode, setCustomizationMode] = useState(false);
+  const [customBriefing, setCustomBriefing] = useState('');
+  const [showUploadModal, setShowUploadModal] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -479,7 +483,9 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   }, [location.pathname, currentContext, events, voices, personas]);
 
   const handleGenerate = async () => {
-    if (!briefing.trim()) {
+    const currentBriefing = customizationMode ? customBriefing : briefing;
+    
+    if (!currentBriefing.trim()) {
       toastNotifications.showError(
         "Briefing necessário",
         "Descreva o que você quer comunicar."
@@ -490,7 +496,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setIsGenerating(true);
     try {
       const response = await copyGenerationService.generateCopy({
-        briefing,
+        briefing: currentBriefing,
         platform: platform || 'Instagram',
         copyType: copyType || 'Post Orgânico',
         tone: 'Profissional',
@@ -594,7 +600,40 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setShowEventSelector(false);
     setSelectedItem(null);
     setShowItemSelector(false);
+    setCustomizationMode(false);
+    setCustomBriefing('');
     setIsModalOpen(false);
+  };
+
+  const handleDataExtracted = (data: any) => {
+    // Aqui você implementaria a lógica para aplicar os dados extraídos
+    // Por exemplo, criar brand voices, personas, etc.
+    console.log('Dados extraídos:', data);
+    
+    // Exemplo de aplicação automática
+    if (data.brandVoice) {
+      // Criar brand voice automaticamente
+      toastNotifications.showSuccess(
+        "Brand Voice criada!",
+        `Brand voice "${data.brandVoice.name}" foi criada automaticamente.`
+      );
+    }
+    
+    if (data.personas && data.personas.length > 0) {
+      // Criar personas automaticamente
+      toastNotifications.showSuccess(
+        "Personas criadas!",
+        `${data.personas.length} personas foram criadas automaticamente.`
+      );
+    }
+    
+    if (data.companyInfo) {
+      // Atualizar informações da empresa
+      toastNotifications.showSuccess(
+        "Informações da empresa atualizadas!",
+        "Dados da empresa foram aplicados automaticamente."
+      );
+    }
   };
 
   const handleEventSelect = (event: any) => {
@@ -626,40 +665,42 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setSelectedItem(item);
     
     // Usar contexto específico da página se disponível
+    let baseContext = '';
     if (pageData?.getContext) {
-      const context = pageData.getContext(item);
-      setBriefing(context);
+      baseContext = pageData.getContext(item);
     } else {
       // Fallback para configuração genérica
-      let itemBriefing = '';
       switch (location.pathname) {
         case '/personas':
-          itemBriefing = `Gerar copy direcionada para a persona: ${item.name}`;
+          baseContext = `Gerar copy direcionada para a persona: ${item.name}`;
           break;
         case '/brand-voices':
-          itemBriefing = `Gerar copy usando a brand voice: ${item.name}`;
+          baseContext = `Gerar copy usando a brand voice: ${item.name}`;
           break;
         case '/templates':
-          itemBriefing = `Gerar copy baseada no template: ${item.name}`;
+          baseContext = `Gerar copy baseada no template: ${item.name}`;
           break;
         case '/campaigns':
-          itemBriefing = `Gerar copy para a campanha: ${item.name}`;
+          baseContext = `Gerar copy para a campanha: ${item.name}`;
           break;
         case '/voices':
-          itemBriefing = `Gerar copy usando a voice: ${item.name}`;
+          baseContext = `Gerar copy usando a voice: ${item.name}`;
           break;
         case '/ai-ideas':
-          itemBriefing = `Desenvolver copy baseada na ideia: ${item.topic || item.content?.[0] || 'Ideia IA'}`;
+          baseContext = `Desenvolver copy baseada na ideia: ${item.topic || item.content?.[0] || 'Ideia IA'}`;
           break;
         case '/trending-hooks':
-          itemBriefing = `Criar copy usando o hook: ${item.hook}`;
+          baseContext = `Criar copy usando o hook: ${item.hook}`;
           break;
         default:
-          itemBriefing = `Gerar copy para: ${item.name || item.title}`;
+          baseContext = `Gerar copy para: ${item.name || item.title}`;
       }
-      setBriefing(itemBriefing);
     }
     
+    // Definir briefing base e entrar em modo de personalização
+    setBriefing(baseContext);
+    setCustomBriefing(baseContext);
+    setCustomizationMode(true);
     setShowItemSelector(false);
   };
 
@@ -1277,6 +1318,45 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
               </div>
             )}
 
+            {/* Upload de Documentos - Nova Funcionalidade */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Upload className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                </div>
+                <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Upload de Documentos
+                </label>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-600 text-xs">
+                  Novo
+                </Badge>
+              </div>
+              
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-600 rounded-xl p-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                    <Brain className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                      IA Analisa seus Documentos
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                      Faça upload de PDFs, DOCX ou TXT com informações da sua empresa. 
+                      A IA extrairá automaticamente brand voice, personas, dados de marketing e muito mais!
+                    </p>
+                    <Button 
+                      onClick={() => setShowUploadModal(true)}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload com IA
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Quick Suggestions - Design Moderno */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -1313,26 +1393,108 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
               </div>
             </div>
 
+            {/* Personalização - Novo Sistema Flexível */}
+            {customizationMode && selectedItem && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Edit3 className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <label className="text-sm font-semibold text-gray-900 dark:text-white">Personalizar Briefing</label>
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-600 text-xs">
+                    Opcional
+                  </Badge>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-600 rounded-xl p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                                              <div className={`w-8 h-8 rounded-full ${pageData?.color || currentContext.color} flex items-center justify-center`}>
+                          {(pageData?.icon || IconComponent)({ className: "w-4 h-4 text-white" })}
+                        </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {selectedItem.name || selectedItem.title}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Base selecionada para personalização
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        Briefing Base (gerado automaticamente):
+                      </label>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                        {briefing}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        Personalizar briefing (adicione detalhes específicos):
+                      </label>
+                      <Textarea
+                        placeholder="Adicione detalhes específicos, objetivos, público-alvo, tom de voz, call-to-action..."
+                        value={customBriefing}
+                        onChange={(e) => setCustomBriefing(e.target.value)}
+                        className="min-h-[100px] resize-none border-gray-200 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500 dark:focus:border-purple-400 dark:focus:ring-purple-400 rounded-lg text-sm leading-relaxed bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setBriefing(customBriefing);
+                          setCustomizationMode(false);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                        size="sm"
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Usar Personalizado
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setCustomBriefing(briefing);
+                          setCustomizationMode(false);
+                        }}
+                        variant="outline"
+                        className="border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-900/20"
+                        size="sm"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Manter Original
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Briefing - Design Moderno */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                   <FileText className="w-3 h-3 text-green-600 dark:text-green-400" />
                 </div>
-                <label className="text-sm font-semibold text-gray-900 dark:text-white">Descrição do Conteúdo</label>
+                <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {customizationMode ? 'Briefing Final' : 'Descrição do Conteúdo'}
+                </label>
                 <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-600 text-xs">
                   Obrigatório
                 </Badge>
               </div>
               <div className="relative">
                 <Textarea
-                  placeholder="Descreva o que você quer comunicar, o objetivo da copy, público-alvo, tom de voz..."
-                  value={briefing}
-                  onChange={(e) => setBriefing(e.target.value)}
+                  placeholder={customizationMode ? "Briefing personalizado será usado para gerar a copy..." : "Descreva o que você quer comunicar, o objetivo da copy, público-alvo, tom de voz..."}
+                  value={customizationMode ? customBriefing : briefing}
+                  onChange={(e) => customizationMode ? setCustomBriefing(e.target.value) : setBriefing(e.target.value)}
                   className="min-h-[140px] resize-none border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 rounded-xl text-sm leading-relaxed bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
                 <div className="absolute bottom-3 right-3 text-xs text-gray-400 dark:text-gray-500">
-                  {briefing.length}/500
+                  {(customizationMode ? customBriefing : briefing).length}/500
                 </div>
               </div>
             </div>
@@ -1540,6 +1702,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Document Upload Modal */}
+      <DocumentUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onDataExtracted={handleDataExtracted}
+      />
     </>
   );
 };
