@@ -27,7 +27,11 @@ import {
   TestTube,
   Settings,
   Link,
-  CreditCard
+  CreditCard,
+  Upload,
+  Check,
+  Brain,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -437,7 +441,7 @@ const contextConfigs: Record<string, ContextConfig> = {
   }
 };
 
-const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotifications, systemToastNotifications }) => {
+const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotifications, systemToastNotifications, onOpenScheduleModal }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [briefing, setBriefing] = useState('');
@@ -461,7 +465,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const { personas } = usePersonas();
   const { templates } = useTemplates();
   const { campaigns } = useCampaigns();
-  const { stats } = useAnalytics();
+  const analyticsData = useAnalytics();
 
   // Detectar contexto baseado na rota atual
   const currentContext = contextConfigs[location.pathname] || contextConfigs['default'];
@@ -853,8 +857,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
         };
       case '/analytics':
         return {
-          hasData: stats && Object.keys(stats).length > 0,
-          data: stats ? Object.entries(stats).map(([key, value]) => ({ name: key, value })) : [],
+          hasData: analyticsData && Object.keys(analyticsData).length > 0,
+          data: analyticsData ? Object.entries(analyticsData).map(([key, value]) => ({ name: key, value })) : [],
           type: 'analytics',
           title: 'Analytics',
           icon: BarChart3,
@@ -1410,7 +1414,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                                               <div className={`w-8 h-8 rounded-full ${pageData?.color || currentContext.color} flex items-center justify-center`}>
-                          {(pageData?.icon || IconComponent)({ className: "w-4 h-4 text-white" })}
+                          {React.createElement(pageData?.icon || IconComponent, { className: "w-4 h-4 text-white" })}
                         </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
