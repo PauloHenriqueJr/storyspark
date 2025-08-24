@@ -24,6 +24,7 @@ import { NotificationDemo } from '@/components/notifications/NotificationDemo';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useSystemToastNotifications } from '@/hooks/useSystemToastNotifications';
 
 const quickActions = [
   {
@@ -81,6 +82,7 @@ const Dashboard = () => {
   } = useDashboardStats();
   const { workspace, loading: workspaceLoading } = useWorkspace();
   const { addNotification } = useNotifications();
+  const systemToastNotifications = useSystemToastNotifications();
 
   const handleQuickAction = async (href: string) => {
     if (href === '/campaigns') {
@@ -321,7 +323,7 @@ const Dashboard = () => {
         transition={{ duration: 0.5, delay: 0.35 }}
         className="flex justify-center"
       >
-        <NotificationDemo />
+        <NotificationDemo systemToastNotifications={systemToastNotifications} />
       </motion.div>
 
       {/* Performance Overview */}
