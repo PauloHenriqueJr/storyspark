@@ -106,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const testSupabaseConnection = async (): Promise<boolean> => {
     try {
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), 2000) // Reduzido para 2s
+        setTimeout(() => reject(new Error('Connection timeout')), 5000) // Aumentado para 5s
       );
       
       const testPromise = supabase
@@ -117,7 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await Promise.race([testPromise, timeoutPromise]);
       return true;
     } catch (error) {
-      trackAuthEvent('CONNECTIVITY_TEST_FAILED', { error: error instanceof Error ? error.message : 'Unknown error' });
+      // Não loggar este erro, é esperado em alguns casos
+      console.debug('Connectivity test failed:', error instanceof Error ? error.message : 'Unknown error');
       return false;
     }
   };

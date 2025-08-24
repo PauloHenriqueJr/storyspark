@@ -1,92 +1,54 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Users, Target, Search, Filter, Plus, MoreVertical, Edit, Trash2, Copy, Eye } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Users, Target, Search, Plus, MoreHorizontal, Edit, Trash2, Copy, Eye, Filter, Loader2, BarChart3, Heart } from 'lucide-react';
 import CreatePersonaModal from '@/components/modals/CreatePersonaModal';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useWorkspace } from '@/hooks/useWorkspace';
+import { usePersonas } from '@/hooks/usePersonas';
+import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+import { Label } from 'recharts';
 
-interface Persona {
-  id: string;
-  name: string;
-  occupation: string;
-  age_range: string;
-  location: string;
-  pain_points: string[];
-  goals: string[];
-  interests: string[];
-  preferred_channels: string[];
-  usage_count: number;
-  created_at: string;
-}
+type CreatePersonaInput = Database['public']['Tables']['target_personas']['Insert'];
 
 const Personas = () => {
-  const { user } = useAuth();
-  const { workspace } = useWorkspace();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSegment, setFilterSegment] = useState('Todos');
+  const [filterAge, setFilterAge] = useState('Todos');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [personas, setPersonas] = useState<Persona[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingPersona, setEditingPersona] = useState(null);
+  const [editingPersona, setEditingPersona] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('all');
 
-  useEffect(() => {
-    const fetchPersonas = async () => {
-      if (!workspace) return;
+  const { personas, loading, error, createPersona, updatePersona, deletePersona, duplicatePersona } = usePersonas();
+  const { toast } = useToast();
 
-      try {
-        const { data, error } = await supabase
-          .from('target_personas')
-          .select('*')
-          .eq('workspace_id', workspace.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching personas:', error);
-        } else {
-          setPersonas(data || []);
-        }
-      } catch (error) {
-        console.error('Error in personas fetch:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPersonas();
-  }, [workspace]);
-
-  const handleCreatePersona = async (newPersona: any) => {
-    if (!workspace || !user) return;
-
+  const handleCreatePersona = async (newPersona: Omit<CreatePersonaInput, 'workspace_id' | 'user_id'>) => {
     try {
-      const { data, error } = await supabase
-        .from('target_personas')
-        .insert({
-          ...newPersona,
-          workspace_id: workspace.id,
-          user_id: user.id
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating persona:', error);
+      if (editingPersona) {
+        await updatePersona(editingPersona.id, newPersona);
+        toast({
+          title: 'Sucesso!',
+          description: 'Persona atualizada com sucesso.',
+        });
       } else {
-        if (editingPersona) {
-          setPersonas(prev => prev.map(p => p.id === editingPersona.id ? data : p));
-        } else {
-          setPersonas(prev => [data, ...prev]);
-        }
+        await createPersona(newPersona);
+        toast({
+          title: 'Sucesso!',
+          description: 'Nova persona criada com sucesso.',
+        });
       }
+      setShowCreateModal(false);
+      setEditingPersona(null);
     } catch (error) {
-      console.error('Error in persona creation:', error);
+      console.error('Erro ao salvar persona:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao salvar persona. Tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -95,21 +57,97 @@ const Personas = () => {
     setShowCreateModal(true);
   };
 
+  const handleDeletePersona = async (personaId: string) => {
+    try {
+      await deletePersona(personaId);
+      toast({
+        title: 'Persona excluída',
+        description: 'Persona foi excluída com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao excluir persona:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao excluir persona. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDuplicatePersona = async (personaId: string) => {
+    try {
+      await duplicatePersona(personaId);
+      toast({
+        title: 'Persona duplicada',
+        description: 'Persona foi duplicada com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao duplicar persona:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao duplicar persona. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUsePersona = (persona: any) => {
+    // Por enquanto, vamos mostrar um toast com opções de onde usar
+    toast({
+      title: "Usar Persona: " + persona.name,
+      description: "Em breve: escolha onde usar esta persona (Composer, Campanhas, Social Scheduler).",
+    });
+    
+    // TODO: Implementar modal ou dropdown com opções:
+    // - Composer (criar conteúdo)
+    // - Campanhas (criar nova campanha)
+    // - Social Scheduler (agendar posts)
+    // - Relatórios (analisar performance)
+  };
+
+  // Filtros
   const filteredPersonas = personas.filter(persona => {
     const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (persona.occupation && persona.occupation.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesSegment = filterSegment === 'Todos' || 
-                          (persona.occupation && persona.occupation.toLowerCase().includes(filterSegment.toLowerCase()));
-    return matchesSearch && matchesSegment;
+    const matchesAge = filterAge === 'Todos' || persona.age_range === filterAge;
+    const matchesTab = activeTab === 'all' || 
+                      (activeTab === 'active' && (persona.usage_count || 0) > 0) ||
+                      (activeTab === 'inactive' && (persona.usage_count || 0) === 0);
+    
+    return matchesSearch && matchesAge && matchesTab;
   });
+
+  const activePersonas = personas.filter(p => (p.usage_count || 0) > 0);
+  const topPerformers = personas.filter(p => (p.usage_count || 0) > 5);
 
   if (loading) {
     return (
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Personas</h1>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Carregando personas...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <Users className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Erro ao carregar personas</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Tentar novamente
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -119,21 +157,81 @@ const Personas = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Personas</h1>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Users className="w-8 h-8 text-primary" />
+            Personas
+          </h1>
           <p className="text-muted-foreground">
-            Defina e gerencie personas para criar conteúdo direcionado
+            Gerencie e organize suas personas de público-alvo para campanhas mais eficazes.
           </p>
         </div>
-        <Button 
-          className="bg-gradient-primary"
-          onClick={() => setShowCreateModal(true)}
-        >
+        <Button onClick={() => setShowCreateModal(true)} size="lg">
           <Plus className="w-4 h-4 mr-2" />
-          Nova Persona
+          Criar Persona
         </Button>
       </div>
+
+      {/* Card explicativo para iniciantes */}
+      <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/50 dark:border-blue-800">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-lg text-blue-800 dark:text-blue-200">
+              O que é uma Persona?
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
+            Uma persona é um <strong>perfil detalhado do seu cliente ideal</strong>. É uma representação semi-fictícia 
+            baseada em dados reais que ajuda a entender <strong>quem</strong> é seu público e <strong>como</strong> se comunicar com ele.
+          </p>
+          <div className="grid md:grid-cols-2 gap-6 text-sm">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Quando é usada:
+              </h4>
+              <ul className="space-y-2 text-blue-700 dark:text-blue-300">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1 text-xs">•</span>
+                  <span><strong>Criação de Conteúdo:</strong> IA adapta linguagem e tom para cada persona</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1 text-xs">•</span>
+                  <span><strong>Campanhas Direcionadas:</strong> Segmenta público para maior eficácia</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1 text-xs">•</span>
+                  <span><strong>Estratégia de Canais:</strong> Escolhe onde e quando comunicar</span>
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-3">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                <Heart className="h-4 w-4" />
+                Principais benefícios:
+              </h4>
+              <ul className="space-y-2 text-blue-700 dark:text-blue-300">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1 text-xs">•</span>
+                  <span><strong>Comunicação Eficaz:</strong> Mensagens que realmente conectam</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1 text-xs">•</span>
+                  <span><strong>ROI Maior:</strong> Campanhas mais precisas e rentáveis</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1 text-xs">•</span>
+                  <span><strong>IA Personalizada:</strong> Conteúdo automático adaptado ao perfil</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -141,10 +239,10 @@ const Personas = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Personas</p>
-                <p className="text-2xl font-bold text-foreground">{personas.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{personas.length}</p>
               </div>
-              <Users className="w-8 h-8 text-primary" />
+              <Users className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -153,12 +251,10 @@ const Personas = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Campanhas Ativas</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {personas.reduce((acc, p) => acc + p.usage_count, 0)}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Ativas</p>
+                <p className="text-2xl font-bold">{activePersonas.length}</p>
               </div>
-              <Target className="w-8 h-8 text-success" />
+              <Target className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -167,26 +263,24 @@ const Personas = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Ocupações</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {new Set(personas.map(p => p.occupation).filter(Boolean)).size}
-                </p>
-              </div>
-              <Filter className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Mais Usada</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {personas.length > 0 ? Math.max(...personas.map(p => p.usage_count)) : 0}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Top Performers</p>
+                <p className="text-2xl font-bold">{topPerformers.length}</p>
               </div>
               <Eye className="w-8 h-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Uso Médio</p>
+                <p className="text-2xl font-bold">
+                  {personas.length > 0 ? Math.round(personas.reduce((acc, p) => acc + (p.usage_count || 0), 0) / personas.length) : 0}
+                </p>
+              </div>
+              <BarChart3 className="w-8 h-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
@@ -203,163 +297,210 @@ const Personas = () => {
             className="pl-10"
           />
         </div>
-        <Select value={filterSegment} onValueChange={setFilterSegment}>
+        <Select value={filterAge} onValueChange={setFilterAge}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filtrar por ocupação" />
+            <SelectValue placeholder="Filtrar por idade" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Todos">Todas as ocupações</SelectItem>
-            <SelectItem value="Executivo">Executivos</SelectItem>
-            <SelectItem value="Empreendedor">Empreendedores</SelectItem>
-            <SelectItem value="Consultor">Consultores</SelectItem>
-            <SelectItem value="Marketing">Marketing</SelectItem>
+            <SelectItem value="Todos">Todas as idades</SelectItem>
+            <SelectItem value="18-25 anos">18-25 anos</SelectItem>
+            <SelectItem value="26-35 anos">26-35 anos</SelectItem>
+            <SelectItem value="36-45 anos">36-45 anos</SelectItem>
+            <SelectItem value="46-55 anos">46-55 anos</SelectItem>
+            <SelectItem value="56+ anos">56+ anos</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Personas Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredPersonas.map((persona) => (
-          <Card key={persona.id} className="hover:shadow-lg transition-all duration-200">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-bold">
-                    {persona.name.charAt(0)}
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{persona.name}</CardTitle>
-                    <Badge variant="outline">{persona.occupation || 'Profissional'}</Badge>
-                  </div>
-                </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Eye className="w-4 h-4 mr-2" />
-                      Visualizar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleEditPersona(persona)}>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Duplicar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="all">Todas ({personas.length})</TabsTrigger>
+          <TabsTrigger value="active">Ativas ({activePersonas.length})</TabsTrigger>
+          <TabsTrigger value="inactive">Inativas ({personas.length - activePersonas.length})</TabsTrigger>
+        </TabsList>
 
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
+        <TabsContent value="all" className="space-y-6">
+          <PersonasGrid 
+            personas={filteredPersonas}
+            onEdit={handleEditPersona}
+            onDelete={handleDeletePersona}
+            onDuplicate={handleDuplicatePersona}
+            onUse={handleUsePersona}
+          />
+        </TabsContent>
+
+        <TabsContent value="active" className="space-y-6">
+          <PersonasGrid 
+            personas={filteredPersonas.filter(p => (p.usage_count || 0) > 0)}
+            onEdit={handleEditPersona}
+            onDelete={handleDeletePersona}
+            onDuplicate={handleDuplicatePersona}
+            onUse={handleUsePersona}
+          />
+        </TabsContent>
+
+        <TabsContent value="inactive" className="space-y-6">
+          <PersonasGrid 
+            personas={filteredPersonas.filter(p => (p.usage_count || 0) === 0)}
+            onEdit={handleEditPersona}
+            onDelete={handleDeletePersona}
+            onDuplicate={handleDuplicatePersona}
+            onUse={handleUsePersona}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Modal */}
+      <CreatePersonaModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onSubmit={handleCreatePersona}
+        initialData={editingPersona}
+        mode={editingPersona ? 'edit' : 'create'}
+      />
+    </div>
+  );
+};
+
+// Helper component para o grid
+const matchesFilters = (persona: any, searchTerm: string, filterAge: string) => {
+  const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       (persona.occupation && persona.occupation.toLowerCase().includes(searchTerm.toLowerCase()));
+  const matchesAge = filterAge === 'Todos' || persona.age_range === filterAge;
+  return matchesSearch && matchesAge;
+};
+
+interface PersonasGridProps {
+  personas: any[];
+  onEdit: (persona: any) => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onUse: (persona: any) => void;
+}
+
+const PersonasGrid: React.FC<PersonasGridProps> = ({ personas, onEdit, onDelete, onDuplicate, onUse }) => {
+  if (personas.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+          <Users className="w-6 h-6 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">Nenhuma persona encontrada</h3>
+        <p className="text-muted-foreground">
+          Crie sua primeira persona para começar a segmentar seu público.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {personas.map((persona) => (
+        <Card key={persona.id} className="relative group">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-lg mb-2">{persona.name}</CardTitle>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {persona.occupation && (
+                    <Badge variant="outline">{persona.occupation}</Badge>
+                  )}
+                  {persona.age_range && (
+                    <Badge variant="secondary">{persona.age_range}</Badge>
+                  )}
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(persona)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDuplicate(persona.id)}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicar
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => onDelete(persona.id)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              {persona.location && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Demografia</h4>
-                  <div className="flex gap-2 text-sm text-muted-foreground">
-                    <span>{persona.age_range || '25-45'} anos</span>
-                    <span>•</span>
-                    <span>{persona.location || 'Brasil'}</span>
+                  <p className="text-sm text-muted-foreground mb-1">Localização:</p>
+                  <p className="text-sm">{persona.location}</p>
+                </div>
+              )}
+              
+              {persona.pain_points && persona.pain_points.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Principais Dores:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {persona.pain_points.slice(0, 2).map((pain: string, index: number) => (
+                      <Badge key={index} variant="destructive" className="text-xs">
+                        {pain}
+                      </Badge>
+                    ))}
+                    {persona.pain_points.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{persona.pain_points.length - 2} mais
+                      </Badge>
+                    )}
                   </div>
                 </div>
-
-                {persona.pain_points && persona.pain_points.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Principais Dores</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {persona.pain_points.slice(0, 2).map((pain, i) => (
-                        <Badge key={i} variant="destructive" className="text-xs">
-                          {pain}
-                        </Badge>
-                      ))}
-                      {persona.pain_points.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{persona.pain_points.length - 2}
-                        </Badge>
-                      )}
-                    </div>
+              )}
+              
+              {persona.goals && persona.goals.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Objetivos:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {persona.goals.slice(0, 2).map((goal: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {goal}
+                      </Badge>
+                    ))}
+                    {persona.goals.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{persona.goals.length - 2} mais
+                      </Badge>
+                    )}
                   </div>
-                )}
-
-                {persona.goals && persona.goals.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Objetivos</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {persona.goals.slice(0, 2).map((goal, i) => (
-                        <Badge key={i} variant="default" className="text-xs">
-                          {goal}
-                        </Badge>
-                      ))}
-                      {persona.goals.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{persona.goals.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {persona.preferred_channels && persona.preferred_channels.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Canais Preferidos</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {persona.preferred_channels.map((channel, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {channel}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
-                  <Target className="w-4 h-4 inline mr-1" />
-                  {persona.usage_count} campanhas
+                  <Target className="w-4 h-4 inline mr-1 text-primary" />
+                  {persona.usage_count || 0} campanhas
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  className="bg-gradient-primary hover:opacity-90 text-white" 
+                  size="sm"
+                  onClick={() => onUse(persona)}
+                >
+                  <Users className="w-4 h-4 mr-1" />
                   Usar Persona
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredPersonas.length === 0 && (
-        <div className="text-center py-12">
-          <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Nenhuma persona encontrada</h3>
-          <p className="text-muted-foreground mb-6">
-            Crie sua primeira persona ou ajuste os filtros de busca.
-          </p>
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Criar Primeira Persona
-          </Button>
-        </div>
-      )}
-
-      {/* Create Persona Modal */}
-      <CreatePersonaModal 
-        open={showCreateModal}
-        onOpenChange={(open) => {
-          setShowCreateModal(open);
-          if (!open) setEditingPersona(null);
-        }}
-        onCreatePersona={handleCreatePersona}
-        editingPersona={editingPersona}
-      />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useWorkspace } from './useWorkspace';
-import { brandVoicesService, type BrandVoiceWithStats } from '@/services/brandVoicesService';
+import { personasService, type PersonaWithStats } from '@/services/personasService';
 import type { Database } from '@/integrations/supabase/types';
 
-type CreateBrandVoiceInput = Database['public']['Tables']['brand_voices']['Insert'];
-type UpdateBrandVoiceInput = Database['public']['Tables']['brand_voices']['Update'];
+type CreatePersonaInput = Database['public']['Tables']['target_personas']['Insert'];
+type UpdatePersonaInput = Database['public']['Tables']['target_personas']['Update'];
 
 interface ErrorWithCode {
   message?: string;
@@ -13,34 +13,33 @@ interface ErrorWithCode {
   error_description?: string;
 }
 
-export interface UseBrandVoicesReturn {
-  voices: BrandVoiceWithStats[];
+export interface UsePersonasReturn {
+  personas: PersonaWithStats[];
   loading: boolean;
   error: string | null;
-  createVoice: (input: Omit<CreateBrandVoiceInput, 'workspace_id' | 'user_id'>) => Promise<void>;
-  updateVoice: (id: string, updates: UpdateBrandVoiceInput) => Promise<void>;
-  deleteVoice: (id: string) => Promise<void>;
-  duplicateVoice: (id: string) => Promise<void>;
-  toggleVoiceStatus: (id: string) => Promise<void>;
+  createPersona: (input: Omit<CreatePersonaInput, 'workspace_id' | 'user_id'>) => Promise<void>;
+  updatePersona: (id: string, updates: UpdatePersonaInput) => Promise<void>;
+  deletePersona: (id: string) => Promise<void>;
+  duplicatePersona: (id: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
-export const useBrandVoices = (): UseBrandVoicesReturn => {
-  const [voices, setVoices] = useState<BrandVoiceWithStats[]>([]);
+export const usePersonas = (): UsePersonasReturn => {
+  const [personas, setPersonas] = useState<PersonaWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const { workspace, user } = useWorkspace();
 
-  const fetchVoices = async () => {
+  const fetchPersonas = async () => {
     if (!workspace?.id) {
-      console.warn('Workspace ID não encontrado');
+      console.debug('Workspace ID não encontrado, aguardando...');
+      setLoading(false);
       return;
     }
     
     if (!user?.id) {
-      console.warn('Usuário não autenticado');
-      setError('Você precisa estar logado para acessar as brand voices.');
+      console.debug('Usuário não autenticado, aguardando...');
       setLoading(false);
       return;
     }
@@ -49,10 +48,10 @@ export const useBrandVoices = (): UseBrandVoicesReturn => {
       setLoading(true);
       setError(null);
       
-      const data = await brandVoicesService.getAll(workspace.id);
-      setVoices(data || []);
+      const data = await personasService.getAll(workspace.id);
+      setPersonas(data || []);
     } catch (err) {
-      console.error('Erro ao carregar brand voices:', err);
+      console.error('Erro ao carregar personas:', err);
       
       let errorMessage = 'Erro desconhecido';
       let errorCode = '';
@@ -72,8 +71,8 @@ export const useBrandVoices = (): UseBrandVoicesReturn => {
       if (errorCode === 'PGRST301' || errorMessage.includes('row-level security')) {
         errorMessage = 'Acesso negado: você não tem permissão para acessar estes dados. Verifique se está logado corretamente.';
       } else if (errorCode === 'PGRST116') {
-        errorMessage = 'Nenhuma brand voice encontrada.';
-        setVoices([]);
+        errorMessage = 'Nenhuma persona encontrada.';
+        setPersonas([]);
         setError(null);
         setLoading(false);
         return;
@@ -97,116 +96,101 @@ export const useBrandVoices = (): UseBrandVoicesReturn => {
     }
   };
 
-  const createVoice = async (input: Omit<CreateBrandVoiceInput, 'workspace_id' | 'user_id'>) => {
+  const createPersona = async (input: Omit<CreatePersonaInput, 'workspace_id' | 'user_id'>) => {
     if (!workspace?.id || !user?.id) {
       throw new Error('Workspace ou usuário não encontrado');
     }
 
     try {
-      await brandVoicesService.create({
+      await personasService.create({
         ...input,
         workspace_id: workspace.id,
         user_id: user.id
       });
       
       // Refetch data after creation
-      await fetchVoices();
+      await fetchPersonas();
     } catch (err) {
-      console.error('Erro ao criar brand voice:', err);
+      console.error('Erro ao criar persona:', err);
       throw err;
     }
   };
 
-  const updateVoice = async (id: string, updates: UpdateBrandVoiceInput) => {
+  const updatePersona = async (id: string, updates: UpdatePersonaInput) => {
     try {
-      await brandVoicesService.update(id, updates);
+      await personasService.update(id, updates);
       
       // Update local state optimistically
-      setVoices(prev => prev.map(voice => 
-        voice.id === id ? { ...voice, ...updates } : voice
+      setPersonas(prev => prev.map(persona => 
+        persona.id === id ? { ...persona, ...updates } : persona
       ));
       
       // Refetch to ensure consistency
-      await fetchVoices();
+      await fetchPersonas();
     } catch (err) {
-      console.error('Erro ao atualizar brand voice:', err);
+      console.error('Erro ao atualizar persona:', err);
       throw err;
     }
   };
 
-  const deleteVoice = async (id: string) => {
+  const deletePersona = async (id: string) => {
     try {
-      await brandVoicesService.delete(id);
+      await personasService.delete(id);
       
       // Remove from local state optimistically
-      setVoices(prev => prev.filter(voice => voice.id !== id));
+      setPersonas(prev => prev.filter(persona => persona.id !== id));
       
       // Refetch para garantir consistência com o servidor
-      await fetchVoices();
+      await fetchPersonas();
     } catch (err) {
-      console.error('Erro ao deletar brand voice:', err);
+      console.error('Erro ao deletar persona:', err);
       // Se houver erro, refazer o fetch para restaurar o estado correto
-      await fetchVoices();
+      await fetchPersonas();
       throw err;
     }
   };
 
-  const toggleVoiceStatus = async (id: string) => {
+  const duplicatePersona = async (id: string) => {
     try {
-      const updatedVoice = await brandVoicesService.toggleStatus(id);
-      
-      // Update local state
-      setVoices(prev => prev.map(voice => 
-        voice.id === id ? { ...voice, is_active: updatedVoice.is_active } : voice
-      ));
-    } catch (err) {
-      console.error('Erro ao alterar status da brand voice:', err);
-      throw err;
-    }
-  };
-
-  const duplicateVoice = async (id: string) => {
-    try {
-      await brandVoicesService.duplicate(id);
+      await personasService.duplicate(id);
       
       // Refetch data after duplication
-      await fetchVoices();
+      await fetchPersonas();
     } catch (err) {
-      console.error('Erro ao duplicar brand voice:', err);
+      console.error('Erro ao duplicar persona:', err);
       throw err;
     }
   };
 
   const refetch = async () => {
-    await fetchVoices();
+    await fetchPersonas();
   };
 
-  // Load voices when workspace or user changes
+  // Load personas when workspace or user changes
   useEffect(() => {
     if (workspace?.id && user?.id) {
-      fetchVoices();
+      fetchPersonas();
     } else if (workspace?.id && !user?.id) {
-      console.warn('Hook useBrandVoices: Usuário não autenticado');
-      setVoices([]);
+      console.warn('Hook usePersonas: Usuário não autenticado');
+      setPersonas([]);
       setLoading(false);
-      setError('Você precisa estar logado para acessar as brand voices.');
+      setError('Você precisa estar logado para acessar as personas.');
     } else {
-      console.warn('Hook useBrandVoices: Workspace não disponível');
-      setVoices([]);
+      console.debug('Hook usePersonas: Workspace não disponível, aguardando...');
+      setPersonas([]);
       setLoading(false);
       setError(null);
     }
   }, [workspace?.id, user?.id]);
 
   return {
-    voices,
+    personas,
     loading,
     error,
-    createVoice,
-    updateVoice,
-    deleteVoice,
-    duplicateVoice,
-    toggleVoiceStatus,
+    createPersona,
+    updatePersona,
+    deletePersona,
+    duplicatePersona,
     refetch
   };
 };

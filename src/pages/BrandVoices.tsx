@@ -47,7 +47,7 @@ const BrandVoices = () => {
   const [selectedVoice, setSelectedVoice] = useState<BrandVoiceWithStats | null>(null);
   const [activeTab, setActiveTab] = useState('all');
   
-  const { voices, loading, error, createVoice, updateVoice, deleteVoice, toggleVoiceStatus } = useBrandVoices();
+  const { voices, loading, error, createVoice, updateVoice, deleteVoice, duplicateVoice, toggleVoiceStatus } = useBrandVoices();
   const { toast } = useToast();
 
   const handleCreateVoice = async (newVoice: Omit<CreateBrandVoiceInput, 'workspace_id' | 'user_id'>) => {
@@ -118,6 +118,22 @@ const BrandVoices = () => {
     }
   };
 
+  const handleDuplicateVoice = async (voiceId: string) => {
+    try {
+      await duplicateVoice(voiceId);
+      toast({
+        title: 'Brand voice duplicada',
+        description: 'A brand voice foi duplicada com sucesso.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível duplicar a brand voice. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const filteredVoices = voices.filter(voice => {
     const matchesSearch = voice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (voice.description || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -169,28 +185,90 @@ const BrandVoices = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header com explicação */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        className="space-y-6"
       >
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <Mic className="w-8 h-8 text-primary" />
-            Brand Voices
-          </h1>
-          <p className="text-muted-foreground">
-            Defina a personalidade e tom de voz da sua marca
-          </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+              <Mic className="w-8 h-8 text-primary" />
+              Brand Voices
+            </h1>
+            <p className="text-muted-foreground">
+              Defina a personalidade e tom de comunicação da sua marca
+            </p>
+          </div>
+          <Button 
+            className="bg-gradient-primary"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Voice
+          </Button>
         </div>
-        <Button 
-          className="bg-gradient-primary"
-          onClick={() => setShowCreateModal(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Voice
-        </Button>
+
+        {/* Card explicativo para iniciantes */}
+        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/50 dark:border-blue-800">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg text-blue-800 dark:text-blue-200">
+                O que é uma Brand Voice?
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
+              A Brand Voice é a <strong>personalidade da sua marca</strong> expressa através de palavras. 
+              Define <strong>como</strong> sua marca se comunica, não apenas <strong>o que</strong> ela diz.
+            </p>
+            <div className="grid md:grid-cols-2 gap-6 text-sm">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Quando é usada:
+                </h4>
+                <ul className="space-y-2 text-blue-700 dark:text-blue-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1 text-xs">•</span>
+                    <span><strong>Geração de Copies:</strong> Todas as copies criadas seguem sua Brand Voice</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1 text-xs">•</span>
+                    <span><strong>Posts e Campanhas:</strong> Mantém consistência na comunicação</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1 text-xs">•</span>
+                    <span><strong>Múltiplas Marcas:</strong> Cada marca pode ter sua própria voz</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-3">
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                  <Heart className="h-4 w-4" />
+                  Principais benefícios:
+                </h4>
+                <ul className="space-y-2 text-blue-700 dark:text-blue-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1 text-xs">•</span>
+                    <span><strong>Consistência:</strong> Mesma personalidade em todos os canais</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1 text-xs">•</span>
+                    <span><strong>Reconhecimento:</strong> Audiência identifica sua marca pelo tom</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1 text-xs">•</span>
+                    <span><strong>IA Inteligente:</strong> Gera conteúdo alinhado automaticamente</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Stats */}
@@ -351,7 +429,7 @@ const BrandVoices = () => {
                     <div>
                       <CardTitle className="text-lg">{voice.name}</CardTitle>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={voice.is_active ? "default" : "secondary"}>
+                        <Badge variant={voice.is_active ? "default" : "destructive"}>
                           {voice.is_active ? 'Ativa' : 'Inativa'}
                         </Badge>
                         <Badge variant="outline">{voice.tone}</Badge>
@@ -387,7 +465,7 @@ const BrandVoices = () => {
                           </>
                         )}
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicateVoice(voice.id)}>
                         <Copy className="w-4 h-4 mr-2" />
                         Duplicar
                       </DropdownMenuItem>
@@ -451,9 +529,9 @@ const BrandVoices = () => {
                     <TestTube className="w-4 h-4 mr-2" />
                     Testar
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleDuplicateVoice(voice.id)}>
                     <Copy className="w-4 h-4 mr-2" />
-                    Usar
+                    Duplicar
                   </Button>
                 </div>
               </CardContent>

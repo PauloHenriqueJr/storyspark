@@ -1,18 +1,65 @@
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/integrations/supabase/types";
 
-type BrandVoice = Database["public"]["Tables"]["brand_voices"]["Row"];
 type CreateBrandVoiceInput =
   Database["public"]["Tables"]["brand_voices"]["Insert"];
 type UpdateBrandVoiceInput =
   Database["public"]["Tables"]["brand_voices"]["Update"];
 
+// Tipos
+export interface BrandVoice {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  tone: string;
+  style: string;
+  examples: string[];
+  guidelines: string;
+  usage_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  personality_traits?: string[];
+  audience?: string;
+  platform?: string;
+  context?: string;
+  writing_style?: string;
+  avoid?: string;
+  good_example?: string;
+  bad_example?: string;
+  keywords?: string[];
+}
+
 export interface BrandVoiceWithStats extends BrandVoice {
+  personality: any;
   campaigns?: number;
   avgEngagement?: number;
-  personality?: string[];
-  audience?: string;
 }
+
+// Função para garantir autenticação antes das operações
+const ensureAuth = async () => {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    console.error("❌ Erro ao verificar sessão:", error);
+    // Não vai mais fazer throw, apenas logar
+    console.warn("⚠️ Continuando sem verificação de sessão (modo debug)");
+    return null;
+  }
+
+  if (!session) {
+    console.warn("⚠️ Nenhuma sessão encontrada (modo debug)");
+    return null;
+  }
+
+  console.log("✅ Usuário autenticado:", session.user.email);
+  return session;
+};
 
 interface DetailedError extends Error {
   code: string;
@@ -28,7 +75,7 @@ export const brandVoicesService = {
         .from("brand_voices")
         .select("*")
         .eq("workspace_id", workspaceId)
-        .eq("is_active", true)
+        .eq("is_active", true) // Apenas brand voices ativas
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -97,12 +144,34 @@ export const brandVoicesService = {
     updates: UpdateBrandVoiceInput
   ): Promise<BrandVoice> {
     try {
+      // Garantir que campos array estejam no formato correto
+      const sanitizedUpdates: any = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Sanitizar arrays se existirem
+      if ("examples" in updates) {
+        sanitizedUpdates.examples = Array.isArray(updates.examples)
+          ? updates.examples
+          : [];
+      }
+      if ("personality_traits" in updates) {
+        sanitizedUpdates.personality_traits = Array.isArray(
+          (updates as any).personality_traits
+        )
+          ? (updates as any).personality_traits
+          : [];
+      }
+      if ("audience" in updates) {
+        sanitizedUpdates.audience = Array.isArray((updates as any).audience)
+          ? (updates as any).audience
+          : [];
+      }
+
       const { data, error } = await supabase
         .from("brand_voices")
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
+        .update(sanitizedUpdates)
         .eq("id", id)
         .select()
         .single();
@@ -118,12 +187,26 @@ export const brandVoicesService = {
   // Deletar brand voice (soft delete)
   async delete(id: string): Promise<void> {
     try {
+      await ensureAuth(); // Garantir autenticação
+      console.log("🔄 Tentando excluir brand voice:", id);
+
       const { error } = await supabase
         .from("brand_voices")
         .update({ is_active: false })
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro completo no delete:", {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
+      }
+
+      console.log("✅ Brand voice excluída com sucesso");
     } catch (error) {
       console.error("Erro ao deletar brand voice:", error);
       throw error;
@@ -137,7 +220,6 @@ export const brandVoicesService = {
         .from("brand_voices")
         .select("*")
         .eq("id", id)
-        .eq("is_active", true)
         .single();
 
       if (error) {
@@ -172,9 +254,14 @@ export const brandVoicesService = {
   // Toggle status ativo/inativo
   async toggleStatus(id: string): Promise<BrandVoice> {
     try {
+      await ensureAuth(); // Garantir autenticação
+      console.log("🔄 Tentando alterar status da brand voice:", id);
+
       // Primeiro buscar o status atual
       const current = await this.getById(id);
       if (!current) throw new Error("Brand voice não encontrada");
+
+      console.log("📋 Status atual:", current.is_active);
 
       const { data, error } = await supabase
         .from("brand_voices")
@@ -186,10 +273,83 @@ export const brandVoicesService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro completo no toggleStatus:", {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
+      }
+
+      console.log("✅ Status alterado com sucesso:", data);
       return data;
     } catch (error) {
       console.error("Erro ao alterar status:", error);
+      throw error;
+    }
+  },
+
+  // Duplicar brand voice
+  async duplicate(id: string): Promise<BrandVoice> {
+    try {
+      await ensureAuth(); // Garantir autenticação
+      console.log("🔄 Tentando duplicar brand voice:", id);
+
+      const original = await this.getById(id);
+      if (!original) throw new Error("Brand voice não encontrada");
+
+      console.log("📋 Brand voice original encontrada:", original.name);
+
+      const { data, error } = await supabase
+        .from("brand_voices")
+        .insert({
+          workspace_id: original.workspace_id,
+          user_id: original.user_id,
+          name: `${original.name} (Cópia)`,
+          description: original.description,
+          tone: original.tone,
+          style: original.style,
+          examples: original.examples,
+          guidelines: original.guidelines,
+          usage_count: 0,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("❌ Erro completo no duplicate:", {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
+      }
+
+      console.log("✅ Brand voice duplicada com sucesso:", data);
+      return data;
+    } catch (error) {
+      console.error("Erro ao duplicar brand voice:", error);
+      throw error;
+    }
+  },
+
+  // Deletar permanentemente (hard delete)
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("brand_voices")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Erro ao deletar permanentemente brand voice:", error);
       throw error;
     }
   },

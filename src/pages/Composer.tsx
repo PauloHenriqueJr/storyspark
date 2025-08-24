@@ -31,6 +31,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { copyGenerationService } from '@/services/copyGenerationService';
 
 const platforms = [
   { name: 'Instagram', icon: Instagram, color: 'text-pink-500' },
@@ -75,6 +77,7 @@ const Composer = () => {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Get active project
   const activeProject = projects.find(p => p.id === activeProjectId);
@@ -155,41 +158,174 @@ const Composer = () => {
 
     setIsGenerating(true);
     
-    // Simulação de geração de copy
-    setTimeout(() => {
-      const generatedText = `🚀 Transforme sua estratégia digital com IA!
+    try {
+      console.log('🤖 Iniciando geração de copy com IA...');
+      
+      // Usar o serviço real de geração de copy
+      const response = await copyGenerationService.generateCopy({
+        briefing: activeProject.briefing,
+        platform: activeProject.platform,
+        copyType: activeProject.copyType,
+        tone: activeProject.tone,
+        userId: user?.id
+      });
 
-Descubra como a inteligência artificial pode revolucionar seus resultados:
+      if (response.success && response.content) {
+        const newVersion = {
+          id: `version_${Date.now()}`,
+          copy: response.content,
+          timestamp: new Date()
+        };
 
-✨ Copies otimizadas automaticamente
-📊 Analytics em tempo real  
-🎯 Segmentação precisa
-💡 Insights baseados em dados
+        updateActiveProject({
+          generatedCopy: response.content,
+          versions: [...(activeProject.versions || []), newVersion]
+        });
 
-Pronto para dominar o marketing digital?
+        toast({
+          title: "Copy gerada com sucesso!",
+          description: `Gerada usando ${response.provider} (${response.model}). Tokens usados: ${response.tokensUsed}`,
+        });
+      } else {
+        throw new Error(response.error || 'Falha na geração de copy');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro na geração de copy:', error);
+      
+      toast({
+        title: "Erro na geração",
+        description: error instanceof Error ? error.message : "Erro desconhecido. Tente novamente.",
+        variant: "destructive"
+      });
+      
+      // Fallback - ainda criar uma versão básica se a IA falhar completamente
+      const fallbackText = `Copy para ${activeProject.platform} - ${activeProject.copyType}
 
-#MarketingDigital #IA #Inovacao #Resultados
+${activeProject.briefing}
 
-[CTA: Comece agora gratuitamente]`;
-
+#marketing #${activeProject.platform.toLowerCase()}`;
+      
       const newVersion = {
         id: `version_${Date.now()}`,
-        copy: generatedText,
+        copy: fallbackText,
         timestamp: new Date()
       };
 
       updateActiveProject({
-        generatedCopy: generatedText,
+        generatedCopy: fallbackText,
         versions: [...(activeProject.versions || []), newVersion]
       });
-
-      setIsGenerating(false);
       
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateVariations = async () => {
+    if (!activeProject?.generatedCopy) {
       toast({
-        title: "Copy gerada!",
-        description: "Nova versão criada e salva automaticamente.",
+        title: "Nenhuma copy encontrada",
+        description: "Gere uma copy primeiro para criar variações.",
+        variant: "destructive"
       });
-    }, 2000);
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      console.log('🔄 Gerando variações da copy...');
+      
+      const variations = await copyGenerationService.generateVariations(
+        activeProject.generatedCopy, 
+        3, 
+        user?.id
+      );
+
+      if (variations.length > 0 && variations[0].success) {
+        const newVersions = variations.map((variation, index) => ({
+          id: `variation_${Date.now()}_${index}`,
+          copy: variation.content,
+          timestamp: new Date()
+        }));
+
+        updateActiveProject({
+          versions: [...(activeProject.versions || []), ...newVersions]
+        });
+
+        toast({
+          title: "Variações geradas!",
+          description: `${variations.length} novas variações criadas.`,
+        });
+      } else {
+        throw new Error('Falha na geração de variações');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro na geração de variações:', error);
+      toast({
+        title: "Erro na geração de variações",
+        description: error instanceof Error ? error.message : "Erro desconhecido. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleOptimizeCopy = async () => {
+    if (!activeProject?.generatedCopy) {
+      toast({
+        title: "Nenhuma copy encontrada",
+        description: "Gere uma copy primeiro para otimizar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      console.log('⚡ Otimizando copy...');
+      
+      const response = await copyGenerationService.optimizeCopy(
+        activeProject.generatedCopy,
+        activeProject.platform,
+        undefined,
+        user?.id
+      );
+
+      if (response.success && response.content) {
+        const newVersion = {
+          id: `optimized_${Date.now()}`,
+          copy: response.content,
+          timestamp: new Date()
+        };
+
+        updateActiveProject({
+          generatedCopy: response.content,
+          versions: [...(activeProject.versions || []), newVersion]
+        });
+
+        toast({
+          title: "Copy otimizada!",
+          description: `Copy melhorada usando ${response.provider}.`,
+        });
+      } else {
+        throw new Error(response.error || 'Falha na otimização');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro na otimização:', error);
+      toast({
+        title: "Erro na otimização",
+        description: error instanceof Error ? error.message : "Erro desconhecido. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCopy = () => {

@@ -143,32 +143,273 @@ class AIContingencyService {
     request: AIRequest
   ): Promise<AIResponse> {
     try {
-      // Simular chamada para o provedor (aqui você implementaria a integração real)
       console.log(
-        `Fazendo requisição para ${provider.name} com modelo ${provider.model}`
+        `🤖 Fazendo requisição REAL para ${provider.name} com modelo ${provider.model}`
       );
 
-      // Simular delay de rede
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000 + Math.random() * 2000)
-      );
-
-      // Simular falha ocasional para teste (10% de chance)
-      if (Math.random() < 0.1) {
-        throw new Error(`Falha simulada no provedor ${provider.name}`);
+      // Implementar integração real baseada no provedor
+      switch (provider.key) {
+        case "gemini":
+          return await this.makeGeminiRequest(provider, request);
+        case "openai":
+          return await this.makeOpenAIRequest(provider, request);
+        case "anthropic":
+          return await this.makeAnthropicRequest(provider, request);
+        case "openrouter":
+          return await this.makeOpenRouterRequest(provider, request);
+        case "kilocode":
+          return await this.makeKilocodeRequest(provider, request);
+        default:
+          throw new Error(`Provedor ${provider.key} não implementado`);
       }
-
-      // Retornar resposta simulada
-      return {
-        content: `Resposta do ${provider.name} usando ${provider.model}: ${request.prompt}`,
-        provider: provider.key,
-        model: provider.model,
-        tokensUsed: Math.floor(Math.random() * 1000) + 100,
-        success: true,
-      };
     } catch (error) {
       throw new Error(`Erro ao comunicar com ${provider.name}: ${error}`);
     }
+  }
+
+  /**
+   * Faz requisição para Google Gemini
+   */
+  private async makeGeminiRequest(
+    provider: AIProvider,
+    request: AIRequest
+  ): Promise<AIResponse> {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: request.prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: request.temperature || 0.7,
+            maxOutputTokens: request.maxTokens || 1000,
+            topP: 0.8,
+            topK: 10,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        `Erro na API do Gemini: ${response.status} - ${errorData}`
+      );
+    }
+
+    const data = await response.json();
+
+    if (
+      !data.candidates ||
+      !data.candidates[0] ||
+      !data.candidates[0].content
+    ) {
+      throw new Error("Resposta inválida da API do Gemini");
+    }
+
+    const content = data.candidates[0].content.parts[0].text;
+    const tokensUsed = data.usageMetadata?.totalTokenCount || 0;
+
+    return {
+      content,
+      provider: provider.key,
+      model: provider.model,
+      tokensUsed,
+      success: true,
+    };
+  }
+
+  /**
+   * Faz requisição para OpenAI
+   */
+  private async makeOpenAIRequest(
+    provider: AIProvider,
+    request: AIRequest
+  ): Promise<AIResponse> {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${provider.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        messages: [
+          {
+            role: "user",
+            content: request.prompt,
+          },
+        ],
+        temperature: request.temperature || 0.7,
+        max_tokens: request.maxTokens || 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        `Erro na API da OpenAI: ${response.status} - ${errorData}`
+      );
+    }
+
+    const data = await response.json();
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error("Resposta inválida da API da OpenAI");
+    }
+
+    const content = data.choices[0].message.content;
+    const tokensUsed = data.usage?.total_tokens || 0;
+
+    return {
+      content,
+      provider: provider.key,
+      model: provider.model,
+      tokensUsed,
+      success: true,
+    };
+  }
+
+  /**
+   * Faz requisição para Anthropic Claude
+   */
+  private async makeAnthropicRequest(
+    provider: AIProvider,
+    request: AIRequest
+  ): Promise<AIResponse> {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": provider.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        messages: [
+          {
+            role: "user",
+            content: request.prompt,
+          },
+        ],
+        temperature: request.temperature || 0.7,
+        max_tokens: request.maxTokens || 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        `Erro na API da Anthropic: ${response.status} - ${errorData}`
+      );
+    }
+
+    const data = await response.json();
+
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      throw new Error("Resposta inválida da API da Anthropic");
+    }
+
+    const content = data.content[0].text;
+    const tokensUsed = data.usage?.output_tokens || 0;
+
+    return {
+      content,
+      provider: provider.key,
+      model: provider.model,
+      tokensUsed,
+      success: true,
+    };
+  }
+
+  /**
+   * Faz requisição para OpenRouter
+   */
+  private async makeOpenRouterRequest(
+    provider: AIProvider,
+    request: AIRequest
+  ): Promise<AIResponse> {
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${provider.apiKey}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "StorySpark",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [
+            {
+              role: "user",
+              content: request.prompt,
+            },
+          ],
+          temperature: request.temperature || 0.7,
+          max_tokens: request.maxTokens || 1000,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        `Erro na API do OpenRouter: ${response.status} - ${errorData}`
+      );
+    }
+
+    const data = await response.json();
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error("Resposta inválida da API do OpenRouter");
+    }
+
+    const content = data.choices[0].message.content;
+    const tokensUsed = data.usage?.total_tokens || 0;
+
+    return {
+      content,
+      provider: provider.key,
+      model: provider.model,
+      tokensUsed,
+      success: true,
+    };
+  }
+
+  /**
+   * Faz requisição para Kilocode
+   */
+  private async makeKilocodeRequest(
+    provider: AIProvider,
+    request: AIRequest
+  ): Promise<AIResponse> {
+    // Implementar conforme a API da Kilocode quando disponível
+    // Por enquanto, usar simulação
+    console.warn("⚠️ Kilocode API não implementada ainda, usando simulação");
+
+    return {
+      content: `[SIMULAÇÃO KILOCODE] Copy gerada baseada em: ${request.prompt.substring(
+        0,
+        100
+      )}...`,
+      provider: provider.key,
+      model: provider.model,
+      tokensUsed: Math.floor(Math.random() * 500) + 100,
+      success: true,
+    };
   }
 
   /**
