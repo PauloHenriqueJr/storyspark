@@ -414,7 +414,7 @@ export const analyticsService = {
   },
 
   // Incrementar métricas de uso (para tracking em tempo real)
-  async trackUsageEvent(workspaceId: string, eventType: string, metadata?: any): Promise<void> {
+  async trackUsageEvent(workspaceId: string, eventType: string, metadata?: Record<string, unknown>): Promise<void> {
     try {
       await supabase
         .from('usage_events')

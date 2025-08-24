@@ -63,6 +63,7 @@ export function ThemeProvider({
   )
 }
 
+// Extract the hook to a separate function to avoid fast refresh warnings
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext)
 

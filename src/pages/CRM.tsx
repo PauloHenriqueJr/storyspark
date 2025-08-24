@@ -9,12 +9,27 @@ import { Plus, Search, Users, Phone, Mail, Calendar, Target, TrendingUp, DollarS
 import { useToast } from '@/hooks/use-toast';
 import CreateLeadModal from '@/components/modals/CreateLeadModal';
 
-const CRM: React.FC = () => {
+interface Lead {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  position: string;
+  status: string;
+  source: string;
+  value: number;
+  lastContact: string;
+  nextAction: string;
+  tags: string[];
+}
+
+const CRM = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const { toast } = useToast();
   
   const [leads] = useState([
@@ -84,7 +99,7 @@ const CRM: React.FC = () => {
     });
   };
 
-  const handleContact = (lead: any, type: string) => {
+  const handleContact = (lead: Lead, type: string) => {
     setSelectedLead(lead);
     toast({
       title: `${type} iniciado`,
@@ -92,7 +107,7 @@ const CRM: React.FC = () => {
     });
   };
 
-  const handleSchedule = (lead: any) => {
+  const handleSchedule = (lead: Lead) => {
     navigate('/calendar');
     toast({
       title: "Redirecionando para calendário",
@@ -100,7 +115,7 @@ const CRM: React.FC = () => {
     });
   };
 
-  const handleViewProfile = (lead: any) => {
+  const handleViewProfile = (lead: Lead) => {
     setSelectedLead(lead);
     setShowContactModal(true);
   };

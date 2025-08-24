@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,20 +10,23 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Share2, 
   Copy, 
-  Mail, 
-  MessageSquare, 
-  ExternalLink,
-  QrCode,
-  Download,
+  ExternalLink, 
+  QrCode, 
+  Download, 
+  FileText, 
+  Heart, 
   Eye,
-  Heart,
-  FileText
+  Twitter,
+  Linkedin,
+  MessageCircle,
+  Send
 } from 'lucide-react';
+import type { TemplateWithStats } from '@/services/templatesService';
 
 interface ShareTemplateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  template: any;
+  template: TemplateWithStats | null;
 }
 
 const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
@@ -225,7 +228,7 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
                     onClick={() => shareToSocial('whatsapp')}
                     className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
                   >
-                    <MessageSquare className="w-4 h-4 mr-2" />
+                    <MessageCircle className="w-4 h-4 mr-2" />
                     WhatsApp
                   </Button>
                   <Button
@@ -233,7 +236,7 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
                     onClick={() => shareToSocial('telegram')}
                     className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
                   >
-                    <MessageSquare className="w-4 h-4 mr-2" />
+                    <MessageCircle className="w-4 h-4 mr-2" />
                     Telegram
                   </Button>
                   <Button
@@ -241,7 +244,7 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
                     onClick={() => shareToSocial('twitter')}
                     className="bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
                   >
-                    <Share2 className="w-4 h-4 mr-2" />
+                    <Twitter className="w-4 h-4 mr-2" />
                     Twitter
                   </Button>
                   <Button
@@ -249,7 +252,7 @@ const ShareTemplateModal: React.FC<ShareTemplateModalProps> = ({
                     onClick={() => shareToSocial('linkedin')}
                     className="bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-900 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
                   >
-                    <Share2 className="w-4 h-4 mr-2" />
+                    <Linkedin className="w-4 h-4 mr-2" />
                     LinkedIn
                   </Button>
                 </div>

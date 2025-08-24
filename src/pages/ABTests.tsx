@@ -9,8 +9,28 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+interface Variant {
+  name: string;
+  visitors: number;
+  conversions: number;
+  conversionRate: number;
+  isControl: boolean;
+}
+
+interface Test {
+  id: number;
+  name: string;
+  status: 'executando' | 'finalizado' | 'configuracao' | 'pausado';
+  type: 'landing-page' | 'email' | 'elemento';
+  startDate: string | null;
+  endDate: string | null;
+  confidence: number;
+  winner: string | null;
+  variants: Variant[];
+}
+
 const ABTests = () => {
-  const [tests, setTests] = useState([
+  const [tests, setTests] = useState<Test[]>([
     {
       id: 1,
       name: 'Headline da Landing Page',
@@ -100,14 +120,14 @@ const ABTests = () => {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedTest, setSelectedTest] = useState<any>(null);
+  const [selectedTest, setSelectedTest] = useState<Test | null>(null);
   const { toast } = useToast();
 
   const handleCreateTest = () => {
     setShowCreateModal(true);
   };
 
-  const handleViewDetails = (test: any) => {
+  const handleViewDetails = (test: Test) => {
     setSelectedTest(test);
     setShowDetailsModal(true);
   };
@@ -151,7 +171,7 @@ const ABTests = () => {
     }
   };
 
-  const getBestVariant = (variants: any[]) => {
+  const getBestVariant = (variants: Variant[]) => {
     return variants.reduce((best, current) => 
       current.conversionRate > best.conversionRate ? current : best
     );
@@ -614,7 +634,7 @@ const ABTests = () => {
               <div className="mt-4">
                 <h4 className="font-medium mb-2">Variações do Teste</h4>
                 <div className="space-y-2">
-                  {selectedTest.variants.map((variant: any) => (
+                  {selectedTest.variants.map((variant: Variant) => (
                     <div key={variant.name} className="p-3 border rounded">
                       <div className="flex justify-between">
                         <span>{variant.name}</span>

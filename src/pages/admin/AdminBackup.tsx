@@ -35,10 +35,23 @@ import {
   Lock
 } from 'lucide-react';
 
+interface Backup {
+  id: number;
+  name: string;
+  type: string;
+  status: string;
+  size: string;
+  created: string;
+  duration: string;
+  encrypted: boolean;
+  location: string;
+  error?: string;
+}
+
 const AdminBackup = () => {
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
-  const [selectedBackup, setSelectedBackup] = useState<any>(null);
+  const [selectedBackup, setSelectedBackup] = useState<Backup | null>(null);
 
   // Mock backup data
   const backupSettings = {
@@ -50,7 +63,7 @@ const AdminBackup = () => {
     cloudStorage: true
   };
 
-  const backupHistory = [
+  const backupHistory: Backup[] = [
     {
       id: 1,
       name: 'backup_2024_01_20_14_30',

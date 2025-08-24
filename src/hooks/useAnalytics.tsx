@@ -30,7 +30,7 @@ export interface UseAnalyticsReturn {
   
   // Methods
   refreshData: () => Promise<void>;
-  trackEvent: (eventType: string, metadata?: any) => Promise<void>;
+  trackEvent: (eventType: string, metadata?: Record<string, unknown>) => Promise<void>;
   setTimeRange: (range: '7d' | '30d' | '90d' | '1y') => void;
   timeRange: '7d' | '30d' | '90d' | '1y';
 }
@@ -54,7 +54,7 @@ export const useAnalytics = (includeGlobal: boolean = false): UseAnalyticsReturn
       setLoading(true);
       setError(null);
 
-      const promises: Promise<any>[] = [];
+      const promises: Array<Promise<unknown>> = [];
 
       // Fetch global stats if needed (for admin)
       if (includeGlobal) {
@@ -86,20 +86,20 @@ export const useAnalytics = (includeGlobal: boolean = false): UseAnalyticsReturn
       let resultIndex = 0;
       
       if (includeGlobal) {
-        setGlobalStats(results[resultIndex++]);
+        setGlobalStats(results[resultIndex++] as AnalyticsStats);
       }
       
       if (workspace?.id) {
-        setWorkspaceStats(results[resultIndex++]);
+        setWorkspaceStats(results[resultIndex++] as Partial<AnalyticsStats>);
       }
       
-      setUsageData(results[resultIndex++]);
-      setPlatformDistribution(results[resultIndex++]);
-      setContentPerformance(results[resultIndex++]);
+      setUsageData(results[resultIndex++] as UsageData[]);
+      setPlatformDistribution(results[resultIndex++] as PlatformDistribution[]);
+      setContentPerformance(results[resultIndex++] as ContentPerformance[]);
       
       if (includeGlobal) {
-        setTopUsers(results[resultIndex++]);
-        setRevenueData(results[resultIndex++]);
+        setTopUsers(results[resultIndex++] as TopUser[]);
+        setRevenueData(results[resultIndex++] as RevenueData[]);
       }
 
     } catch (err) {
@@ -114,7 +114,7 @@ export const useAnalytics = (includeGlobal: boolean = false): UseAnalyticsReturn
     await fetchData();
   };
 
-  const trackEvent = async (eventType: string, metadata?: any) => {
+  const trackEvent = async (eventType: string, metadata?: Record<string, unknown>) => {
     if (!workspace?.id) return;
     
     try {

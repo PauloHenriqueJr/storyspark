@@ -8,5 +8,5 @@ export interface CalendarEvent {
   date: Date;
   status: 'Agendado' | 'Publicado' | 'Rascunho';
   color: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }

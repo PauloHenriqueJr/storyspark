@@ -22,23 +22,46 @@ import {
   Crown,
   Copy
 } from 'lucide-react';
+import type { ComponentType } from 'react';
 
 interface InviteMemberModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+interface Role {
+  id: string;
+  name: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+  badge: 'primary' | 'destructive' | 'default' | 'secondary' | 'outline';
+}
+
+interface PermissionModule {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Permissions {
+  campaigns: { read: boolean; write: boolean; delete: boolean };
+  analytics: { read: boolean; write: boolean; delete: boolean };
+  team: { read: boolean; write: boolean; delete: boolean };
+  settings: { read: boolean; write: boolean; delete: boolean };
+}
+
 export const InviteMemberModal = ({ open, onOpenChange }: InviteMemberModalProps) => {
   const [inviteType, setInviteType] = useState<'single' | 'bulk'>('single');
   const [selectedRole, setSelectedRole] = useState('viewer');
-  const [permissions, setPermissions] = useState({
+  const [permissions, setPermissions] = useState<Permissions>({
     campaigns: { read: true, write: false, delete: false },
     analytics: { read: true, write: false, delete: false },
     team: { read: false, write: false, delete: false },
     settings: { read: false, write: false, delete: false }
   });
 
-  const roles = [
+  const roles: Role[] = [
     {
       id: 'owner',
       name: 'Owner',
@@ -81,7 +104,7 @@ export const InviteMemberModal = ({ open, onOpenChange }: InviteMemberModalProps
     }
   ];
 
-  const permissionModules = [
+  const permissionModules: PermissionModule[] = [
     {
       id: 'campaigns',
       name: 'Campanhas',
@@ -237,7 +260,7 @@ export const InviteMemberModal = ({ open, onOpenChange }: InviteMemberModalProps
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{role.name}</span>
-                                <Badge variant={role.badge as any}>
+                                <Badge variant={role.badge}>
                                   {role.name}
                                 </Badge>
                               </div>

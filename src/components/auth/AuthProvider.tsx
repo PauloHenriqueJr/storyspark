@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase, authHelpers, SignInData, SignUpData } from '@/lib/supabase';
 import { useSystemToastNotifications } from '@/hooks/useSystemToastNotifications';
@@ -31,17 +31,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Usar notificações de sistema (efeito visual) apenas se estiver disponível
-  let systemNotifications: ReturnType<typeof useSystemToastNotifications> | null = null;
-  try {
-    systemNotifications = useSystemToastNotifications();
-  } catch {
-    // Hook não disponível ainda
-  }
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const systemNotifications = useSystemToastNotifications();
 
   // Sistema de monitoramento simplificado
-  const trackAuthEvent = (event: string, data?: Record<string, unknown>) => {
+  const trackAuthEvent = useCallback((event: string, data?: Record<string, unknown>) => {
     // Loggar apenas eventos críticos
     const criticalEvents = [
       'AUTH_STATE_ERROR',
@@ -54,10 +48,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (criticalEvents.includes(event)) {
       console.warn(`🔍 AUTH_PROVIDER: ${event}`, data);
     }
-  };
+  }, []);
 
   // Função para detectar e corrigir clock skew
-  const handleClockSkew = () => {
+  const handleClockSkew = useCallback(() => {
     const originalConsoleWarn = console.warn;
     
     // Interceptar warnings do Supabase sobre clock skew
@@ -109,10 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn = originalConsoleWarn;
       trackAuthEvent('CONSOLE_WARN_RESTORED');
     }, 10000);
-  };
+  }, [systemNotifications, trackAuthEvent]);
 
   // Teste de conectividade simplificado
-  const testSupabaseConnection = async (): Promise<boolean> => {
+  const testSupabaseConnection = useCallback(async (): Promise<boolean> => {
     try {
       const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error('Connection timeout')), 5000) // Aumentado para 5s
@@ -130,10 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.debug('Connectivity test failed:', error instanceof Error ? error.message : 'Unknown error');
       return false;
     }
-  };
+  }, []);
 
   // Função para validação server-side simplificada
-  const validateRoleServerSide = async (userId: string): Promise<string | null> => {
+  const validateRoleServerSide = useCallback(async (userId: string): Promise<string | null> => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -150,10 +144,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       return null;
     }
-  };
+  }, [trackAuthEvent]);
+
+  const logout = useCallback(async () => {
+    setLoading(true);
+    try {
+      await authHelpers.signOut();
+      if (systemNotifications) {
+        systemNotifications.showSuccess(
+          "Logout realizado",
+          "Você foi desconectado com sucesso."
+        );
+      }
+    } catch (error: unknown) {
+      if (systemNotifications) {
+        systemNotifications.showError(
+          "Erro no logout",
+          error instanceof Error ? error.message : "Erro ao desconectar."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [systemNotifications]);
 
   // Função para detectar possível manipulação de role
-  const validateRoleIntegrity = async (currentUser: User): Promise<boolean> => {
+  const validateRoleIntegrity = useCallback(async (currentUser: User): Promise<boolean> => {
     if (!currentUser.id) return false;
     
     const serverRole = await validateRoleServerSide(currentUser.id);
@@ -178,8 +194,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     return true;
-  };
-  const getOrCreateUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null> => {
+  }, [systemNotifications, trackAuthEvent, validateRoleServerSide, logout]);
+
+  const getOrCreateUserProfile = useCallback(async (supabaseUser: SupabaseUser): Promise<User | null> => {
     // Criar perfil temporário como fallback otimizado
     const createTempProfile = (): User => {
       const isKnownAdmin = supabaseUser.email === 'paulojack2011@gmail.com';
@@ -235,39 +252,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return createTempProfile();
         }
         
-        return {
-          id: newProfile.id,
-          email: newProfile.email,
-          name: newProfile.full_name || newProfile.email.split('@')[0],
-          avatar_url: newProfile.avatar_url || supabaseUser.user_metadata?.avatar_url,
-          created_at: newProfile.created_at,
-          updated_at: newProfile.updated_at,
-          role: newProfile.role || 'user'
-        };
-      } else if (error) {
-        return createTempProfile();
+        if (newProfile) {
+          return {
+            id: newProfile.id,
+            email: newProfile.email,
+            name: newProfile.full_name,
+            avatar_url: newProfile.avatar_url || undefined,
+            created_at: newProfile.created_at,
+            updated_at: newProfile.updated_at,
+            role: newProfile.role
+          };
+        }
       }
       
-      // 4. Processar perfil encontrado
+      // 4. Se perfil encontrado, retornar
       if (profile) {
         return {
           id: profile.id,
           email: profile.email,
-          name: profile.full_name || profile.email.split('@')[0],
-          avatar_url: profile.avatar_url || supabaseUser.user_metadata?.avatar_url,
+          name: profile.full_name,
+          avatar_url: profile.avatar_url || undefined,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
-          role: profile.role || 'user'
+          role: profile.role
         };
       }
       
+      // 5. Fallback para perfil temporário
       return createTempProfile();
-      
     } catch (error) {
+      trackAuthEvent('PROFILE_FETCH_ERROR', { 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       return createTempProfile();
     }
-  };
-
+  }, [testSupabaseConnection, trackAuthEvent]);
 
   useEffect(() => {
     let mounted = true;
@@ -385,7 +404,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       subscription.unsubscribe();
     };
-  }, []);
+  }, [getOrCreateUserProfile, handleClockSkew, systemNotifications, trackAuthEvent, validateRoleIntegrity]);
 
   const login = async (data: SignInData) => {
     setLoading(true);
@@ -474,28 +493,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = async () => {
-    setLoading(true);
-    try {
-      await authHelpers.signOut();
-      if (systemNotifications) {
-        systemNotifications.showSuccess(
-          "Logout realizado",
-          "Você foi desconectado com sucesso."
-        );
-      }
-    } catch (error: unknown) {
-      if (systemNotifications) {
-        systemNotifications.showError(
-          "Erro no logout",
-          error instanceof Error ? error.message : "Erro ao desconectar."
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const isAuthenticated = !!user;
 
   return (
@@ -515,6 +512,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// Extract the hook to avoid fast refresh warnings
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

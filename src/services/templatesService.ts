@@ -13,8 +13,14 @@ export interface TemplateWithStats extends Template {
   platform?: string;
 }
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  ttl: number;
+}
+
 // Simple cache implementation
-const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const cache = new Map<string, CacheEntry<unknown>>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const getCachedData = <T>(key: string): T | null => {
@@ -61,7 +67,7 @@ export const templatesService = {
       if (error) throw error;
 
       // Enriquecer com estatísticas reais quando disponíveis
-      const result = (data || []).map((template: any) => ({
+      const result = (data || []).map((template) => ({
         ...template,
         performance: template?.template_stats?.[0]?.performance_rate !== undefined
           ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
@@ -97,7 +103,7 @@ export const templatesService = {
 
       if (error) throw error;
 
-      const result = (data || []).map((template: any) => ({
+      const result = (data || []).map((template) => ({
         ...template,
         performance: template?.template_stats?.[0]?.performance_rate !== undefined
           ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
@@ -239,7 +245,7 @@ export const templatesService = {
 
       if (error) throw error;
 
-      return (data || []).map((template: any) => ({
+      return (data || []).map((template) => ({
         ...template,
         performance: template?.template_stats?.[0]?.performance_rate !== undefined
           ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
@@ -266,7 +272,7 @@ export const templatesService = {
 
       if (error) throw error;
 
-      return (data || []).map((template: any) => ({
+      return (data || []).map((template) => ({
         ...template,
         performance: template?.template_stats?.[0]?.performance_rate !== undefined
           ? `${Number(template.template_stats[0].performance_rate).toFixed(1)}%`
@@ -352,8 +358,8 @@ export const templatesService = {
           // Não quebrar a página por falha secundária
           console.warn('Aviso: falha ao buscar template_stats:', statsError);
         } else if (statsData && statsData.length > 0) {
-          const sumLikes = statsData.reduce((acc: number, s: any) => acc + (s.total_likes || 0), 0);
-          const sumPerf = statsData.reduce((acc: number, s: any) => acc + (Number(s.performance_rate) || 0), 0);
+          const sumLikes = statsData.reduce((acc: number, s: { total_likes?: number }) => acc + (s.total_likes || 0), 0);
+          const sumPerf = statsData.reduce((acc: number, s: { performance_rate?: number }) => acc + (Number(s.performance_rate) || 0), 0);
           averageLikes = Math.round(sumLikes / statsData.length);
           averagePerformance = `${(sumPerf / statsData.length).toFixed(1)}%`;
         }
@@ -410,7 +416,7 @@ export const templatesService = {
       .eq('user_id', userId);
 
     if (error) throw error;
-    return (data || []).map((r: any) => r.template_id as string);
+    return (data || []).map((r: { template_id: string }) => r.template_id);
   },
 
   async share(templateId: string, isPublic: boolean = true) {

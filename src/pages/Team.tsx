@@ -236,7 +236,7 @@ const Team = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
                           <h3 className="font-semibold text-foreground">{member.name}</h3>
-                          <Badge variant={getRoleColor(member.role) as any}>
+                          <Badge variant={getRoleColor(member.role) as "default" | "destructive" | "outline" | "secondary"}>
                             <div className="flex items-center gap-1">
                               {getRoleIcon(member.role)}
                               {member.role}
@@ -310,7 +310,7 @@ const Team = () => {
                       <div>
                         <div className="flex items-center gap-3 mb-1">
                           <h3 className="font-semibold text-foreground">{invitation.email}</h3>
-                          <Badge variant={getRoleColor(invitation.role) as any}>
+                          <Badge variant={getRoleColor(invitation.role) as "default" | "destructive" | "outline" | "secondary"}>
                             {invitation.role}
                           </Badge>
                           <Badge variant={invitation.status === 'Pendente' ? 'default' : 'destructive'}>

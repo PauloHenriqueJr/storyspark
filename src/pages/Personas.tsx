@@ -11,15 +11,15 @@ import CreatePersonaModal from '@/components/modals/CreatePersonaModal';
 import { usePersonas } from '@/hooks/usePersonas';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
-import { Label } from 'recharts';
 
 type CreatePersonaInput = Database['public']['Tables']['target_personas']['Insert'];
+type Persona = Database['public']['Tables']['target_personas']['Row'];
 
 const Personas = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAge, setFilterAge] = useState('Todos');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingPersona, setEditingPersona] = useState<any>(null);
+  const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
   const [activeTab, setActiveTab] = useState('all');
 
   const { personas, loading, error, createPersona, updatePersona, deletePersona, duplicatePersona } = usePersonas();
@@ -52,7 +52,7 @@ const Personas = () => {
     }
   };
 
-  const handleEditPersona = (persona: any) => {
+  const handleEditPersona = (persona: Persona) => {
     setEditingPersona(persona);
     setShowCreateModal(true);
   };
@@ -91,7 +91,7 @@ const Personas = () => {
     }
   };
 
-  const handleUsePersona = (persona: any) => {
+  const handleUsePersona = (persona: Persona) => {
     // Por enquanto, vamos mostrar um toast com opções de onde usar
     toast({
       title: "Usar Persona: " + persona.name,
@@ -364,7 +364,7 @@ const Personas = () => {
 };
 
 // Helper component para o grid
-const matchesFilters = (persona: any, searchTerm: string, filterAge: string) => {
+const matchesFilters = (persona: Persona, searchTerm: string, filterAge: string) => {
   const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        (persona.occupation && persona.occupation.toLowerCase().includes(searchTerm.toLowerCase()));
   const matchesAge = filterAge === 'Todos' || persona.age_range === filterAge;
@@ -372,11 +372,11 @@ const matchesFilters = (persona: any, searchTerm: string, filterAge: string) => 
 };
 
 interface PersonasGridProps {
-  personas: any[];
-  onEdit: (persona: any) => void;
+  personas: Persona[];
+  onEdit: (persona: Persona) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
-  onUse: (persona: any) => void;
+  onUse: (persona: Persona) => void;
 }
 
 const PersonasGrid: React.FC<PersonasGridProps> = ({ personas, onEdit, onDelete, onDuplicate, onUse }) => {

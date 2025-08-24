@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = "https://qgtgvqfikqfjbeixzbyb.supabase.co"
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFndGd2cWZpa3FmamJlaXh6YnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzE2MTcsImV4cCI6MjA3MDI0NzYxN30.iNAOOITHhXMfAY2kJnQ_Dtrd44UZ7bhlufekerTdtw4"
+// Usar variáveis de ambiente
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
+
+// Validar se as variáveis estão definidas
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Variáveis de ambiente do Supabase não configuradas corretamente')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -9,23 +15,45 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce', // Usar PKCE por padrão, mas suporta OAuth também
+    flowType: 'pkce',
+    debug: import.meta.env.DEV, // Debug apenas em desenvolvimento
+    storageKey: 'storyspark-auth-token', // Chave específica para evitar conflitos
   },
-  // Configurações para resolver clock skew e melhorar performance
   global: {
     headers: {
-      'X-Client-Info': 'storyspark-web@1.0.0'
+      'X-Client-Info': 'storyspark-web@1.0.0',
+      'apikey': supabaseAnonKey,
+      'Prefer': 'return=representation'
     }
   },
   db: {
     schema: 'public'
   },
-  // Configuração de realtime (se necessário)
   realtime: {
     timeout: 30000,
     heartbeatIntervalMs: 30000
   }
 })
+
+// Interceptar requisições para garantir que o token seja enviado
+supabase.auth.onAuthStateChange((event, session) => {
+  if (session?.access_token) {
+    // Atualizar headers globais com o token de acesso
+    supabase.rest.headers['Authorization'] = `Bearer ${session.access_token}`
+  } else {
+    // Remover header de autorização se não houver sessão
+    delete supabase.rest.headers['Authorization']
+  }
+})
+
+// Log da configuração em desenvolvimento
+if (import.meta.env.DEV) {
+  console.log('🔧 Supabase configurado:', {
+    url: supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    keyLength: supabaseAnonKey.length
+  })
+}
 
 // Tipos de usuário
 export type User = {

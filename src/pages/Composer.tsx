@@ -73,6 +73,25 @@ interface Project {
   lastModified: Date;
 }
 
+interface ContextConfig {
+  title?: string;
+  // Add other properties as needed
+}
+
+interface LocationStateContext {
+  page?: string;
+  contextConfig?: ContextConfig;
+  // Add other properties as needed
+}
+
+interface LocationState {
+  briefing: string;
+  platform: string;
+  copyType: string;
+  generatedCopy: string;
+  context: LocationStateContext;
+}
+
 const Composer = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string>('');
@@ -101,7 +120,7 @@ const Composer = () => {
   // Handle incoming data from FloatingCopyButton
   useEffect(() => {
     if (location.state) {
-      const { briefing, platform, copyType, generatedCopy, context } = location.state as any;
+      const { briefing, platform, copyType, generatedCopy, context } = location.state as LocationState;
       
       if (briefing && generatedCopy) {
         // Criar nome do projeto baseado no contexto
@@ -194,7 +213,7 @@ const Composer = () => {
               name: templateName ? decodeURIComponent(templateName) : template.name,
               briefing: template.description || 'Template importado',
               platform: (template.metadata && typeof template.metadata === 'object' && template.metadata !== null && 'platform' in template.metadata)
-                ? String((template.metadata as any).platform) : '',
+                ? String((template.metadata as Record<string, unknown>).platform) : '',
               copyType: template.type || '',
               tone: '',
               generatedCopy: template.content,
@@ -240,7 +259,7 @@ const Composer = () => {
     };
     
     loadTemplate();
-  }, [searchParams, toast]);
+  }, [searchParams, toast, createNewProject]);
 
   const createNewProject = () => {
     const newProject: Project = {

@@ -1,3 +1,7 @@
+# Regras Centrais
+
+- A partir de agora, eu devo responder apenas em português e pensar em português para que você possa ver tudo o que eu planejo e estou fazendo. Esta será uma regra central.
+
 # Project: StorySpark
 
 ## Project Overview

@@ -16,9 +16,9 @@ interface SearchResult {
   id: string;
   title: string;
   description: string;
-  type: 'campaign' | 'template' | 'analytics' | 'persona' | 'page';
+  type: string;
   url: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   badge?: string;
 }
 

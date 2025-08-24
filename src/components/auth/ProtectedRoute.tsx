@@ -104,7 +104,7 @@ export const ProtectedRoute = ({
     };
 
     performServerValidation();
-  }, [user, isAuthenticated, requiredRole, adminOnly, superAdminOnly, location.pathname]);
+  }, [user, isAuthenticated, requiredRole, adminOnly, superAdminOnly, location.pathname, validateRoleServerSide]);
 
   if (loading || serverValidation === 'pending') {
     return (

@@ -54,7 +54,7 @@ const EditCampaignModal: React.FC<EditCampaignModalProps> = ({
         name: campaign.name || '',
         description: campaign.description || '',
         budget: campaign.budget || 0,
-        platform: typeof campaign.metadata === 'object' && campaign.metadata ? (campaign.metadata as any).platform || '' : '',
+        platform: typeof campaign.metadata === 'object' && campaign.metadata ? (campaign.metadata as { platform?: string })?.platform || '' : '',
         status: campaign.status || 'DRAFT',
         startDate: campaign.start_date ? new Date(campaign.start_date).toISOString().split('T')[0] : '',
         endDate: campaign.end_date ? new Date(campaign.end_date).toISOString().split('T')[0] : ''

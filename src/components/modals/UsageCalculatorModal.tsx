@@ -82,7 +82,7 @@ const UsageCalculatorModal: React.FC<UsageCalculatorModalProps> = ({
 
   useEffect(() => {
     calculatePlans();
-  }, [inputs]);
+  }, [inputs, calculatePlans]);
 
   const calculatePlans = () => {
     const calculated = plans.map(plan => {

@@ -6,71 +6,97 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, TrendingUp, Users, Target, BarChart3, ArrowRight, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const Funnels = () => {
-  const [funnels] = useState([
-    {
-      id: 1,
-      name: 'Curso Copy IA - Funil Principal',
-      status: 'ativo',
-      visitors: 15420,
-      leads: 3245,
-      customers: 234,
-      revenue: 45600,
-      conversionRate: 1.5,
-      created: '2024-01-10',
-      steps: [
-        { name: 'Landing Page', visitors: 15420, conversion: 21.0 },
-        { name: 'Lead Magnet', visitors: 3245, conversion: 7.2 },
-        { name: 'Checkout', visitors: 234, conversion: 100 }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Consultoria Marketing',
-      status: 'pausado',
-      visitors: 8750,
-      leads: 1234,
-      customers: 89,
-      revenue: 26700,
-      conversionRate: 1.0,
-      created: '2024-01-05',
-      steps: [
-        { name: 'Página de Captura', visitors: 8750, conversion: 14.1 },
-        { name: 'Formulário Qualificação', visitors: 1234, conversion: 7.2 },
-        { name: 'Agendamento', visitors: 89, conversion: 100 }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Ebook Gratuito + Upsell',
-      status: 'rascunho',
-      visitors: 0,
-      leads: 0,
-      customers: 0,
-      revenue: 0,
-      conversionRate: 0,
-      created: '2024-01-15',
-      steps: []
-    },
-  ]);
+interface Funnel {
+  id: string;
+  name: string;
+  created: string;
+  status: string;
+  visitors: number;
+  leads: number;
+  customers: number;
+  revenue: number;
+  conversionRate: number;
+  steps: Array<{
+    name: string;
+    visitors: number;
+    conversion: number;
+  }>;
+}
 
+const Funnels = () => {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('funnels');
+  
+  const [funnels] = useState<Funnel[]>([
+    {
+      id: '1',
+      name: 'Funil SaaS B2B',
+      created: '2024-01-15',
+      status: 'ativo',
+      visitors: 2450,
+      leads: 320,
+      customers: 42,
+      revenue: 28500,
+      conversionRate: 1.7,
+      steps: [
+        { name: 'Visitas', visitors: 2450, conversion: 13.1 },
+        { name: 'Leads Qualificados', visitors: 320, conversion: 13.1 },
+        { name: 'Demo Agendada', visitors: 180, conversion: 23.3 },
+        { name: 'Proposta Enviada', visitors: 85, conversion: 49.4 },
+        { name: 'Clientes', visitors: 42, conversion: 100 }
+      ]
+    },
+    {
+      id: '2',
+      name: 'Funil E-commerce',
+      created: '2024-01-10',
+      status: 'ativo',
+      visitors: 15230,
+      leads: 2100,
+      customers: 280,
+      revenue: 43800,
+      conversionRate: 1.8,
+      steps: [
+        { name: 'Visitas', visitors: 15230, conversion: 13.8 },
+        { name: 'Carrinhos', visitors: 2100, conversion: 13.3 },
+        { name: 'Checkout', visitors: 850, conversion: 32.9 },
+        { name: 'Clientes', visitors: 280, conversion: 100 }
+      ]
+    },
+    {
+      id: '3',
+      name: 'Funil Consultoria',
+      created: '2024-01-05',
+      status: 'pausado',
+      visitors: 890,
+      leads: 120,
+      customers: 18,
+      revenue: 54000,
+      conversionRate: 2.0,
+      steps: [
+        { name: 'Visitas', visitors: 890, conversion: 13.5 },
+        { name: 'Contatos', visitors: 120, conversion: 15.0 },
+        { name: 'Consultas', visitors: 65, conversion: 27.7 },
+        { name: 'Clientes', visitors: 18, conversion: 100 }
+      ]
+    }
+  ]);
 
   const handleCreateFunnel = () => {
     toast({
-      title: "Novo funil",
+      title: "Criando novo funil",
       description: "Abrindo constructor de funil...",
     });
   };
 
-  const handleViewDetails = (funnel: any) => {
+  const handleViewDetails = (funnel: Funnel) => {
     toast({
       title: "Detalhes do funil",
       description: `Visualizando ${funnel.name}`,
     });
   };
 
-  const handleOptimize = (funnel: any) => {
+  const handleOptimize = (funnel: Funnel) => {
     toast({
       title: "Otimização IA",
       description: `Analisando ${funnel.name} para sugestões de melhoria`,

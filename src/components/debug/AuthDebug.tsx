@@ -19,7 +19,7 @@ const AuthDebug = () => {
     console.log('HasAdminAccess:', hasAdminAccess());
     console.log('HasSuperAdminAccess:', hasSuperAdminAccess());
     console.log('==================');
-  }, [loading, isAuthenticated, user, supabaseUser, currentRole]);
+  }, [loading, isAuthenticated, user, supabaseUser, currentRole, hasAdminAccess, hasSuperAdminAccess]);
 
   if (loading) {
     return (

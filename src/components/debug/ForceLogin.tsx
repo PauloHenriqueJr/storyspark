@@ -39,7 +39,7 @@ const ForceLogin = () => {
       console.log('🚀 ForceLogin: Perfil forçado criado:', forcedUser);
 
       // Tentar usar o setUser do contexto se disponível
-      const authContext = (window as any).authContext;
+      const authContext = (window as { authContext?: { setUser?: (user: Record<string, unknown>) => void } }).authContext;
       if (authContext && authContext.setUser) {
         authContext.setUser(forcedUser);
       }

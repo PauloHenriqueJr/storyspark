@@ -18,10 +18,28 @@ import {
   X
 } from 'lucide-react';
 
+// Definindo a interface para o Lead
+interface Lead {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  position: string;
+  status: string;
+  source: string;
+  value: number;
+  description: string;
+  tags: string[];
+  createdAt: Date;
+  lastContact: string;
+  nextAction: string;
+}
+
 interface CreateLeadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateLead?: (lead: any) => void;
+  onCreateLead?: (lead: Partial<Lead>) => void;
 }
 
 const CreateLeadModal: React.FC<CreateLeadModalProps> = ({

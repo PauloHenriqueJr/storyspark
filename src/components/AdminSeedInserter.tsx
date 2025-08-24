@@ -111,10 +111,10 @@ export default function AdminSeedInserter() {
         message: `${data.length} Brand Voices inseridas com sucesso!`,
         count: data.length 
       };
-    } catch (error: any) {
+    } catch (error) {
       return { 
         success: false, 
-        message: `Erro ao inserir Brand Voices: ${error.message}` 
+        message: `Erro ao inserir Brand Voices: ${(error as Error).message}` 
       };
     }
   };
@@ -232,10 +232,10 @@ export default function AdminSeedInserter() {
         message: `${data.length} Personas inseridas com sucesso!`,
         count: data.length 
       };
-    } catch (error: any) {
+    } catch (error) {
       return { 
         success: false, 
-        message: `Erro ao inserir Personas: ${error.message}` 
+        message: `Erro ao inserir Personas: ${(error as Error).message}` 
       };
     }
   };

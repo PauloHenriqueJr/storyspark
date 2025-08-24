@@ -1,14 +1,33 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Lightbulb, Sparkles, TrendingUp, Target, Clock, Zap, Brain, BookOpen, Loader2 } from 'lucide-react';
-import GenerateIdeasModal from '@/components/modals/GenerateIdeasModal';
-import { useWorkspace } from '@/hooks/useWorkspace';
-import { useToast } from '@/hooks/use-toast';
-import { aiIdeasService } from '@/services/aiIdeasService';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import GenerateIdeasModal from '@/components/modals/GenerateIdeasModal';
+import { 
+  Lightbulb, 
+  Target, 
+  Zap, 
+  TrendingUp, 
+  Brain, 
+  Plus, 
+  Sparkles, 
+  Loader2,
+  TrendingUp as TrendingUpIcon,
+  Calendar,
+  Eye,
+  Heart
+} from 'lucide-react';
+import { aiIdeasService, type IdeaPayload } from '@/services/aiIdeasService';
+
+interface FetchedIdea extends IdeaPayload {
+  id: number | string;
+  title?: string;
+  generated?: string;
+  used?: boolean;
+}
 
 const AIIdeas = () => {
   const navigate = useNavigate();
@@ -16,7 +35,7 @@ const AIIdeas = () => {
   const { workspace, user } = useWorkspace();
 
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
-  const [ideas, setIdeas] = useState<any[]>([]);
+  const [ideas, setIdeas] = useState<FetchedIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,9 +47,9 @@ const AIIdeas = () => {
     try {
       setLoading(true);
       const data = await aiIdeasService.fetchIdeas(workspace.id, 50);
-      setIdeas(data);
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao carregar ideias');
+      setIdeas(data as FetchedIdea[]);
+    } catch (e) {
+      setError((e as Error)?.message || 'Erro ao carregar ideias');
     } finally {
       setLoading(false);
     }
@@ -84,7 +103,7 @@ const AIIdeas = () => {
     }
   };
 
-  const handleUseIdea = (idea: any) => {
+  const handleUseIdea = (idea: FetchedIdea) => {
     const text = idea.content?.[0] || '';
     navigate('/composer', {
       state: {
@@ -98,7 +117,7 @@ const AIIdeas = () => {
     });
   };
 
-  const handleSaveIdea = async (idea: any) => {
+  const handleSaveIdea = async (idea: FetchedIdea) => {
     if (!workspace?.id || !user?.id) {
       toast({
         title: 'Autenticação necessária',
@@ -126,23 +145,23 @@ const AIIdeas = () => {
         title: 'Ideia salva',
         description: 'Esta ideia foi salva na sua biblioteca.',
       });
-    } catch (e: any) {
+    } catch (e) {
       toast({
         title: 'Erro ao salvar',
-        description: e?.message || 'Falha ao salvar ideia.',
+        description: (e as Error)?.message || 'Falha ao salvar ideia.',
         variant: 'destructive',
       });
     }
   };
 
   const totalIdeas = ideas.length;
-  const usedCount = ideas.filter((i: any) => i.used).length;
+  const usedCount = ideas.filter((i) => i.used).length;
   const avgConfidence =
     totalIdeas > 0
-      ? Math.round(ideas.reduce((a: number, i: any) => a + (i.confidence || 0), 0) / totalIdeas)
+      ? Math.round(ideas.reduce((a, i) => a + (i.confidence || 0), 0) / totalIdeas)
       : 0;
   const activeTrends = Array.from(
-    new Set<string>(ideas.flatMap((i: any) => (i.trends as string[] | undefined) || []))
+    new Set<string>(ideas.flatMap((i) => i.trends || []))
   ).length;
 
   if (loading) {

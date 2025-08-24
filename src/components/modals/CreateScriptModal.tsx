@@ -12,6 +12,18 @@ import { Separator } from '@/components/ui/separator';
 import { Phone, Plus, Trash2, MoveUp, MoveDown, Play, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// Definindo a interface para o template
+interface Template {
+  name: string;
+  category: string;
+  blocks: Array<{
+    type: ScriptBlock['type'];
+    title: string;
+    content: string;
+    duration: string;
+  }>;
+}
+
 interface CreateScriptModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +59,37 @@ const CreateScriptModal = ({ open, onOpenChange }: CreateScriptModalProps) => {
   ]);
 
   const { toast } = useToast();
+
+  // Função para aplicar um template
+  const applyTemplate = (
+    template: Template, 
+    setFormData: React.Dispatch<React.SetStateAction<typeof formData>>, 
+    setScriptBlocks: React.Dispatch<React.SetStateAction<ScriptBlock[]>>, 
+    setActiveTab: React.Dispatch<React.SetStateAction<string>>, 
+    toast: ReturnType<typeof useToast>['toast']
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      name: template.name,
+      category: template.category
+    }));
+    
+    const newBlocks = template.blocks.map((block, index) => ({
+      id: (index + 1).toString(),
+      type: block.type,
+      title: block.title,
+      content: block.content,
+      duration: block.duration
+    }));
+    
+    setScriptBlocks(newBlocks);
+    setActiveTab('builder');
+    
+    toast({
+      title: "Template aplicado!",
+      description: `Script base "${template.name}" foi carregado.`,
+    });
+  };
 
   const categories = [
     { value: 'prospeccao', label: 'Prospecção Cold Call' },
@@ -127,30 +170,6 @@ const CreateScriptModal = ({ open, onOpenChange }: CreateScriptModalProps) => {
     setScriptBlocks(scriptBlocks.map(block => 
       block.id === id ? { ...block, [field]: value } : block
     ));
-  };
-
-  const useTemplate = (template: any) => {
-    setFormData(prev => ({
-      ...prev,
-      name: template.name,
-      category: template.category
-    }));
-    
-    const newBlocks = template.blocks.map((block: any, index: number) => ({
-      id: (index + 1).toString(),
-      type: block.type,
-      title: block.title,
-      content: block.content,
-      duration: block.duration
-    }));
-    
-    setScriptBlocks(newBlocks);
-    setActiveTab('builder');
-    
-    toast({
-      title: "Template aplicado!",
-      description: `Script base "${template.name}" foi carregado.`,
-    });
   };
 
   const handleSave = () => {
@@ -305,7 +324,7 @@ const CreateScriptModal = ({ open, onOpenChange }: CreateScriptModalProps) => {
                         ))}
                       </div>
                       <Button 
-                        onClick={() => useTemplate(template)}
+                        onClick={() => applyTemplate(template, setFormData, setScriptBlocks, setActiveTab, toast)}
                         className="w-full"
                       >
                         Usar Template
