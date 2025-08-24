@@ -16,6 +16,7 @@ import { useTemplates } from '@/hooks/useTemplates';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { templatesService } from '@/services/templatesService';
 import { toast } from 'sonner';
+import { useFloatingButton } from '@/contexts/FloatingButtonContext';
 
 const Templates = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +47,23 @@ const Templates = () => {
   } = useTemplates();
 
   const { user } = useWorkspace();
+  const { openModal } = useFloatingButton();
+
+  const handleUseTemplateWithAI = (template: any) => {
+    const contextualBriefing = `
+      **Use o seguinte template como base para criar uma nova copy.**
+      **Template:** ${template.name}
+      **Descrição do Template:** ${template.description}
+      **Conteúdo Estrutural do Template:**
+      \`\`\`
+      ${template.content}
+      \`\`\`
+
+      ---
+      **Minha Solicitação (adapte o template para esta necessidade):**
+    `;
+    openModal(contextualBriefing.trim());
+  };
 
   useEffect(() => {
     const loadCommunityTemplates = async () => {
@@ -522,7 +540,7 @@ const Templates = () => {
                     )}
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       className="flex-1 bg-gradient-primary"
                       size="sm"
@@ -531,7 +549,17 @@ const Templates = () => {
                       <Copy className="w-4 h-4 mr-2" />
                       Usar Template
                     </Button>
-                    
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUseTemplateWithAI(template)}
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Usar com IA
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 mt-2">
                     {/* Mostrar botões de edição/compartilhamento apenas para templates próprios */}
                     {selectedCategory !== 'Comunidade' && (
                       <>

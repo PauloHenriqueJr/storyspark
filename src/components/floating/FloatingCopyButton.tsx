@@ -13,7 +13,8 @@ import {
   Target,
   Zap,
   Sparkles,
-  Copy
+  Copy,
+  SendToBack
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -140,9 +141,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
   toastNotifications,
   systemToastNotifications,
 }) => {
-  const { getActionForPath } = useFloatingButton();
+  const {
+    getActionForPath,
+    isModalOpen,
+    closeModal,
+    contextualBriefing
+  } = useFloatingButton();
   const [isOpen, setIsOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [briefing, setBriefing] = useState('');
   const [platform, setPlatform] = useState('');
   const [copyType, setCopyType] = useState('');
@@ -163,7 +168,11 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
   }, [location.pathname, currentContext]);
 
   const handleGenerate = async () => {
-    if (!briefing.trim()) {
+    const finalBriefing = contextualBriefing
+      ? `${contextualBriefing}\n\n${briefing}`
+      : briefing;
+
+    if (!finalBriefing.trim()) {
       systemToastNotifications.showError(
         "Briefing necessário",
         "Por favor, descreva o que você quer comunicar."
@@ -176,7 +185,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
 
     try {
       const response = await copyGenerationService.generateCopy({
-        briefing,
+        briefing: finalBriefing,
         platform: platform || 'Instagram',
         copyType: copyType || 'Post Orgânico',
         tone: 'Profissional',
@@ -222,16 +231,23 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
   const handleCopyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(generatedCopy);
-      toastNotifications.showSuccess(
+      systemToastNotifications.showSuccess(
         "Copy copiada!",
-        "Conteúdo copiado para área de transferência."
+        "Conteúdo copiado para sua área de transferência."
       );
     } catch (error) {
-      toastNotifications.showError(
+      systemToastNotifications.showError(
         "Erro ao copiar",
         "Não foi possível copiar o conteúdo."
       );
     }
+  };
+
+  const handleTakeToComposer = () => {
+    const encodedContent = encodeURIComponent(generatedCopy);
+    const targetUrl = `/composer?from=floating-button&content=${encodedContent}`;
+    navigate(targetUrl);
+    resetModal();
   };
 
   const resetModal = () => {
@@ -239,8 +255,16 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
     setGeneratedCopy('');
     setPlatform(currentContext.defaultPlatform || '');
     setCopyType(currentContext.defaultType || '');
-    setIsModalOpen(false);
+    closeModal();
   };
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      // Reset local state when global modal state is closed
+      setBriefing('');
+      setGeneratedCopy('');
+    }
+  }, [isModalOpen]);
 
   const IconComponent = currentContext.icon;
 
@@ -261,11 +285,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
           className="relative"
         >
           <Button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsModalOpen(true);
-            }}
+            onClick={() => openModal()}
             className={`w-16 h-16 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${currentContext.color} border-4 border-white/20 relative z-10`}
             size="lg"
           >
@@ -279,9 +299,9 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
 
       {/* Context Modal */}
       <Dialog open={isModalOpen} onOpenChange={(open) => !open && resetModal()}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-sm border-border">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
+            <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className={`w-10 h-10 rounded-full ${currentContext.color} flex items-center justify-center`}>
                 <IconComponent className="w-6 h-6 text-white" />
               </div>
@@ -299,7 +319,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
           <div className="space-y-6">
             {/* Quick Suggestions */}
             <div className="space-y-3">
-              <label className="text-sm font-medium">💡 Sugestões Rápidas:</label>
+              <label className="text-sm font-medium text-muted-foreground">💡 Sugestões Rápidas:</label>
               <div className="flex flex-wrap gap-2">
                 {currentContext.suggestions.map((suggestion) => (
                   <Button
@@ -307,7 +327,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => setBriefing(suggestion)}
-                    className="text-xs hover:bg-primary hover:text-white transition-colors"
+                    className="text-xs hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground transition-colors"
                   >
                     {suggestion}
                   </Button>
@@ -315,19 +335,33 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
               </div>
             </div>
 
-            {/* Briefing */}
+            {/* Contextual Briefing (if any) */}
+            {contextualBriefing && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Contexto da Página:</label>
+                <div className="bg-muted/50 dark:bg-black/20 rounded-lg p-3 max-h-40 overflow-y-auto border">
+                  <pre className="whitespace-pre-wrap text-xs font-sans opacity-80">
+                    {contextualBriefing}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            {/* User Briefing */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Descrição *</label>
+              <label className="text-sm font-medium">
+                {contextualBriefing ? "Sua Solicitação (adicione detalhes):" : "Descrição *"}
+              </label>
               <Textarea
                 placeholder="Descreva o que você quer comunicar..."
                 value={briefing}
                 onChange={(e) => setBriefing(e.target.value)}
-                className="min-h-[120px] resize-none"
+                className="min-h-[100px] resize-none bg-background/50 dark:bg-black/20"
               />
             </div>
 
             {/* Platform & Type Selection */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Plataforma</label>
                 <Select value={platform} onValueChange={setPlatform}>
@@ -401,9 +435,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
                     </pre>
                   </div>
 
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex flex-wrap gap-2 justify-end">
                     <Button variant="ghost" onClick={resetModal}>
                       Descartar
+                    </Button>
+                    <Button variant="outline" onClick={handleTakeToComposer}>
+                      <SendToBack className="w-4 h-4 mr-2" />
+                      Levar para Composer
                     </Button>
                     <Button onClick={handleCopyToClipboard}>
                       <Copy className="w-4 h-4 mr-2" />

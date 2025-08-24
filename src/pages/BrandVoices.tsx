@@ -17,7 +17,8 @@ import {
   Users,
   Heart,
   TestTube,
-  Loader2
+  Loader2,
+  Wand2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import CreateBrandVoiceModal from '@/components/modals/CreateBrandVoiceModal';
 import VoiceTesterModal from '@/components/modals/VoiceTesterModal';
 import { useBrandVoices } from '@/hooks/useBrandVoices';
 import { useToast } from '@/hooks/use-toast';
+import { useFloatingButton } from '@/contexts/FloatingButtonContext';
 import type { BrandVoiceWithStats } from '@/services/brandVoicesService';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -49,6 +51,22 @@ const BrandVoices = () => {
   
   const { voices, loading, error, createVoice, updateVoice, deleteVoice, duplicateVoice, toggleVoiceStatus } = useBrandVoices();
   const { toast } = useToast();
+  const { openModal } = useFloatingButton();
+
+  const handleUseVoiceForCopy = (voice: BrandVoiceWithStats) => {
+    const contextualBriefing = `
+      **Voz da Marca a ser usada:** ${voice.name}
+      **Tom:** ${voice.tone}
+      **Personalidade:** ${voice.personality?.join(', ')}
+      **Público-alvo:** ${voice.audience}
+      **Descrição da Voz:** ${voice.description}
+      **Exemplo de Post:** "${voice.examples?.[0]}"
+
+      ---
+      **Minha Solicitação:**
+    `;
+    openModal(contextualBriefing.trim());
+  };
 
   const handleCreateVoice = async (newVoice: Omit<CreateBrandVoiceInput, 'workspace_id' | 'user_id'>) => {
     try {
@@ -524,14 +542,14 @@ const BrandVoices = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button className="flex-1" size="sm" onClick={() => handleTestVoice(voice)}>
-                    <TestTube className="w-4 h-4 mr-2" />
-                    Testar
+                <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                  <Button className="flex-1" size="sm" onClick={() => handleUseVoiceForCopy(voice)}>
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Usar para Criar Copy
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDuplicateVoice(voice.id)}>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Duplicar
+                  <Button variant="outline" className="flex-1" size="sm" onClick={() => handleTestVoice(voice)}>
+                    <TestTube className="w-4 h-4 mr-2" />
+                    Testar Voice
                   </Button>
                 </div>
               </CardContent>
