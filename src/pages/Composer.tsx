@@ -101,13 +101,19 @@ const Composer = () => {
   // Handle incoming data from FloatingCopyButton
   useEffect(() => {
     if (location.state) {
-      const { briefing, platform, copyType, generatedCopy } = location.state as any;
+      const { briefing, platform, copyType, generatedCopy, context } = location.state as any;
       
       if (briefing && generatedCopy) {
+        // Criar nome do projeto baseado no contexto
+        let projectName = `Copy - ${platform} ${copyType}`;
+        if (context?.contextConfig?.title) {
+          projectName = `${context.contextConfig.title} - ${platform} ${copyType}`;
+        }
+        
         // Criar novo projeto com os dados recebidos
         const newProject: Project = {
           id: Date.now().toString(),
-          name: `Copy - ${platform} ${copyType}`,
+          name: projectName,
           briefing: briefing,
           platform: platform || 'Instagram',
           copyType: copyType || 'Post Orgânico',
@@ -127,9 +133,16 @@ const Composer = () => {
         // Limpar o state para evitar recriação
         navigate(location.pathname, { replace: true });
         
+        // Mensagem personalizada baseada no contexto
+        let description = "Copy do botão flutuante foi carregada no Composer.";
+        if (context?.page) {
+          const pageName = context.page.replace('/', '').replace('-', ' ');
+          description = `Copy contextual de ${pageName} foi carregada no Composer.`;
+        }
+        
         toast({
           title: "Projeto criado!",
-          description: "Copy do botão flutuante foi carregada no Composer.",
+          description: description,
         });
       }
     }

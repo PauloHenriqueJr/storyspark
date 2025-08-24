@@ -16,7 +16,18 @@ import {
   Zap,
   Clock,
   Edit3,
-  Copy as CopyIcon
+  Copy as CopyIcon,
+  Globe,
+  TrendingUp,
+  MessageSquare,
+  Phone,
+  Mic,
+  BarChart3,
+  Lightbulb,
+  TestTube,
+  Settings,
+  Link,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -54,6 +65,7 @@ interface ContextConfig {
 }
 
 const contextConfigs: Record<string, ContextConfig> = {
+  // Páginas de Criação de Conteúdo
   '/templates': {
     title: 'Copy para Templates',
     icon: FileText,
@@ -94,18 +106,19 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Newsletter',
     targetPage: '/email-marketing'
   },
-  '/social-media': {
-    title: 'Copy para Social Media',
+  '/social-scheduler': {
+    title: 'Copy para Social Scheduler',
     icon: Instagram,
     color: 'bg-pink-600',
-    description: 'Posts que viralizam e engajam',
+    description: 'Posts agendados que viralizam e engajam',
     suggestions: [
       'Post para Instagram Stories',
       'Carrossel educativo',
-      'Post promocional'
+      'Post promocional agendado'
     ],
     defaultPlatform: 'Instagram',
-    targetPage: '/social-media'
+    defaultType: 'Post Orgânico',
+    targetPage: '/social-scheduler'
   },
   '/composer': {
     title: 'Composer - Criar Copy',
@@ -135,6 +148,274 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/calendar'
   },
+  
+  // Páginas de Landing Pages e Funnels
+  '/landing-pages': {
+    title: 'Copy para Landing Pages',
+    icon: Globe,
+    color: 'bg-gradient-to-r from-orange-600 to-red-600',
+    description: 'Copy de alta conversão para landing pages',
+    suggestions: [
+      'Headline principal da landing page',
+      'Copy do formulário de captura',
+      'Copy dos benefícios do produto'
+    ],
+    defaultPlatform: 'Web',
+    defaultType: 'Landing Page',
+    targetPage: '/landing-pages'
+  },
+  '/funnels': {
+    title: 'Copy para Funnels',
+    icon: TrendingUp,
+    color: 'bg-gradient-to-r from-indigo-600 to-purple-600',
+    description: 'Copy otimizada para cada etapa do funil',
+    suggestions: [
+      'Copy da página de entrada',
+      'Copy do upsell',
+      'Copy de fechamento'
+    ],
+    defaultPlatform: 'Web',
+    defaultType: 'Funnel',
+    targetPage: '/funnels'
+  },
+  
+  // Páginas de Comunicação
+  '/push-whatsapp': {
+    title: 'Copy para Push/WhatsApp',
+    icon: MessageSquare,
+    color: 'bg-gradient-to-r from-green-600 to-emerald-600',
+    description: 'Mensagens diretas que convertem',
+    suggestions: [
+      'Mensagem de promoção WhatsApp',
+      'Notificação push urgente',
+      'Sequência de follow-up'
+    ],
+    defaultPlatform: 'WhatsApp',
+    defaultType: 'Mensagem',
+    targetPage: '/push-whatsapp'
+  },
+  '/call-scripts': {
+    title: 'Copy para Call Scripts',
+    icon: Phone,
+    color: 'bg-gradient-to-r from-blue-600 to-cyan-600',
+    description: 'Scripts inteligentes para ligações',
+    suggestions: [
+      'Script de prospecção',
+      'Script de follow-up',
+      'Script de objeções'
+    ],
+    defaultPlatform: 'Phone',
+    defaultType: 'Script',
+    targetPage: '/call-scripts'
+  },
+  
+  // Páginas de Personas e Brand Voices
+  '/personas': {
+    title: 'Copy para Personas',
+    icon: Users,
+    color: 'bg-gradient-to-r from-purple-600 to-pink-600',
+    description: 'Copy direcionada para personas específicas',
+    suggestions: [
+      'Copy para persona empreendedor',
+      'Copy para persona profissional',
+      'Copy para persona estudante'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/personas'
+  },
+  '/brand-voices': {
+    title: 'Copy com Brand Voice',
+    icon: Mic,
+    color: 'bg-gradient-to-r from-teal-600 to-cyan-600',
+    description: 'Copy alinhada com sua marca',
+    suggestions: [
+      'Copy com tom profissional',
+      'Copy com tom casual',
+      'Copy com tom inspirador'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/brand-voices'
+  },
+  '/voices': {
+    title: 'Copy com Voice Personalizada',
+    icon: Mic,
+    color: 'bg-gradient-to-r from-violet-600 to-purple-600',
+    description: 'Copy usando suas voices personalizadas',
+    suggestions: [
+      'Copy com voice de especialista',
+      'Copy com voice de mentor',
+      'Copy com voice de amigo'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/voices'
+  },
+  
+  // Páginas de Analytics e CRM
+  '/analytics': {
+    title: 'Copy para Analytics',
+    icon: BarChart3,
+    color: 'bg-gradient-to-r from-slate-600 to-gray-600',
+    description: 'Copy baseada em dados e insights',
+    suggestions: [
+      'Copy sobre métricas de sucesso',
+      'Copy sobre otimizações',
+      'Copy sobre resultados'
+    ],
+    defaultPlatform: 'LinkedIn',
+    defaultType: 'Post Orgânico',
+    targetPage: '/analytics'
+  },
+  '/crm': {
+    title: 'Copy para CRM',
+    icon: Users,
+    color: 'bg-gradient-to-r from-emerald-600 to-green-600',
+    description: 'Copy para relacionamento com clientes',
+    suggestions: [
+      'Copy de follow-up com leads',
+      'Copy de reativação',
+      'Copy de agradecimento'
+    ],
+    defaultPlatform: 'Email',
+    defaultType: 'Follow-up',
+    targetPage: '/crm'
+  },
+  
+  // Páginas de Conteúdo e Templates
+  '/content-library': {
+    title: 'Copy para Content Library',
+    icon: FileText,
+    color: 'bg-gradient-to-r from-amber-600 to-orange-600',
+    description: 'Copy para organizar e promover conteúdo',
+    suggestions: [
+      'Copy para descrição de assets',
+      'Copy para promoção de conteúdo',
+      'Copy para categorização'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/content-library'
+  },
+  '/ai-ideas': {
+    title: 'Copy para AI Ideas',
+    icon: Lightbulb,
+    color: 'bg-gradient-to-r from-yellow-600 to-orange-600',
+    description: 'Copy baseada em ideias geradas por IA',
+    suggestions: [
+      'Copy para headline de ideia',
+      'Copy para desenvolvimento de conceito',
+      'Copy para campanha baseada em ideia'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/ai-ideas'
+  },
+  '/trending-hooks': {
+    title: 'Copy com Trending Hooks',
+    icon: TrendingUp,
+    color: 'bg-gradient-to-r from-red-600 to-pink-600',
+    description: 'Copy usando hooks virais e tendências',
+    suggestions: [
+      'Copy com hook de transformação',
+      'Copy com hook de contraste',
+      'Copy com hook de experiência'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/trending-hooks'
+  },
+  
+  // Páginas de Testes e Otimização
+  '/ab-tests': {
+    title: 'Copy para A/B Tests',
+    icon: TestTube,
+    color: 'bg-gradient-to-r from-indigo-600 to-blue-600',
+    description: 'Copy otimizada para testes A/B',
+    suggestions: [
+      'Copy para variação A',
+      'Copy para variação B',
+      'Copy para hipótese de teste'
+    ],
+    defaultPlatform: 'Web',
+    defaultType: 'A/B Test',
+    targetPage: '/ab-tests'
+  },
+  '/feedback': {
+    title: 'Copy para Feedback',
+    icon: MessageSquare,
+    color: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+    description: 'Copy para coletar e responder feedback',
+    suggestions: [
+      'Copy para solicitar feedback',
+      'Copy para agradecer feedback',
+      'Copy para implementar sugestões'
+    ],
+    defaultPlatform: 'Email',
+    defaultType: 'Feedback',
+    targetPage: '/feedback'
+  },
+  
+  // Páginas de Configuração (redirecionam para composer)
+  '/settings': {
+    title: 'Copy Personalizada',
+    icon: Settings,
+    color: 'bg-gradient-to-r from-gray-600 to-slate-600',
+    description: 'Criar copy personalizada para suas necessidades',
+    suggestions: [
+      'Copy para configurações',
+      'Copy para documentação',
+      'Copy para treinamento'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/composer'
+  },
+  '/team': {
+    title: 'Copy para Equipe',
+    icon: Users,
+    color: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+    description: 'Copy para comunicação interna e externa',
+    suggestions: [
+      'Copy para onboarding',
+      'Copy para treinamento',
+      'Copy para comunicação'
+    ],
+    defaultPlatform: 'Email',
+    defaultType: 'Comunicação',
+    targetPage: '/composer'
+  },
+  '/integrations': {
+    title: 'Copy para Integrações',
+    icon: Link,
+    color: 'bg-gradient-to-r from-purple-600 to-indigo-600',
+    description: 'Copy para documentar e promover integrações',
+    suggestions: [
+      'Copy para documentação',
+      'Copy para tutorial',
+      'Copy para promoção'
+    ],
+    defaultPlatform: 'LinkedIn',
+    defaultType: 'Post Orgânico',
+    targetPage: '/composer'
+  },
+  '/billing': {
+    title: 'Copy para Billing',
+    icon: CreditCard,
+    color: 'bg-gradient-to-r from-green-600 to-emerald-600',
+    description: 'Copy para comunicação financeira',
+    suggestions: [
+      'Copy para cobrança',
+      'Copy para upgrade',
+      'Copy para agradecimento'
+    ],
+    defaultPlatform: 'Email',
+    defaultType: 'Billing',
+    targetPage: '/composer'
+  },
+  
+  // Página padrão
   'default': {
     title: 'Criar Copy com IA',
     icon: Wand2,
@@ -159,6 +440,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const [generatedCopy, setGeneratedCopy] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showEventSelector, setShowEventSelector] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [showItemSelector, setShowItemSelector] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -176,6 +459,11 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     // Se estiver na página de calendário, mostrar seletor de eventos
     if (location.pathname === '/calendar' && events.length > 0) {
       setShowEventSelector(true);
+    }
+    
+    // Se estiver em páginas com dados contextuais, mostrar seletor
+    if (['/personas', '/brand-voices', '/voices', '/ai-ideas', '/trending-hooks'].includes(location.pathname)) {
+      setShowItemSelector(true);
     }
   }, [location.pathname, currentContext, events]);
 
@@ -226,7 +514,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   briefing: briefing,
                   platform: platform,
                   copyType: copyType,
-                  generatedCopy: response.content
+                  generatedCopy: response.content,
+                  context: {
+                    page: location.pathname,
+                    selectedEvent: selectedEvent,
+                    selectedItem: selectedItem,
+                    contextConfig: currentContext
+                  }
                 }
               });
             } else {
@@ -276,6 +570,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setCopyType(currentContext.defaultType || '');
     setSelectedEvent(null);
     setShowEventSelector(false);
+    setSelectedItem(null);
+    setShowItemSelector(false);
     setIsModalOpen(false);
   };
 
@@ -294,6 +590,43 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
         `A copy foi aplicada ao evento "${selectedEvent.title}"`
       );
     }
+    
+    if (selectedItem && generatedCopy) {
+      // Aqui você pode implementar a lógica para aplicar a copy ao item selecionado
+      toastNotifications.showSuccess(
+        "Copy aplicada!",
+        `A copy foi aplicada ao item "${selectedItem.name || selectedItem.title}"`
+      );
+    }
+  };
+
+  const handleItemSelect = (item: any) => {
+    setSelectedItem(item);
+    
+    // Configurar briefing baseado no tipo de item
+    let itemBriefing = '';
+    switch (location.pathname) {
+      case '/personas':
+        itemBriefing = `Gerar copy direcionada para a persona: ${item.name}`;
+        break;
+      case '/brand-voices':
+        itemBriefing = `Gerar copy usando a brand voice: ${item.name}`;
+        break;
+      case '/voices':
+        itemBriefing = `Gerar copy usando a voice: ${item.name}`;
+        break;
+      case '/ai-ideas':
+        itemBriefing = `Desenvolver copy baseada na ideia: ${item.topic || item.content?.[0] || 'Ideia IA'}`;
+        break;
+      case '/trending-hooks':
+        itemBriefing = `Criar copy usando o hook: ${item.hook}`;
+        break;
+      default:
+        itemBriefing = `Gerar copy para: ${item.name || item.title}`;
+    }
+    
+    setBriefing(itemBriefing);
+    setShowItemSelector(false);
   };
 
   const IconComponent = currentContext.icon;
@@ -376,6 +709,30 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                       </Button>
                     </div>
                   ))}
+                </div>
+                <Separator />
+              </div>
+            )}
+
+            {/* Contextual Item Selector */}
+            {showItemSelector && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium">
+                  {location.pathname === '/personas' && '👥 Selecionar Persona:'}
+                  {location.pathname === '/brand-voices' && '🎤 Selecionar Brand Voice:'}
+                  {location.pathname === '/voices' && '🎙️ Selecionar Voice:'}
+                  {location.pathname === '/ai-ideas' && '💡 Selecionar Ideia IA:'}
+                  {location.pathname === '/trending-hooks' && '📈 Selecionar Hook:'}
+                </label>
+                <div className="max-h-40 overflow-y-auto space-y-2 border rounded-lg p-3">
+                  {/* Placeholder para itens contextuais - será implementado com dados reais */}
+                  <div className="text-sm text-muted-foreground text-center py-4">
+                    {location.pathname === '/personas' && 'Personas disponíveis serão carregadas aqui'}
+                    {location.pathname === '/brand-voices' && 'Brand voices disponíveis serão carregadas aqui'}
+                    {location.pathname === '/voices' && 'Voices disponíveis serão carregadas aqui'}
+                    {location.pathname === '/ai-ideas' && 'Ideias IA disponíveis serão carregadas aqui'}
+                    {location.pathname === '/trending-hooks' && 'Hooks disponíveis serão carregados aqui'}
+                  </div>
                 </div>
                 <Separator />
               </div>
@@ -515,12 +872,12 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                     <CopyIcon className="w-4 h-4 mr-2" />
                     Copiar Copy
                   </Button>
-                  {location.pathname === '/calendar' && selectedEvent && (
+                  {(location.pathname === '/calendar' && selectedEvent) || selectedItem ? (
                     <Button onClick={handleUseGeneratedCopy} variant="secondary" className="flex-1">
                       <Edit3 className="w-4 h-4 mr-2" />
-                      Aplicar ao Evento
+                      {location.pathname === '/calendar' ? 'Aplicar ao Evento' : 'Aplicar ao Item'}
                     </Button>
-                  )}
+                  ) : null}
                   <Button variant="outline" onClick={resetModal}>
                     <Plus className="w-4 h-4 mr-2" />
                     Nova Copy
