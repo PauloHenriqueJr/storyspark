@@ -4,7 +4,7 @@
 
 Este documento detalha a arquitetura atual do Botão Flutuante de IA e fornece um guia para futuras integrações em outras páginas da plataforma.
 
-A funcionalidade foi refatorada para ser modular, escalável e contextualmente inteligente, permitindo integrações "rasas" (abrir um modal com texto) e "profundas" (usar o contexto da página para enriquecer o prompt da IA).
+A funcionalidade foi refatorada para ser modular, escalável e contextualmente inteligente, permitindo que as páginas forneçam um "briefing contextual" detalhado para a IA, melhorando drasticamente a relevância da copy gerada.
 
 ---
 
@@ -15,74 +15,73 @@ A arquitetura é baseada em um **Contexto React global** (`FloatingButtonContext
 ### Componentes Principais:
 
 1.  **`FloatingButtonContext.tsx`**:
-    *   **`FloatingButtonProvider`**: Provedor global que deve envolver toda a aplicação (atualmente em `AppWrapper.tsx`). Ele gerencia o estado de abertura do modal e o "briefing contextual".
-    *   **`useFloatingButton()`**: Hook que dá acesso ao estado e às funções do contexto, como `openModal(briefing)`.
-    *   **`useRegisterFloatingButtonAction()`**: Hook que permite que páginas específicas registrem uma ação a ser executada quando a copy é gerada no modal do botão. (Atualmente não utilizado na nova arquitetura, mas mantido para possíveis casos de uso).
+    *   **`FloatingButtonProvider`**: Provedor global que envolve toda a aplicação (localizado em `AppWrapper.tsx`). Ele gerencia o estado de abertura do modal e o `contextualBriefing`.
+    *   **`useFloatingButton()`**: Hook que dá acesso ao estado (`isModalOpen`, `contextualBriefing`) e às funções do contexto (`openModal`, `closeModal`).
 
 2.  **`FloatingCopyButton.tsx`**:
-    *   O componente em si. Ele é renderizado uma vez no `AppLayout.tsx`.
-    *   Seu estado de "aberto/fechado" é controlado pelo `FloatingButtonContext`.
-    *   Ele pode ser aberto de duas formas:
-        1.  **Pelo usuário**: Clicando no próprio botão.
-        2.  **Programaticamente**: Chamando a função `openModal()` do contexto, o que permite que outras partes da aplicação (como um botão "Usar com IA" em um card) abram o modal.
-    *   Ele pode receber um **briefing contextual**, que é um texto pré-preenchido que serve de base para a IA.
+    *   O componente do botão em si. Ele é renderizado uma vez no `AppLayout.tsx`.
+    *   Seu estado de "aberto/fechado" é totalmente controlado pelo `FloatingButtonContext`.
+    *   Pode ser aberto de duas formas:
+        1.  **Pelo usuário (Genérico)**: Clicando no próprio botão. Isso abre o modal para uma solicitação de copy geral.
+        2.  **Programaticamente (Contextual)**: Outros componentes podem chamar a função `openModal(contextualBriefing)` do contexto. Isso permite que uma página ou componente específico (como um card de Brand Voice) abra o modal já com um briefing detalhado e pré-preenchido.
+    *   O modal agora exibe o `contextualBriefing` (se houver) em uma área separada, e o input do usuário é anexado a ele antes de ser enviado para a IA.
 
-3.  **Páginas com Integração**:
-    *   Páginas como `BrandVoices.tsx` e `Templates.tsx` agora contêm botões específicos ("Usar para Criar Copy", "Usar com IA").
-    *   Esses botões chamam a função `openModal(contextualBriefing)` do hook `useFloatingButton`, passando um prompt detalhado e formatado com base no item selecionado (a voz da marca ou o template).
+3.  **Páginas com Integração Profunda (`BrandVoices.tsx`, `Templates.tsx`)**:
+    *   Essas páginas contêm botões específicos ("Usar para Criar Copy", "Usar com IA").
+    *   Esses botões usam o hook `useFloatingButton()` para obter a função `openModal`.
+    *   Ao serem clicados, eles formatam um prompt detalhado com base no item selecionado (a voz da marca ou o template) e o passam para `openModal(promptDetalhado)`, iniciando um fluxo de geração de copy altamente contextual.
 
 ---
 
 ## 🚀 Próximas Ações e Tarefas Detalhadas
 
-Aqui estão as próximas páginas a serem integradas e o nível de integração recomendado para cada uma.
+A arquitetura atual é robusta. A prioridade agora é expandir a **integração profunda** para outras áreas da plataforma para maximizar o valor para o usuário.
 
-### Tarefa 1: Integração Rasa - Página de E-mail Marketing
+### Tarefa 1: Integração Profunda - Análise de Dados (Analytics)
 
--   **Objetivo**: Ao clicar no botão flutuante na página de E-mail Marketing, a copy gerada deve abrir o modal de criação de e-mail com o conteúdo pré-preenchido.
--   **Nível**: Integração Rasa.
--   **Passos**:
-    1.  **Modificar `CreateEmailCampaignModal.tsx`**: Adicionar uma prop `initialContent` para receber o texto da copy. Usar essa prop para definir o estado inicial do campo de texto principal do e-mail.
-    2.  **Modificar `EmailMarketing.tsx`**:
-        *   Importar o hook `useRegisterFloatingButtonAction`.
-        *   Adicionar um state para controlar a abertura do modal de criação e para guardar o conteúdo inicial (`const [modalContent, setModalContent] = useState('')`).
-        *   Criar uma função `handleOpenEmailModalWithContent(content: string)` que atualiza o estado e abre o modal.
-        *   Usar o hook `useRegisterFloatingButtonAction` para registrar a função `handleOpenEmailModalWithContent` para o path `/email-marketing`.
-    3.  **Testar**: Navegar para a página de E-mail Marketing, usar o botão flutuante e verificar se, após gerar a copy, o modal de criação de e-mail abre com o texto correto.
-
-### Tarefa 2: Integração Rasa - Página de Social Media / Agendamento
-
--   **Objetivo**: Similar ao Calendário, permitir que a copy gerada abra o modal de agendamento de post.
--   **Nível**: Integração Rasa.
--   **Passos**:
-    1.  **Analisar `SocialScheduler.tsx`**: Verificar qual modal é usado para criar um novo post. Provavelmente é o mesmo `CreateEventModal` usado pelo Calendário.
-    2.  **Modificar `SocialScheduler.tsx`**:
-        *   Se o modal for diferente, aplicar a mesma lógica da Tarefa 1 (adicionar prop `initialContent`).
-        *   Se o modal for o mesmo, a lógica será idêntica à do `Calendar.tsx`.
-        *   Importar `useRegisterFloatingButtonAction` e registrar a ação de abrir o modal de agendamento com o conteúdo para o path `/social-scheduler`.
-
-### Tarefa 3: Integração Profunda - Análise de Dados (Analytics)
-
--   **Objetivo**: Permitir que o usuário gere uma análise ou resumo de um gráfico ou conjunto de dados específico usando o botão flutuante.
+-   **Objetivo**: Permitir que o usuário gere uma análise textual ou um resumo de um gráfico/conjunto de dados específico usando o botão flutuante.
 -   **Nível**: Integração Profunda (Avançada).
 -   **Passos**:
-    1.  **Identificar Contexto**: Na página de `Analytics.tsx`, determinar qual é o "contexto" selecionado. Pode ser um período de tempo, um gráfico específico que está em foco, ou uma tabela de dados.
-    2.  **Adicionar Trigger**: Adicionar um ícone de "Analisar com IA" (`<Wand2 />`) próximo aos gráficos ou tabelas.
-    3.  **Criar Handler**: A função `onClick` desse ícone deve:
-        *   Coletar os dados relevantes (ex: `{ "período": "Últimos 7 dias", "métrica": "Taxa de Engajamento", "dados": [1, 2, 3] }`).
+    1.  **Identificar Contexto na Página de Analytics**: Determinar qual é o "contexto" selecionado. Pode ser um período de tempo, um gráfico específico em foco, ou uma tabela de dados.
+    2.  **Adicionar Trigger de IA**: Adicionar um ícone/botão de "Analisar com IA" (`<Wand2 />`) próximo aos gráficos ou tabelas relevantes.
+    3.  **Implementar o Handler**: A função `onClick` desse botão deve:
+        *   Coletar os dados relevantes do gráfico/tabela (ex: `{ "período": "Últimos 7 dias", "métrica": "Taxa de Engajamento", "dados": [1, 2, 3, 5, 4, 6, 8] }`).
         *   Formatar esses dados em um prompt claro para a IA. Ex: `"Baseado nos seguintes dados de Taxa de Engajamento para os últimos 7 dias, gere um resumo com insights e sugestões de melhoria. Dados: ..."`.
-        *   Chamar a função `openModal(promptFormatado)` do `useFloatingButton`.
-    4.  **Testar**: Verificar se o modal abre com o contexto do gráfico e se a IA consegue gerar uma análise relevante.
+        *   Chamar a função `openModal(promptFormatado)` do hook `useFloatingButton`.
+    4.  **Testar**: Verificar se o modal do botão flutuante abre com o contexto do gráfico e se a IA consegue gerar uma análise relevante a partir dos dados estruturados.
+
+### Tarefa 2: Integração Profunda - Upload de Documentos de Onboarding
+
+-   **Objetivo**: Implementar a funcionalidade solicitada de permitir que o usuário faça upload de um documento (PDF) que servirá como base de conhecimento para toda a IA da plataforma.
+-   **Nível**: Integração Profunda (Estratégica).
+-   **Passos**:
+    1.  **Criar Interface de Upload**: Desenvolver uma nova página ou seção (ex: em Configurações) onde o usuário pode fazer o upload de um arquivo PDF.
+    2.  **Desenvolver o Backend/Serviço**:
+        *   Criar um serviço para processar o PDF. Isso envolve extrair o texto do documento.
+        *   Analisar o texto extraído para identificar seções relevantes (Voz da Marca, Persona, Sobre a Empresa, etc.). Isso pode ser feito com uma chamada de IA para "resumir e estruturar".
+        *   Salvar os dados estruturados no banco de dados, associados ao workspace do usuário.
+    3.  **Integrar com as Páginas**: Modificar as páginas (`BrandVoices`, `Personas`) para que elas primeiro verifiquem se já existem dados pré-preenchidos a partir de um documento importado e os exibam.
+    4.  **Integrar com o Botão Flutuante**: O `contextualBriefing` pode ser enriquecido com essa base de conhecimento global do workspace para gerar copies ainda mais precisas.
+
+### Tarefa 3: Melhorar a Flexibilidade do Redirecionamento
+
+-   **Objetivo**: Dar ao usuário a opção de para onde levar a copy gerada.
+-   **Nível**: Melhoria de UX.
+-   **Passos**:
+    1.  **Analisar o `FloatingCopyButton.tsx`**: A lógica atual redireciona para o Composer por padrão.
+    2.  **Adicionar Opções**: No modal, após a copy ser gerada, além de "Levar para Composer", adicionar outras opções contextuais. Por exemplo:
+        *   "Agendar no Calendário"
+        *   "Criar Campanha com esta Copy"
+    3.  **Implementar Ações**: Cada um desses novos botões chamaria a respectiva função de abrir modal (`openCalendarModalWithContent`, `openCampaignModalWithContent`) que seriam registradas no contexto global, similar à arquitetura anterior, mas de uma forma mais centralizada. Isso exigiria uma pequena refatoração no `FloatingButtonContext` para reintroduzir o registro de ações.
 
 ---
 
 ## ✅ Checklist de Implementação para Novas Integrações
 
-Para cada nova página a ser integrada, siga estes passos:
-
--   [ ] **Definir o Nível de Integração**: É uma integração "rasa" (apenas passar texto) ou "profunda" (passar dados estruturados)?
--   [ ] **Identificar o Ponto de Entrada**: O usuário vai clicar no botão flutuante global ou em um botão específico na página (como em Brand Voices)?
--   [ ] **Criar a Função Handler**: Implementar a lógica que coleta o contexto e chama `openModal` ou `useRegisterFloatingButtonAction`.
--   [ ] **Modificar o Componente do Modal (se necessário)**: Garantir que o modal de destino (ex: `CreatePostModal`) possa aceitar o conteúdo inicial.
--   [ ] **Testar o Fluxo Completo**: Garantir que a experiência do usuário seja fluida e intuitiva.
+-   [ ] **Definir o Objetivo**: Qual é a tarefa que o usuário quer facilitar com a IA nesta página?
+-   [ ] **Identificar o Ponto de Entrada**: O usuário vai clicar no botão flutuante global ou em um botão de ação específico em um card/item?
+-   [ ] **Criar a Função Handler**: Implementar a lógica que coleta o contexto da página/item.
+-   [ ] **Formatar o `contextualBriefing`**: Criar um prompt claro e detalhado para a IA.
+-   [ ] **Chamar `openModal`**: Usar o hook `useFloatingButton` para chamar `openModal(briefing)` e abrir a interface.
+-   [ ] **Testar o Fluxo Completo**: Garantir que a experiência do usuário seja fluida, intuitiva e que o resultado da IA seja de alta qualidade.
 -   [ ] **Atualizar esta Documentação**: Adicionar a nova integração à lista de funcionalidades implementadas.

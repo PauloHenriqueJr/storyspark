@@ -104,10 +104,32 @@ const Composer = () => {
       const templateId = searchParams.get('template');
       const templateName = searchParams.get('name');
       const content = searchParams.get('content');
-      const fromTemplate = searchParams.get('from');
+      const from = searchParams.get('from');
+
+      // Prioridade para conteúdo do botão flutuante
+      if (content && from === 'floating-button') {
+        const newProject: Project = {
+          id: `fb_project_${Date.now()}`,
+          name: `Copy de ${new Date().toLocaleTimeString('pt-BR')}`,
+          briefing: decodeURIComponent(content),
+          platform: '',
+          copyType: '',
+          tone: '',
+          generatedCopy: '',
+          versions: [],
+          lastModified: new Date()
+        };
+        setProjects([newProject]);
+        setActiveProjectId(newProject.id);
+        toast({
+          title: "✅ Copy importada!",
+          description: "Sua copy gerada está pronta para ser refinada no Composer.",
+        });
+        return;
+      }
       
       // Prioridade para conteúdo processado do template
-      if (content && templateName && fromTemplate === 'template') {
+      if (content && templateName && from === 'template') {
         const processedProject: Project = {
           id: `processed_template_${Date.now()}`,
           name: `${decodeURIComponent(templateName)} - Personalizado`,

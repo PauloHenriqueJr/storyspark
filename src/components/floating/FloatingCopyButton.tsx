@@ -144,7 +144,6 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
   const {
     getActionForPath,
     isModalOpen,
-    openModal,
     closeModal,
     contextualBriefing
   } = useFloatingButton();
@@ -206,16 +205,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
         }
         else {
           // Ação padrão: navegar para o composer com a copy
-          const encodedContent = encodeURIComponent(response.content);
-          const targetUrl = `/composer?from=floating-button&content=${encodedContent}`;
-
-          if (location.pathname !== '/composer') {
-            navigate(targetUrl);
-            systemToastNotifications.showInfo("Redirecionando para o Composer...");
-          } else {
-            // Se já estiver no composer, apenas informar
-            systemToastNotifications.showInfo("Copy pronta para ser usada no Composer.");
-          }
+          handleTakeToComposer();
+          systemToastNotifications.showInfo("Redirecionando para o Composer...");
         }
 
       } else {
@@ -300,9 +291,9 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
 
       {/* Context Modal */}
       <Dialog open={isModalOpen} onOpenChange={(open) => !open && resetModal()}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-sm border-border">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-sm border-border shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-3 text-foreground">
               <div className={`w-10 h-10 rounded-full ${currentContext.color} flex items-center justify-center`}>
                 <IconComponent className="w-6 h-6 text-white" />
               </div>
@@ -328,7 +319,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => setBriefing(suggestion)}
-                    className="text-xs hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground transition-colors"
+                    className="text-xs bg-transparent dark:hover:bg-primary dark:hover:text-primary-foreground transition-colors"
                   >
                     {suggestion}
                   </Button>
@@ -340,8 +331,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
             {contextualBriefing && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Contexto da Página:</label>
-                <div className="bg-muted/50 dark:bg-black/20 rounded-lg p-3 max-h-40 overflow-y-auto border">
-                  <pre className="whitespace-pre-wrap text-xs font-sans opacity-80">
+                <div className="bg-muted/30 dark:bg-black/20 rounded-lg p-3 max-h-40 overflow-y-auto border border-dashed">
+                  <pre className="whitespace-pre-wrap text-xs font-sans text-muted-foreground">
                     {contextualBriefing}
                   </pre>
                 </div>
@@ -350,19 +341,19 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
 
             {/* User Briefing */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-sm font-medium text-foreground">
                 {contextualBriefing ? "Sua Solicitação (adicione detalhes):" : "Descrição *"}
               </label>
               <Textarea
                 placeholder="Descreva o que você quer comunicar..."
                 value={briefing}
                 onChange={(e) => setBriefing(e.target.value)}
-                className="min-h-[100px] resize-none bg-background/50 dark:bg-black/20"
+                className="min-h-[100px] resize-none bg-muted/20 dark:bg-black/20 focus:bg-background/50"
               />
             </div>
 
             {/* Platform & Type Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Plataforma</label>
                 <Select value={platform} onValueChange={setPlatform}>
