@@ -20,7 +20,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateCampaignModal from '@/components/modals/CreateCampaignModal';
-import { NotificationDemo } from '@/components/notifications/NotificationDemo';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -313,16 +312,6 @@ const Dashboard = () => {
           </Card>
         </motion.div>
       </div>
-
-      {/* Notification System Demo */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.35 }}
-        className="flex justify-center"
-      >
-        <NotificationDemo />
-      </motion.div>
 
       {/* Performance Overview */}
       <motion.div

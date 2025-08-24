@@ -9,6 +9,7 @@ import { useSystemNotifications } from '@/hooks/useSystemNotifications';
 import { useToastNotifications } from '@/hooks/useToastNotifications';
 import { useSystemToastNotifications } from '@/hooks/useSystemToastNotifications';
 import FloatingCopyButton from '@/components/floating/FloatingCopyButton';
+import { FloatingButtonProvider } from '@/contexts/FloatingButtonContext';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -34,7 +35,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           
           <main className="flex-1 p-6 md:p-8 overflow-auto">
             <div className="max-w-7xl mx-auto">
-              {children}
+              <FloatingButtonProvider value={{
+                openCalendarModalWithContent: () => console.warn('Default context: no calendar action.'),
+                openCampaignModalWithContent: () => console.warn('Default context: no campaign action.')
+              }}>
+                {children}
+              </FloatingButtonProvider>
             </div>
           </main>
         </div>

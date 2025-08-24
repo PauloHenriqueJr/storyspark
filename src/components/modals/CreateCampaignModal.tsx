@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useEffect } from 'react';
 import {
   CalendarIcon,
   Target,
@@ -23,16 +24,18 @@ interface CreateCampaignModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreateCampaign?: (campaign: any) => void;
+  initialDescription?: string;
 }
 
 const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
   open,
   onOpenChange,
-  onCreateCampaign
+  onCreateCampaign,
+  initialDescription
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
+    description: initialDescription || '',
     objective: '',
     budget: '',
     platforms: [] as string[],
@@ -41,6 +44,15 @@ const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
     targetAudience: '',
     persona: ''
   });
+
+  useEffect(() => {
+    if (open) {
+      setFormData(prev => ({
+        ...prev,
+        description: initialDescription || '',
+      }));
+    }
+  }, [open, initialDescription]);
 
   const platforms = [
     { id: 'facebook', name: 'Facebook', icon: '📘' },

@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { copyGenerationService } from '@/services/copyGenerationService';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useFloatingButton } from '@/contexts/FloatingButtonContext';
 
 interface FloatingCopyButtonProps {
   toastNotifications: {
@@ -31,7 +32,7 @@ interface FloatingCopyButtonProps {
     showSuccess: (title: string, description?: string, duration?: number) => string;
     showError: (title: string, description?: string, duration?: number) => string;
     showInfo: (title: string, description?: string, duration?: number) => string;
-    showWarning: (title: string, description?: string, duration?: number) => string;
+    showWarning: (title:string, description?: string, duration?: number) => string;
   };
 }
 
@@ -43,10 +44,23 @@ interface ContextConfig {
   suggestions: string[];
   defaultPlatform?: string;
   defaultType?: string;
-  targetPage?: string;
+  actionType: 'navigate' | 'openCalendar' | 'openCampaign';
 }
 
 const contextConfigs: Record<string, ContextConfig> = {
+  '/calendar': {
+    title: 'Copy para Calendário',
+    icon: Calendar,
+    color: 'bg-red-600',
+    description: 'Crie copy para um novo post agendado no calendário',
+    suggestions: [
+      'Post sobre novidade da empresa',
+      'Lembrete de evento importante',
+      'Conteúdo de engajamento para a semana'
+    ],
+    defaultPlatform: 'Instagram',
+    actionType: 'openCalendar'
+  },
   '/templates': {
     title: 'Copy para Templates',
     icon: FileText,
@@ -58,7 +72,7 @@ const contextConfigs: Record<string, ContextConfig> = {
       'Template de engajamento'
     ],
     defaultType: 'Template',
-    targetPage: '/templates'
+    actionType: 'navigate'
   },
   '/campaigns': {
     title: 'Copy para Campanhas',
@@ -71,7 +85,7 @@ const contextConfigs: Record<string, ContextConfig> = {
       'Campanha de retenção de clientes'
     ],
     defaultPlatform: 'Facebook',
-    targetPage: '/campaigns'
+    actionType: 'openCampaign'
   },
   '/email-marketing': {
     title: 'Copy para E-mail Marketing',
@@ -85,7 +99,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     ],
     defaultPlatform: 'Email',
     defaultType: 'Newsletter',
-    targetPage: '/email-marketing'
+    actionType: 'navigate'
   },
   '/social-media': {
     title: 'Copy para Social Media',
@@ -98,7 +112,7 @@ const contextConfigs: Record<string, ContextConfig> = {
       'Post promocional'
     ],
     defaultPlatform: 'Instagram',
-    targetPage: '/social-media'
+    actionType: 'navigate'
   },
   '/composer': {
     title: 'Composer - Criar Copy',
@@ -112,7 +126,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     ],
     defaultPlatform: 'Instagram',
     defaultType: 'Post Orgânico',
-    targetPage: '/composer'
+    actionType: 'navigate'
   },
   'default': {
     title: 'Criar Copy com IA',
@@ -124,11 +138,15 @@ const contextConfigs: Record<string, ContextConfig> = {
       'E-mail marketing',
       'Landing page'
     ],
-    targetPage: '/composer'
+    actionType: 'navigate'
   }
 };
 
-const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotifications, systemToastNotifications }) => {
+const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
+  toastNotifications,
+  systemToastNotifications,
+}) => {
+  const { openCalendarModalWithContent, openCampaignModalWithContent } = useFloatingButton();
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [briefing, setBriefing] = useState('');
@@ -152,14 +170,16 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
   const handleGenerate = async () => {
     if (!briefing.trim()) {
-      toastNotifications.showError(
+      systemToastNotifications.showError(
         "Briefing necessário",
-        "Descreva o que você quer comunicar."
+        "Por favor, descreva o que você quer comunicar."
       );
       return;
     }
 
     setIsGenerating(true);
+    setGeneratedCopy(''); // Limpar copy anterior
+
     try {
       const response = await copyGenerationService.generateCopy({
         briefing,
@@ -171,42 +191,37 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
       if (response.success && response.content) {
         setGeneratedCopy(response.content);
-        
-        // Copiar automaticamente para clipboard
-        try {
-          await navigator.clipboard.writeText(response.content);
-          toastNotifications.showSuccess(
-            "🎉 Copy gerada e copiada!",
-            "Copy contextual criada e copiada para área de transferência."
-          );
-        } catch {
-          toastNotifications.showSuccess(
-            "🎉 Copy gerada!",
-            "Copy contextual criada com sucesso."
-          );
-        }
+        systemToastNotifications.showSuccess("🎉 Copy gerada com sucesso!");
 
-        // Navegar para página específica se disponível, padrão é composer
-        const targetPage = currentContext.targetPage || '/composer';
-        if (targetPage !== location.pathname) {
-          setTimeout(() => {
-            navigate(targetPage);
-            const pageName = targetPage === '/composer' ? 'Composer' : targetPage.replace('/', '').replace('-', ' ');
-            toastNotifications.showInfo(
-              `Redirecionando para ${pageName}`,
-              "Copy criada! Você foi direcionado para continuar editando."
-            );
-          }, 1500);
+        // Ação pós-geração baseada no contexto
+        if (currentContext.actionType === 'openCalendar' && openCalendarModalWithContent) {
+          openCalendarModalWithContent(response.content);
+          systemToastNotifications.showInfo("Abrindo modal do calendário...");
+          setTimeout(() => resetModal(), 500);
+        } else if (currentContext.actionType === 'openCampaign' && openCampaignModalWithContent) {
+          openCampaignModalWithContent(response.content);
+          systemToastNotifications.showInfo("Abrindo modal de campanha...");
+          setTimeout(() => resetModal(), 500);
+        } else {
+          // Ação padrão: navegar para o composer com a copy
+          const encodedContent = encodeURIComponent(response.content);
+          const targetUrl = `/composer?from=floating-button&content=${encodedContent}`;
+
+          if (location.pathname !== '/composer') {
+            navigate(targetUrl);
+            systemToastNotifications.showInfo("Redirecionando para o Composer...");
+          } else {
+            // Se já estiver no composer, apenas informar
+            systemToastNotifications.showInfo("Copy pronta para ser usada no Composer.");
+          }
         }
 
       } else {
-        throw new Error('Falha na geração');
+        throw new Error(response.error || 'Falha na geração de copy');
       }
     } catch (error) {
-      toastNotifications.showError(
-        "Erro na geração",
-        "Tente novamente em alguns instantes."
-      );
+      const errorMessage = error instanceof Error ? error.message : "Tente novamente em alguns instantes.";
+      systemToastNotifications.showError("Erro na Geração", errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -374,32 +389,38 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
               )}
             </Button>
 
-            {/* Generated Copy */}
-            {generatedCopy && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
-              >
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-green-800 mb-2">Copy Gerada:</h3>
-                  <div className="bg-white rounded-lg p-4 border">
-                    <pre className="whitespace-pre-wrap text-sm leading-relaxed">
+            {/* Generated Copy Preview */}
+            <AnimatePresence>
+              {generatedCopy && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: -20, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4 border-t pt-6"
+                >
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-yellow-500" />
+                    Pré-visualização da Copy
+                  </h3>
+                  <div className="bg-muted/50 rounded-lg p-4 max-h-60 overflow-y-auto border">
+                    <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans">
                       {generatedCopy}
                     </pre>
                   </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button onClick={handleCopyToClipboard} className="flex-1">
-                    Copiar Copy
-                  </Button>
-                  <Button variant="outline" onClick={resetModal}>
-                    Nova Copy
-                  </Button>
-                </div>
-              </motion.div>
-            )}
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" onClick={resetModal}>
+                      Descartar
+                    </Button>
+                    <Button onClick={handleCopyToClipboard}>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copiar e Fechar
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </DialogContent>
       </Dialog>

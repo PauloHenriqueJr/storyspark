@@ -29,6 +29,7 @@ import CreateEventModal from '@/components/modals/CreateEventModal';
 import DraggableCalendar from '@/components/calendar/DraggableCalendar';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useToast } from '@/hooks/use-toast';
+import { FloatingButtonProvider } from '@/contexts/FloatingButtonContext';
 import type { CalendarEventWithStats } from '@/services/calendarService';
 import type { CalendarEvent } from '@/types/calendar';
 
@@ -93,8 +94,14 @@ const Calendar = () => {
   // Iniciar em novembro de 2024 onde estão os eventos de exemplo
   const [currentDate, setCurrentDate] = useState(new Date(2024, 10, 1)); // 10 = novembro (0-indexado)
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [modalInitialContent, setModalInitialContent] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month');
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
+
+  const handleOpenModalWithContent = (content: string) => {
+    setModalInitialContent(content);
+    setShowCreateModal(true);
+  };
 
   const { events, loading, error, stats, createEvent, deleteEvent, updateEventStatus, refetch } = useCalendar();
   const { toast } = useToast();
@@ -266,9 +273,10 @@ const Calendar = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <motion.div
+    <FloatingButtonProvider value={{ openCalendarModalWithContent: handleOpenModalWithContent }}>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
@@ -484,11 +492,18 @@ const Calendar = () => {
       {/* Create Event Modal */}
       <CreateEventModal 
         open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+        onOpenChange={(open) => {
+          setShowCreateModal(open);
+          if (!open) {
+            setModalInitialContent(undefined);
+          }
+        }}
         selectedDate={selectedDate}
         onCreateEvent={handleCreateEvent}
+        initialContent={modalInitialContent}
       />
     </div>
+    </FloatingButtonProvider>
   );
 };
 

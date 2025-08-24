@@ -31,6 +31,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkspace } from '@/hooks/useWorkspace';
+import { FloatingButtonProvider } from '@/contexts/FloatingButtonContext';
 
 // Dados agora vêm do hook useCampaigns conectado ao Supabase
 
@@ -38,8 +39,14 @@ const Campaigns = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Todas');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [modalInitialDescription, setModalInitialDescription] = useState<string | undefined>(undefined);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Database['public']['Tables']['campaigns']['Row'] | null>(null);
+
+  const handleOpenModalWithDescription = (description: string) => {
+    setModalInitialDescription(description);
+    setShowCreateModal(true);
+  };
   
   const { campaigns, loading, error, stats, createCampaign, updateCampaign, deleteCampaign, updateCampaignStatus, refetch } = useCampaigns();
   const { toast } = useToast();
@@ -234,9 +241,10 @@ const Campaigns = () => {
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <motion.div
+    <FloatingButtonProvider value={{ openCampaignModalWithContent: handleOpenModalWithDescription }}>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
@@ -483,8 +491,14 @@ const Campaigns = () => {
       {/* Create Campaign Modal */}
       <CreateCampaignModal 
         open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+        onOpenChange={(open) => {
+          setShowCreateModal(open);
+          if (!open) {
+            setModalInitialDescription(undefined);
+          }
+        }}
         onCreateCampaign={handleCreateCampaign}
+        initialDescription={modalInitialDescription}
       />
       
       {/* Edit Campaign Modal */}
@@ -498,6 +512,7 @@ const Campaigns = () => {
         }}
       />
     </div>
+    </FloatingButtonProvider>
   );
 };
 

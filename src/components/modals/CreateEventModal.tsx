@@ -25,6 +25,7 @@ interface CreateEventModalProps {
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
   onCreateEvent?: (event: Omit<CalendarEventWithStats, 'id' | 'created_at' | 'updated_at' | 'workspace_id' | 'user_id' | 'formattedDate' | 'formattedTime' | 'statusBadge' | 'platformIcon'>) => void;
+  initialContent?: string;
 }
 
 const platforms = [
@@ -46,11 +47,14 @@ const contentTypes = [
   'Anúncio'
 ];
 
+import { useEffect } from 'react';
+
 const CreateEventModal: React.FC<CreateEventModalProps> = ({
   open,
   onOpenChange,
   selectedDate,
-  onCreateEvent
+  onCreateEvent,
+  initialContent
 }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -59,9 +63,19 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
     contentType: '',
     date: selectedDate || new Date(),
     time: '09:00',
-    content: '',
+    content: initialContent || '',
     hashtags: ''
   });
+
+  useEffect(() => {
+    if (open) {
+      setFormData(prev => ({
+        ...prev,
+        content: initialContent || '',
+        date: selectedDate || new Date(),
+      }));
+    }
+  }, [open, initialContent, selectedDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
