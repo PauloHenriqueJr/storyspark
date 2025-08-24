@@ -66,6 +66,25 @@ const AdminSecurity = React.lazy(() => import('./pages/admin/AdminSecurity'));
 const AdminPermissions = React.lazy(() => import('./pages/admin/AdminPermissions'));
 const AdminBackup = React.lazy(() => import('./pages/admin/AdminBackup'));
 
+// Calendar Wrapper Component
+const CalendarWrapper = () => {
+  const [scheduleModalHandler, setScheduleModalHandler] = React.useState<((copyContent: string, platform: string, copyType: string) => void) | null>(null);
+
+  const handleOpenScheduleModal = (copyContent: string, platform: string, copyType: string) => {
+    if (scheduleModalHandler) {
+      scheduleModalHandler(copyContent, platform, copyType);
+    }
+  };
+
+  return (
+    <AppLayout onOpenScheduleModal={handleOpenScheduleModal}>
+      <LazyLoadWrapper>
+        <Calendar onScheduleModalReady={setScheduleModalHandler} />
+      </LazyLoadWrapper>
+    </AppLayout>
+  );
+};
+
 const App = () => (
   <AppWrapper>
     <OnboardingModal />
@@ -116,11 +135,7 @@ const App = () => (
       } />
       <Route path="/calendar" element={
         <ProtectedRoute>
-          <AppLayout>
-            <LazyLoadWrapper>
-              <Calendar />
-            </LazyLoadWrapper>
-          </AppLayout>
+          <CalendarWrapper />
         </ProtectedRoute>
       } />
       <Route path="/analytics" element={

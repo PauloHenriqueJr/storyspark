@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Bot, 
@@ -80,6 +80,8 @@ const Composer = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Get active project
   const activeProject = projects.find(p => p.id === activeProjectId);
@@ -95,6 +97,56 @@ const Composer = () => {
     const interval = setInterval(autoSave, 5000); // Auto-save every 5 seconds
     return () => clearInterval(interval);
   }, [projects]);
+
+  // Handle incoming data from FloatingCopyButton
+  useEffect(() => {
+    if (location.state) {
+      const { briefing, platform, copyType, generatedCopy, context } = location.state as any;
+      
+      if (briefing && generatedCopy) {
+        // Criar nome do projeto baseado no contexto
+        let projectName = `Copy - ${platform} ${copyType}`;
+        if (context?.contextConfig?.title) {
+          projectName = `${context.contextConfig.title} - ${platform} ${copyType}`;
+        }
+        
+        // Criar novo projeto com os dados recebidos
+        const newProject: Project = {
+          id: Date.now().toString(),
+          name: projectName,
+          briefing: briefing,
+          platform: platform || 'Instagram',
+          copyType: copyType || 'Post Orgânico',
+          tone: 'Profissional',
+          generatedCopy: generatedCopy,
+          versions: [{
+            id: '1',
+            copy: generatedCopy,
+            timestamp: new Date()
+          }],
+          lastModified: new Date()
+        };
+
+        setProjects(prev => [newProject, ...prev]);
+        setActiveProjectId(newProject.id);
+        
+        // Limpar o state para evitar recriação
+        navigate(location.pathname, { replace: true });
+        
+        // Mensagem personalizada baseada no contexto
+        let description = "Copy do botão flutuante foi carregada no Composer.";
+        if (context?.page) {
+          const pageName = context.page.replace('/', '').replace('-', ' ');
+          description = `Copy contextual de ${pageName} foi carregada no Composer.`;
+        }
+        
+        toast({
+          title: "Projeto criado!",
+          description: description,
+        });
+      }
+    }
+  }, [location.state, navigate, location.pathname, toast]);
 
   const [searchParams] = useSearchParams();
 

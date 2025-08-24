@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,11 @@ interface CreateEventModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
+  preFilledContent?: {
+    content: string;
+    platform: string;
+    contentType: string;
+  };
   onCreateEvent?: (event: Omit<CalendarEventWithStats, 'id' | 'created_at' | 'updated_at' | 'workspace_id' | 'user_id' | 'formattedDate' | 'formattedTime' | 'statusBadge' | 'platformIcon'>) => void;
 }
 
@@ -50,18 +55,31 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
   open,
   onOpenChange,
   selectedDate,
+  preFilledContent,
   onCreateEvent
 }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    platform: '',
-    contentType: '',
+    platform: preFilledContent?.platform || '',
+    contentType: preFilledContent?.contentType || '',
     date: selectedDate || new Date(),
     time: '09:00',
-    content: '',
+    content: preFilledContent?.content || '',
     hashtags: ''
   });
+
+  // Atualizar formulário quando preFilledContent mudar
+  useEffect(() => {
+    if (preFilledContent) {
+      setFormData(prev => ({
+        ...prev,
+        platform: preFilledContent.platform || prev.platform,
+        contentType: preFilledContent.contentType || prev.contentType,
+        content: preFilledContent.content || prev.content
+      }));
+    }
+  }, [preFilledContent]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
