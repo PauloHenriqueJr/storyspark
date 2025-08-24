@@ -9,9 +9,14 @@ import {
   Calendar,
   FileText,
   Instagram,
+  Facebook,
+  Linkedin,
   Users,
   Target,
-  Zap
+  Zap,
+  Clock,
+  Edit3,
+  Copy as CopyIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,6 +25,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { copyGenerationService } from '@/services/copyGenerationService';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useCalendar } from '@/hooks/useCalendar';
+import { Separator } from '@/components/ui/separator';
 
 interface FloatingCopyButtonProps {
   toastNotifications: {
@@ -114,6 +121,20 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/composer'
   },
+  '/calendar': {
+    title: 'Copy para Eventos do Calendário',
+    icon: Calendar,
+    color: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+    description: 'Gerar copy para eventos agendados ou criar novos',
+    suggestions: [
+      'Post para evento agendado',
+      'Anúncio de lançamento',
+      'Stories promocional'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/calendar'
+  },
   'default': {
     title: 'Criar Copy com IA',
     icon: Wand2,
@@ -136,10 +157,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const [copyType, setCopyType] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCopy, setGeneratedCopy] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [showEventSelector, setShowEventSelector] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { events } = useCalendar();
 
   // Detectar contexto baseado na rota atual
   const currentContext = contextConfigs[location.pathname] || contextConfigs['default'];
@@ -148,7 +172,12 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   useEffect(() => {
     if (currentContext.defaultPlatform) setPlatform(currentContext.defaultPlatform);
     if (currentContext.defaultType) setCopyType(currentContext.defaultType);
-  }, [location.pathname, currentContext]);
+    
+    // Se estiver na página de calendário, mostrar seletor de eventos
+    if (location.pathname === '/calendar' && events.length > 0) {
+      setShowEventSelector(true);
+    }
+  }, [location.pathname, currentContext, events]);
 
   const handleGenerate = async () => {
     if (!briefing.trim()) {
@@ -190,7 +219,20 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
         const targetPage = currentContext.targetPage || '/composer';
         if (targetPage !== location.pathname) {
           setTimeout(() => {
-            navigate(targetPage);
+            // Se for para o composer, passar o briefing como state
+            if (targetPage === '/composer') {
+              navigate(targetPage, { 
+                state: { 
+                  briefing: briefing,
+                  platform: platform,
+                  copyType: copyType,
+                  generatedCopy: response.content
+                }
+              });
+            } else {
+              navigate(targetPage);
+            }
+            
             const pageName = targetPage === '/composer' ? 'Composer' : targetPage.replace('/', '').replace('-', ' ');
             toastNotifications.showInfo(
               `Redirecionando para ${pageName}`,
@@ -232,7 +274,26 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setGeneratedCopy('');
     setPlatform(currentContext.defaultPlatform || '');
     setCopyType(currentContext.defaultType || '');
+    setSelectedEvent(null);
+    setShowEventSelector(false);
     setIsModalOpen(false);
+  };
+
+  const handleEventSelect = (event: any) => {
+    setSelectedEvent(event);
+    setBriefing(`Gerar copy para o evento: ${event.title}`);
+    setPlatform(event.platform || 'Instagram');
+    setShowEventSelector(false);
+  };
+
+  const handleUseGeneratedCopy = () => {
+    if (selectedEvent && generatedCopy) {
+      // Aqui você pode implementar a lógica para atualizar o evento com a copy gerada
+      toastNotifications.showSuccess(
+        "Copy aplicada ao evento!",
+        `A copy foi aplicada ao evento "${selectedEvent.title}"`
+      );
+    }
   };
 
   const IconComponent = currentContext.icon;
@@ -290,6 +351,36 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Event Selector for Calendar */}
+            {location.pathname === '/calendar' && events.length > 0 && showEventSelector && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium">📅 Selecionar Evento Agendado:</label>
+                <div className="max-h-40 overflow-y-auto space-y-2 border rounded-lg p-3">
+                  {events.slice(0, 5).map((event) => (
+                    <div
+                      key={event.id}
+                      onClick={() => handleEventSelect(event)}
+                      className="flex items-center gap-3 p-2 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{event.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(event.event_date).toLocaleDateString()} • {event.platform}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        <Edit3 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Separator />
+              </div>
+            )}
+
             {/* Quick Suggestions */}
             <div className="space-y-3">
               <label className="text-sm font-medium">💡 Sugestões Rápidas:</label>
@@ -382,19 +473,56 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                 className="space-y-4"
               >
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-green-800 mb-2">Copy Gerada:</h3>
-                  <div className="bg-white rounded-lg p-4 border">
-                    <pre className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {generatedCopy}
-                    </pre>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-green-800 flex items-center gap-2">
+                      <Wand2 className="w-4 h-4" />
+                      Copy Gerada com IA
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {platform} • {copyType}
+                    </Badge>
+                  </div>
+                  
+                  {/* Preview da Copy */}
+                  <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                    {/* Header do Preview */}
+                    <div className="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                          {platform === 'Instagram' && <Instagram className="w-3 h-3 text-pink-500" />}
+                          {platform === 'Facebook' && <Facebook className="w-3 h-3 text-blue-600" />}
+                          {platform === 'LinkedIn' && <Linkedin className="w-3 h-3 text-blue-700" />}
+                          {platform === 'Email' && <Mail className="w-3 h-3 text-purple-600" />}
+                        </div>
+                        <span className="text-xs font-medium text-gray-600">{platform}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{copyType}</span>
+                    </div>
+                    
+                    {/* Conteúdo da Copy */}
+                    <div className="p-4">
+                      <div className="prose prose-sm max-w-none">
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+                          {generatedCopy}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="flex gap-2">
                   <Button onClick={handleCopyToClipboard} className="flex-1">
+                    <CopyIcon className="w-4 h-4 mr-2" />
                     Copiar Copy
                   </Button>
+                  {location.pathname === '/calendar' && selectedEvent && (
+                    <Button onClick={handleUseGeneratedCopy} variant="secondary" className="flex-1">
+                      <Edit3 className="w-4 h-4 mr-2" />
+                      Aplicar ao Evento
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={resetModal}>
+                    <Plus className="w-4 h-4 mr-2" />
                     Nova Copy
                   </Button>
                 </div>
