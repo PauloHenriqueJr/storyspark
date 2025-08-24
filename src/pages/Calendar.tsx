@@ -88,7 +88,11 @@ const transformEventForCalendar = (event: CalendarEventWithStats): CalendarEvent
   };
 };
 
-const Calendar = () => {
+interface CalendarProps {
+  onScheduleModalReady?: (handler: (copyContent: string, platform: string, copyType: string) => void) => void;
+}
+
+const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
   const [selectedDate, setSelectedDate] = useState(today);
   // Iniciar em novembro de 2024 onde estão os eventos de exemplo
   const [currentDate, setCurrentDate] = useState(new Date(2024, 10, 1)); // 10 = novembro (0-indexado)
@@ -131,6 +135,13 @@ const Calendar = () => {
     });
     setShowCreateModal(true);
   };
+
+  // Expor a função para o FloatingCopyButton
+  React.useEffect(() => {
+    if (onScheduleModalReady) {
+      onScheduleModalReady(handleOpenScheduleModal);
+    }
+  }, [onScheduleModalReady]);
 
   const handleDeleteEvent = async (eventId: string) => {
     try {

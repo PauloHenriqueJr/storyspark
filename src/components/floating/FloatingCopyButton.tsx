@@ -645,84 +645,107 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - Design Moderno */}
       <motion.div
-       className="fixed bottom-6 right-6 z-[9999]"
-       initial={{ scale: 0, x: 100 }}
-       animate={{ scale: 1, x: 0 }}
-       transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-     >
+        className="fixed bottom-8 right-8 z-[9999]"
+        initial={{ scale: 0, x: 100, y: 100 }}
+        animate={{ scale: 1, x: 0, y: 0 }}
+        transition={{ delay: 0.5, type: "spring", stiffness: 200, damping: 20 }}
+      >
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="relative"
+          whileHover={{ scale: 1.15, rotate: 5 }}
+          whileTap={{ scale: 0.95 }}
+          className="relative group"
         >
+          {/* Glow effect */}
+          <div className={`absolute inset-0 rounded-full ${currentContext.color} opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300`} />
+          
+          {/* Main button */}
           <Button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setIsModalOpen(true);
             }}
-            className={`w-16 h-16 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${currentContext.color} border-4 border-white/20 relative z-10`}
+            className={`w-20 h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${currentContext.color} border-4 border-white/30 relative z-10 backdrop-blur-sm`}
             size="lg"
           >
-            <IconComponent className="w-8 h-8 text-white" />
+            <IconComponent className="w-10 h-10 text-white drop-shadow-lg" />
           </Button>
           
           {/* Pulse effect */}
-          <div className={`absolute inset-0 rounded-full ${currentContext.color} opacity-30 animate-ping pointer-events-none`} />
+          <div className={`absolute inset-0 rounded-full ${currentContext.color} opacity-40 animate-ping pointer-events-none`} />
+          
+          {/* Tooltip */}
+          <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+              {currentContext.title}
+              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+            </div>
+          </div>
         </motion.div>
       </motion.div>
 
-      {/* Context Modal */}
+      {/* Context Modal - Design Moderno */}
       <Dialog open={isModalOpen} onOpenChange={(open) => !open && resetModal()}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full ${currentContext.color} flex items-center justify-center`}>
-                <IconComponent className="w-6 h-6 text-white" />
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-gray-50">
+          <DialogHeader className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl ${currentContext.color} flex items-center justify-center shadow-lg`}>
+                <IconComponent className="w-7 h-7 text-white" />
               </div>
-              {currentContext.title}
-              <Badge variant="secondary" className="ml-2">
+              <div className="flex-1">
+                <DialogTitle className="text-xl font-bold text-gray-900">
+                  {currentContext.title}
+                </DialogTitle>
+                <DialogDescription className="text-base text-gray-600 mt-1">
+                  {currentContext.description}
+                </DialogDescription>
+              </div>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                 <Zap className="w-3 h-3 mr-1" />
-                Contexto: {location.pathname.replace('/', '') || 'Home'}
+                {location.pathname.replace('/', '') || 'Home'}
               </Badge>
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              {currentContext.description}
-            </DialogDescription>
+            </div>
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Event Selector for Calendar */}
+            {/* Event Selector for Calendar - Design Moderno */}
             {location.pathname === '/calendar' && events.length > 0 && showEventSelector && (
-              <div className="space-y-3">
-                <label className="text-sm font-medium">📅 Selecionar Evento Agendado:</label>
-                <div className="max-h-40 overflow-y-auto space-y-2 border rounded-lg p-3">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Calendar className="w-3 h-3 text-blue-600" />
+                  </div>
+                  <label className="text-sm font-semibold text-gray-900">Selecionar Evento Agendado</label>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 rounded-xl p-4 bg-white">
                   {events.slice(0, 5).map((event) => (
                     <div
                       key={event.id}
                       onClick={() => handleEventSelect(event)}
-                      className="flex items-center gap-3 p-2 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                      className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 cursor-pointer transition-all duration-200 group"
                     >
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-primary" />
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
+                        <Calendar className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{event.title}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                          {event.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
                           {new Date(event.event_date).toLocaleDateString()} • {event.platform}
                         </p>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        <Edit3 className="w-4 h-4" />
+                      <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit3 className="w-4 h-4 text-blue-600" />
                       </Button>
                     </div>
                   ))}
                 </div>
-                <Separator />
+                <Separator className="bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
               </div>
             )}
 
@@ -750,150 +773,256 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
               </div>
             )}
 
-            {/* Quick Suggestions */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium">💡 Sugestões Rápidas:</label>
-              <div className="flex flex-wrap gap-2">
-                {currentContext.suggestions.map((suggestion) => (
+            {/* Quick Suggestions - Design Moderno */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <Lightbulb className="w-3 h-3 text-yellow-600" />
+                </div>
+                <label className="text-sm font-semibold text-gray-900">Sugestões Rápidas</label>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {currentContext.suggestions.map((suggestion, index) => (
                   <Button
                     key={suggestion}
                     variant="outline"
-                    size="sm"
                     onClick={() => setBriefing(suggestion)}
-                    className="text-xs hover:bg-primary hover:text-white transition-colors"
+                    className="justify-start h-auto p-4 text-left border-gray-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 transition-all duration-200 group"
                   >
-                    {suggestion}
+                    <div className="flex items-start gap-3 w-full">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-semibold text-blue-600">{index + 1}</span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                        {suggestion}
+                      </span>
+                    </div>
                   </Button>
                 ))}
               </div>
             </div>
 
-            {/* Briefing */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Descrição *</label>
-              <Textarea
-                placeholder="Descreva o que você quer comunicar..."
-                value={briefing}
-                onChange={(e) => setBriefing(e.target.value)}
-                className="min-h-[120px] resize-none"
-              />
+            {/* Briefing - Design Moderno */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                  <FileText className="w-3 h-3 text-green-600" />
+                </div>
+                <label className="text-sm font-semibold text-gray-900">Descrição do Conteúdo</label>
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                  Obrigatório
+                </Badge>
+              </div>
+              <div className="relative">
+                <Textarea
+                  placeholder="Descreva o que você quer comunicar, o objetivo da copy, público-alvo, tom de voz..."
+                  value={briefing}
+                  onChange={(e) => setBriefing(e.target.value)}
+                  className="min-h-[140px] resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl text-sm leading-relaxed"
+                />
+                <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                  {briefing.length}/500
+                </div>
+              </div>
             </div>
 
-            {/* Platform & Type Selection */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Plataforma</label>
+            {/* Platform & Type Selection - Design Moderno */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Globe className="w-3 h-3 text-purple-600" />
+                  </div>
+                  <label className="text-sm font-semibold text-gray-900">Plataforma</label>
+                </div>
                 <Select value={platform} onValueChange={setPlatform}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl">
                     <SelectValue placeholder="Escolha a plataforma" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Instagram">Instagram</SelectItem>
-                    <SelectItem value="Facebook">Facebook</SelectItem>
-                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                    <SelectItem value="Email">E-mail</SelectItem>
-                    <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                    <SelectItem value="Instagram">📱 Instagram</SelectItem>
+                    <SelectItem value="Facebook">📘 Facebook</SelectItem>
+                    <SelectItem value="LinkedIn">💼 LinkedIn</SelectItem>
+                    <SelectItem value="Email">📧 E-mail</SelectItem>
+                    <SelectItem value="WhatsApp">💬 WhatsApp</SelectItem>
+                    <SelectItem value="Web">🌐 Web</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Tipo</label>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+                    <Target className="w-3 h-3 text-orange-600" />
+                  </div>
+                  <label className="text-sm font-semibold text-gray-900">Tipo de Conteúdo</label>
+                </div>
                 <Select value={copyType} onValueChange={setCopyType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-200 focus:border-orange-500 focus:ring-orange-500 rounded-xl">
                     <SelectValue placeholder="Tipo de conteúdo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Post Orgânico">Post Orgânico</SelectItem>
-                    <SelectItem value="Stories">Stories</SelectItem>
-                    <SelectItem value="Anúncio">Anúncio</SelectItem>
-                    <SelectItem value="Newsletter">Newsletter</SelectItem>
-                    <SelectItem value="Carrossel">Carrossel</SelectItem>
+                    <SelectItem value="Post Orgânico">📝 Post Orgânico</SelectItem>
+                    <SelectItem value="Stories">📱 Stories</SelectItem>
+                    <SelectItem value="Anúncio">💰 Anúncio</SelectItem>
+                    <SelectItem value="Newsletter">📬 Newsletter</SelectItem>
+                    <SelectItem value="Carrossel">🔄 Carrossel</SelectItem>
+                    <SelectItem value="Landing Page">🌐 Landing Page</SelectItem>
+                    <SelectItem value="Script">📞 Script</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Generate Button */}
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || !briefing.trim()}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              size="lg"
-            >
-              {isGenerating ? (
-                <>
-                  <Wand2 className="w-4 h-4 mr-2 animate-spin" />
-                  Gerando Copy...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Gerar Copy Contextual
-                </>
+            {/* Generate Button - Design Moderno */}
+            <div className="space-y-3">
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating || !briefing.trim()}
+                className="w-full bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] disabled:transform-none disabled:opacity-50"
+                size="lg"
+              >
+                {isGenerating ? (
+                  <>
+                    <div className="w-5 h-5 mr-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="text-base font-semibold">Gerando Copy com IA...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-5 h-5 mr-3" />
+                    <span className="text-base font-semibold">✨ Gerar Copy Contextual</span>
+                  </>
+                )}
+              </Button>
+              
+              {!briefing.trim() && (
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">
+                    Preencha a descrição para gerar sua copy personalizada
+                  </p>
+                </div>
               )}
-            </Button>
+            </div>
 
-            {/* Generated Copy */}
+            {/* Generated Copy - Design Moderno */}
             {generatedCopy && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-green-800 flex items-center gap-2">
-                      <Wand2 className="w-4 h-4" />
-                      Copy Gerada com IA
-                    </h3>
-                    <Badge variant="secondary" className="text-xs">
-                      {platform} • {copyType}
+                {/* Header com Status */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                      <Wand2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Copy Gerada com IA</h3>
+                      <p className="text-sm text-gray-500">Pronta para usar</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      {platform}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                      {copyType}
                     </Badge>
                   </div>
-                  
-                  {/* Preview da Copy */}
-                  <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                    {/* Header do Preview */}
-                    <div className="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                          {platform === 'Instagram' && <Instagram className="w-3 h-3 text-pink-500" />}
-                          {platform === 'Facebook' && <Facebook className="w-3 h-3 text-blue-600" />}
-                          {platform === 'LinkedIn' && <Linkedin className="w-3 h-3 text-blue-700" />}
-                          {platform === 'Email' && <Mail className="w-3 h-3 text-purple-600" />}
+                </div>
+
+                {/* Preview da Copy - Design Moderno */}
+                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  {/* Header do Preview */}
+                  <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center">
+                          {platform === 'Instagram' && <Instagram className="w-4 h-4 text-pink-500" />}
+                          {platform === 'Facebook' && <Facebook className="w-4 h-4 text-blue-600" />}
+                          {platform === 'LinkedIn' && <Linkedin className="w-4 h-4 text-blue-700" />}
+                          {platform === 'Email' && <Mail className="w-4 h-4 text-purple-600" />}
+                          {platform === 'WhatsApp' && <MessageSquare className="w-4 h-4 text-green-600" />}
+                          {platform === 'Web' && <Globe className="w-4 h-4 text-gray-600" />}
                         </div>
-                        <span className="text-xs font-medium text-gray-600">{platform}</span>
+                        <div>
+                          <span className="text-sm font-semibold text-gray-900">{platform}</span>
+                          <span className="text-xs text-gray-500 ml-2">• {copyType}</span>
+                        </div>
                       </div>
-                      <span className="text-xs text-gray-500">{copyType}</span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-xs text-gray-500">Pronto</span>
+                      </div>
                     </div>
-                    
-                    {/* Conteúdo da Copy */}
-                    <div className="p-4">
+                  </div>
+                  
+                  {/* Conteúdo da Copy */}
+                  <div className="p-6">
+                    <div className="bg-white rounded-lg border border-gray-100 p-4">
                       <div className="prose prose-sm max-w-none">
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 font-medium">
                           {generatedCopy}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex gap-2">
-                  <Button onClick={handleCopyToClipboard} className="flex-1">
-                    <CopyIcon className="w-4 h-4 mr-2" />
-                    Copiar Copy
-                  </Button>
-                  {(location.pathname === '/calendar' && selectedEvent) || selectedItem ? (
-                    <Button onClick={handleUseGeneratedCopy} variant="secondary" className="flex-1">
-                      <Edit3 className="w-4 h-4 mr-2" />
-                      {location.pathname === '/calendar' ? 'Aplicar ao Evento' : 'Aplicar ao Item'}
+
+                {/* Ações */}
+                <div className="space-y-3">
+                  {/* Botões Principais */}
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={handleCopyToClipboard} 
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                      size="lg"
+                    >
+                      <CopyIcon className="w-4 h-4 mr-2" />
+                      Copiar Copy
                     </Button>
-                  ) : null}
-                  <Button variant="outline" onClick={resetModal}>
+                    {(location.pathname === '/calendar' && selectedEvent) || selectedItem ? (
+                      <Button 
+                        onClick={handleUseGeneratedCopy} 
+                        variant="secondary" 
+                        className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                        size="lg"
+                      >
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        {location.pathname === '/calendar' ? 'Agendar Post' : 'Aplicar ao Item'}
+                      </Button>
+                    ) : null}
+                  </div>
+                  
+                  {/* Botão Secundário */}
+                  <Button 
+                    variant="outline" 
+                    onClick={resetModal}
+                    className="w-full border-gray-200 hover:bg-gray-50 transition-colors"
+                    size="lg"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
-                    Nova Copy
+                    Criar Nova Copy
                   </Button>
+                </div>
+
+                {/* Informações Adicionais */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Zap className="w-3 h-3 text-blue-600" />
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-900 mb-1">Dica Pro</p>
+                      <p className="text-blue-700">
+                        {location.pathname === '/calendar' 
+                          ? 'A copy foi otimizada para agendamento. Clique em "Agendar Post" para continuar.'
+                          : 'A copy foi gerada com base no contexto da página atual. Use no Composer para editar.'
+                        }
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
