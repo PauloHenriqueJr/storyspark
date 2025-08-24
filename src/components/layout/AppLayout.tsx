@@ -12,9 +12,10 @@ import FloatingCopyButton from '@/components/floating/FloatingCopyButton';
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  onOpenScheduleModal?: (copyContent: string, platform: string, copyType: string) => void;
 }
 
-export const AppLayout = ({ children }: AppLayoutProps) => {
+export const AppLayout = ({ children, onOpenScheduleModal }: AppLayoutProps) => {
   // Inicializar monitoramento automático de notificações
   useSystemNotifications();
   
@@ -54,6 +55,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         <FloatingCopyButton
           toastNotifications={toastNotifications}
           systemToastNotifications={systemToastNotifications}
+          onOpenScheduleModal={onOpenScheduleModal}
         />
       </div>
     </SidebarProvider>

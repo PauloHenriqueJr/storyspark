@@ -95,6 +95,11 @@ const Calendar = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month');
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
+  const [preFilledContent, setPreFilledContent] = useState<{
+    content: string;
+    platform: string;
+    contentType: string;
+  } | null>(null);
 
   const { events, loading, error, stats, createEvent, deleteEvent, updateEventStatus, refetch } = useCalendar();
   const { toast } = useToast();
@@ -107,6 +112,8 @@ const Calendar = () => {
         description: 'Novo evento criado com sucesso.',
       });
       setShowCreateModal(false);
+      // Limpar conteúdo pré-preenchido após criar evento
+      setPreFilledContent(null);
     } catch (error) {
       toast({
         title: 'Erro',
@@ -114,6 +121,15 @@ const Calendar = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleOpenScheduleModal = (copyContent: string, platform: string, copyType: string) => {
+    setPreFilledContent({
+      content: copyContent,
+      platform: platform,
+      contentType: copyType
+    });
+    setShowCreateModal(true);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
@@ -486,6 +502,7 @@ const Calendar = () => {
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
         selectedDate={selectedDate}
+        preFilledContent={preFilledContent}
         onCreateEvent={handleCreateEvent}
       />
     </div>

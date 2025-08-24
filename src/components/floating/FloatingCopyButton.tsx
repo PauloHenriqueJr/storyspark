@@ -51,6 +51,7 @@ interface FloatingCopyButtonProps {
     showInfo: (title: string, description?: string, duration?: number) => string;
     showWarning: (title: string, description?: string, duration?: number) => string;
   };
+  onOpenScheduleModal?: (copyContent: string, platform: string, copyType: string) => void;
 }
 
 interface ContextConfig {
@@ -503,36 +504,47 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
           );
         }
 
-        // Navegar para página específica se disponível, padrão é composer
-        const targetPage = currentContext.targetPage || '/composer';
-        if (targetPage !== location.pathname) {
-          setTimeout(() => {
-            // Se for para o composer, passar o briefing como state
-            if (targetPage === '/composer') {
-              navigate(targetPage, { 
-                state: { 
-                  briefing: briefing,
-                  platform: platform,
-                  copyType: copyType,
-                  generatedCopy: response.content,
-                  context: {
-                    page: location.pathname,
-                    selectedEvent: selectedEvent,
-                    selectedItem: selectedItem,
-                    contextConfig: currentContext
-                  }
-                }
-              });
-            } else {
-              navigate(targetPage);
-            }
-            
-            const pageName = targetPage === '/composer' ? 'Composer' : targetPage.replace('/', '').replace('-', ' ');
-            toastNotifications.showInfo(
-              `Redirecionando para ${pageName}`,
-              "Copy criada! Você foi direcionado para continuar editando."
+        // Lógica específica para calendário - abrir modal de agendamento
+        if (location.pathname === '/calendar') {
+          if (onOpenScheduleModal) {
+            onOpenScheduleModal(response.content, platform, copyType);
+            toastNotifications.showSuccess(
+              "Copy gerada!",
+              "Modal de agendamento aberto com a copy preenchida."
             );
-          }, 1500);
+          }
+        } else {
+          // Navegar para página específica se disponível, padrão é composer
+          const targetPage = currentContext.targetPage || '/composer';
+          if (targetPage !== location.pathname) {
+            setTimeout(() => {
+              // Se for para o composer, passar o briefing como state
+              if (targetPage === '/composer') {
+                navigate(targetPage, { 
+                  state: { 
+                    briefing: briefing,
+                    platform: platform,
+                    copyType: copyType,
+                    generatedCopy: response.content,
+                    context: {
+                      page: location.pathname,
+                      selectedEvent: selectedEvent,
+                      selectedItem: selectedItem,
+                      contextConfig: currentContext
+                    }
+                  }
+                });
+              } else {
+                navigate(targetPage);
+              }
+              
+              const pageName = targetPage === '/composer' ? 'Composer' : targetPage.replace('/', '').replace('-', ' ');
+              toastNotifications.showInfo(
+                `Redirecionando para ${pageName}`,
+                "Copy criada! Você foi direcionado para continuar editando."
+              );
+            }, 1500);
+          }
         }
 
       } else {
