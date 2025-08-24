@@ -144,6 +144,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
   const {
     getActionForPath,
     isModalOpen,
+    openModal,
     closeModal,
     contextualBriefing
   } = useFloatingButton();
