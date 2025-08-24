@@ -39,6 +39,9 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useBrandVoices } from '@/hooks/useBrandVoices';
 import { usePersonas } from '@/hooks/usePersonas';
+import { useTemplates } from '@/hooks/useTemplates';
+import { useCampaigns } from '@/hooks/useCampaigns';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { Separator } from '@/components/ui/separator';
 
 interface FloatingCopyButtonProps {
@@ -452,6 +455,9 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const { events } = useCalendar();
   const { voices } = useBrandVoices();
   const { personas } = usePersonas();
+  const { templates } = useTemplates();
+  const { campaigns } = useCampaigns();
+  const { stats } = useAnalytics();
 
   // Detectar contexto baseado na rota atual
   const currentContext = contextConfigs[location.pathname] || contextConfigs['default'];
@@ -467,7 +473,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     }
     
     // Se estiver em páginas com dados contextuais ou funcionalidades especiais, mostrar seletor
-    if (['/personas', '/brand-voices', '/voices', '/ai-ideas', '/trending-hooks', '/landing-pages', '/funnels', '/analytics'].includes(location.pathname)) {
+    if (['/personas', '/brand-voices', '/voices', '/ai-ideas', '/trending-hooks', '/landing-pages', '/funnels', '/analytics', '/templates', '/campaigns', '/social-scheduler', '/email-marketing', '/push-whatsapp', '/call-scripts', '/crm', '/content-library', '/ab-tests', '/feedback', '/team', '/integrations', '/billing', '/settings'].includes(location.pathname)) {
       setShowItemSelector(true);
     }
   }, [location.pathname, currentContext, events, voices, personas]);
@@ -619,29 +625,41 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const handleItemSelect = (item: any) => {
     setSelectedItem(item);
     
-    // Configurar briefing baseado no tipo de item
-    let itemBriefing = '';
-    switch (location.pathname) {
-      case '/personas':
-        itemBriefing = `Gerar copy direcionada para a persona: ${item.name}`;
-        break;
-      case '/brand-voices':
-        itemBriefing = `Gerar copy usando a brand voice: ${item.name}`;
-        break;
-      case '/voices':
-        itemBriefing = `Gerar copy usando a voice: ${item.name}`;
-        break;
-      case '/ai-ideas':
-        itemBriefing = `Desenvolver copy baseada na ideia: ${item.topic || item.content?.[0] || 'Ideia IA'}`;
-        break;
-      case '/trending-hooks':
-        itemBriefing = `Criar copy usando o hook: ${item.hook}`;
-        break;
-      default:
-        itemBriefing = `Gerar copy para: ${item.name || item.title}`;
+    // Usar contexto específico da página se disponível
+    if (pageData?.getContext) {
+      const context = pageData.getContext(item);
+      setBriefing(context);
+    } else {
+      // Fallback para configuração genérica
+      let itemBriefing = '';
+      switch (location.pathname) {
+        case '/personas':
+          itemBriefing = `Gerar copy direcionada para a persona: ${item.name}`;
+          break;
+        case '/brand-voices':
+          itemBriefing = `Gerar copy usando a brand voice: ${item.name}`;
+          break;
+        case '/templates':
+          itemBriefing = `Gerar copy baseada no template: ${item.name}`;
+          break;
+        case '/campaigns':
+          itemBriefing = `Gerar copy para a campanha: ${item.name}`;
+          break;
+        case '/voices':
+          itemBriefing = `Gerar copy usando a voice: ${item.name}`;
+          break;
+        case '/ai-ideas':
+          itemBriefing = `Desenvolver copy baseada na ideia: ${item.topic || item.content?.[0] || 'Ideia IA'}`;
+          break;
+        case '/trending-hooks':
+          itemBriefing = `Criar copy usando o hook: ${item.hook}`;
+          break;
+        default:
+          itemBriefing = `Gerar copy para: ${item.name || item.title}`;
+      }
+      setBriefing(itemBriefing);
     }
     
-    setBriefing(itemBriefing);
     setShowItemSelector(false);
   };
 
@@ -663,7 +681,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Brand voice para e-commerce',
             'Brand voice para consultoria',
             'Brand voice para educação'
-          ]
+          ],
+          getContext: (item: any) => `Usando a brand voice "${item.name}" com tom ${item.tone || 'profissional'}. ${item.description || ''}`
         };
       case '/personas':
         return {
@@ -680,7 +699,44 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Persona profissional experiente',
             'Persona estudante universitário',
             'Persona dona de casa'
-          ]
+          ],
+          getContext: (item: any) => `Direcionado para a persona "${item.name}" - ${item.description || 'Sem descrição'}`
+        };
+      case '/templates':
+        return {
+          hasData: templates.length > 0,
+          data: templates,
+          type: 'template',
+          title: 'Templates',
+          icon: FileText,
+          color: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+          emptyMessage: 'Nenhum template criado ainda',
+          createMessage: 'Criar novo template com IA',
+          suggestions: [
+            'Template para lançamento de produto',
+            'Template para campanha sazonal',
+            'Template para engajamento',
+            'Template para conversão'
+          ],
+          getContext: (item: any) => `Baseado no template "${item.name}" - ${item.description || 'Template profissional'}`
+        };
+      case '/campaigns':
+        return {
+          hasData: campaigns.length > 0,
+          data: campaigns,
+          type: 'campaign',
+          title: 'Campanhas',
+          icon: Target,
+          color: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          emptyMessage: 'Nenhuma campanha criada ainda',
+          createMessage: 'Criar nova campanha com IA',
+          suggestions: [
+            'Copy para campanha de lançamento',
+            'Copy para campanha de remarketing',
+            'Copy para campanha sazonal',
+            'Copy para campanha de engajamento'
+          ],
+          getContext: (item: any) => `Para a campanha "${item.name}" - ${item.description || 'Campanha ativa'}`
         };
       case '/ai-ideas':
         return {
@@ -697,7 +753,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Ideia para conteúdo educativo',
             'Ideia para promoção sazonal',
             'Ideia para engajamento'
-          ]
+          ],
+          getContext: () => 'Gerando ideias criativas com IA'
         };
       case '/trending-hooks':
         return {
@@ -714,7 +771,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Hook de contraste surpreendente',
             'Hook de experiência compartilhada',
             'Hook de paradoxo intrigante'
-          ]
+          ],
+          getContext: () => 'Criando copy com hooks virais'
         };
       case '/landing-pages':
         return {
@@ -731,7 +789,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Copy do formulário de captura',
             'Copy dos benefícios do produto',
             'Copy do call-to-action'
-          ]
+          ],
+          getContext: () => 'Criando copy para landing page de alta conversão'
         };
       case '/funnels':
         return {
@@ -748,12 +807,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Copy do upsell',
             'Copy de fechamento',
             'Copy de retenção'
-          ]
+          ],
+          getContext: () => 'Criando copy para funil de vendas'
         };
       case '/analytics':
         return {
-          hasData: false,
-          data: [],
+          hasData: stats && Object.keys(stats).length > 0,
+          data: stats ? Object.entries(stats).map(([key, value]) => ({ name: key, value })) : [],
           type: 'analytics',
           title: 'Analytics',
           icon: BarChart3,
@@ -765,7 +825,242 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Copy sobre otimizações',
             'Copy sobre resultados',
             'Copy sobre insights'
-          ]
+          ],
+          getContext: (item: any) => `Baseado nos dados de ${item.name}: ${item.value}`
+        };
+      case '/social-scheduler':
+        return {
+          hasData: false,
+          data: [],
+          type: 'scheduler',
+          title: 'Social Scheduler',
+          icon: Calendar,
+          color: 'bg-gradient-to-r from-pink-500 to-rose-500',
+          emptyMessage: 'Nenhum post agendado',
+          createMessage: 'Criar copy para post',
+          suggestions: [
+            'Copy para post de engajamento',
+            'Copy para post promocional',
+            'Copy para post educativo',
+            'Copy para post de storytelling'
+          ],
+          getContext: () => 'Criando copy para post nas redes sociais'
+        };
+      case '/email-marketing':
+        return {
+          hasData: false,
+          data: [],
+          type: 'email',
+          title: 'Email Marketing',
+          icon: Mail,
+          color: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+          emptyMessage: 'Nenhum email criado',
+          createMessage: 'Criar copy para email',
+          suggestions: [
+            'Subject line de alta abertura',
+            'Copy do corpo do email',
+            'Copy do call-to-action',
+            'Copy de follow-up'
+          ],
+          getContext: () => 'Criando copy para email marketing'
+        };
+      case '/push-whatsapp':
+        return {
+          hasData: false,
+          data: [],
+          type: 'whatsapp',
+          title: 'Push WhatsApp',
+          icon: MessageSquare,
+          color: 'bg-gradient-to-r from-green-500 to-teal-500',
+          emptyMessage: 'Nenhuma mensagem criada',
+          createMessage: 'Criar copy para WhatsApp',
+          suggestions: [
+            'Copy para mensagem de boas-vindas',
+            'Copy para promoção',
+            'Copy para suporte',
+            'Copy para follow-up'
+          ],
+          getContext: () => 'Criando copy para mensagens no WhatsApp'
+        };
+      case '/call-scripts':
+        return {
+          hasData: false,
+          data: [],
+          type: 'script',
+          title: 'Call Scripts',
+          icon: Phone,
+          color: 'bg-gradient-to-r from-purple-500 to-violet-500',
+          emptyMessage: 'Nenhum script criado',
+          createMessage: 'Criar script de vendas',
+          suggestions: [
+            'Script de abertura',
+            'Script de apresentação',
+            'Script de objeções',
+            'Script de fechamento'
+          ],
+          getContext: () => 'Criando script para ligações de vendas'
+        };
+      case '/crm':
+        return {
+          hasData: false,
+          data: [],
+          type: 'crm',
+          title: 'CRM',
+          icon: Users,
+          color: 'bg-gradient-to-r from-indigo-500 to-blue-500',
+          emptyMessage: 'Nenhum cliente cadastrado',
+          createMessage: 'Criar copy para cliente',
+          suggestions: [
+            'Copy para follow-up',
+            'Copy para onboarding',
+            'Copy para reativação',
+            'Copy para upsell'
+          ],
+          getContext: () => 'Criando copy para gestão de clientes'
+        };
+      case '/content-library':
+        return {
+          hasData: false,
+          data: [],
+          type: 'content',
+          title: 'Content Library',
+          icon: BookOpen,
+          color: 'bg-gradient-to-r from-amber-500 to-orange-500',
+          emptyMessage: 'Nenhum conteúdo criado',
+          createMessage: 'Criar novo conteúdo',
+          suggestions: [
+            'Copy para artigo de blog',
+            'Copy para post de rede social',
+            'Copy para newsletter',
+            'Copy para case study'
+          ],
+          getContext: () => 'Criando conteúdo para biblioteca'
+        };
+      case '/voices':
+        return {
+          hasData: false,
+          data: [],
+          type: 'voice',
+          title: 'Voices',
+          icon: Mic,
+          color: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+          emptyMessage: 'Nenhuma voice criada',
+          createMessage: 'Criar nova voice',
+          suggestions: [
+            'Voice para narração',
+            'Voice para podcast',
+            'Voice para vídeo',
+            'Voice para apresentação'
+          ],
+          getContext: () => 'Criando voice para áudio'
+        };
+      case '/ab-tests':
+        return {
+          hasData: false,
+          data: [],
+          type: 'test',
+          title: 'A/B Tests',
+          icon: TestTube,
+          color: 'bg-gradient-to-r from-violet-500 to-purple-500',
+          emptyMessage: 'Nenhum teste criado',
+          createMessage: 'Criar teste A/B',
+          suggestions: [
+            'Copy para variante A',
+            'Copy para variante B',
+            'Copy para hipótese',
+            'Copy para resultados'
+          ],
+          getContext: () => 'Criando copy para teste A/B'
+        };
+      case '/feedback':
+        return {
+          hasData: false,
+          data: [],
+          type: 'feedback',
+          title: 'Feedback',
+          icon: MessageSquare,
+          color: 'bg-gradient-to-r from-cyan-500 to-blue-500',
+          emptyMessage: 'Nenhum feedback recebido',
+          createMessage: 'Criar copy para feedback',
+          suggestions: [
+            'Copy para solicitar feedback',
+            'Copy para agradecer feedback',
+            'Copy para implementar sugestões',
+            'Copy para follow-up'
+          ],
+          getContext: () => 'Criando copy para gestão de feedback'
+        };
+      case '/team':
+        return {
+          hasData: false,
+          data: [],
+          type: 'team',
+          title: 'Team',
+          icon: Users,
+          color: 'bg-gradient-to-r from-slate-500 to-gray-500',
+          emptyMessage: 'Nenhum membro na equipe',
+          createMessage: 'Criar copy para equipe',
+          suggestions: [
+            'Copy para onboarding',
+            'Copy para treinamento',
+            'Copy para comunicação',
+            'Copy para motivação'
+          ],
+          getContext: () => 'Criando copy para gestão de equipe'
+        };
+      case '/integrations':
+        return {
+          hasData: false,
+          data: [],
+          type: 'integration',
+          title: 'Integrations',
+          icon: Link,
+          color: 'bg-gradient-to-r from-gray-500 to-slate-500',
+          emptyMessage: 'Nenhuma integração configurada',
+          createMessage: 'Criar copy para integração',
+          suggestions: [
+            'Copy para configuração',
+            'Copy para documentação',
+            'Copy para suporte',
+            'Copy para atualização'
+          ],
+          getContext: () => 'Criando copy para integrações'
+        };
+      case '/billing':
+        return {
+          hasData: false,
+          data: [],
+          type: 'billing',
+          title: 'Billing',
+          icon: CreditCard,
+          color: 'bg-gradient-to-r from-emerald-500 to-green-500',
+          emptyMessage: 'Nenhum plano ativo',
+          createMessage: 'Criar copy para billing',
+          suggestions: [
+            'Copy para upgrade de plano',
+            'Copy para renovação',
+            'Copy para cancelamento',
+            'Copy para suporte'
+          ],
+          getContext: () => 'Criando copy para gestão de cobrança'
+        };
+      case '/settings':
+        return {
+          hasData: false,
+          data: [],
+          type: 'settings',
+          title: 'Settings',
+          icon: Settings,
+          color: 'bg-gradient-to-r from-slate-500 to-gray-500',
+          emptyMessage: 'Configurações padrão',
+          createMessage: 'Criar copy para configurações',
+          suggestions: [
+            'Copy para onboarding',
+            'Copy para configurações',
+            'Copy para segurança',
+            'Copy para preferências'
+          ],
+          getContext: () => 'Criando copy para configurações'
         };
       default:
         return null;
@@ -780,7 +1075,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     <>
       {/* Floating Button - Design Moderno */}
       <motion.div
-        className="fixed bottom-8 right-8 z-[9999]"
+        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[9999]"
         initial={{ scale: 0, x: 100, y: 100 }}
         animate={{ scale: 1, x: 0, y: 0 }}
         transition={{ delay: 0.5, type: "spring", stiffness: 200, damping: 20 }}
@@ -802,20 +1097,20 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
               e.stopPropagation();
               setIsModalOpen(true);
             }}
-            className={`w-20 h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${currentContext.color} border-4 border-white/30 relative z-10 backdrop-blur-sm`}
+            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${currentContext.color} border-4 border-white/30 dark:border-gray-800/30 relative z-10 backdrop-blur-sm`}
             size="lg"
           >
-            <IconComponent className="w-10 h-10 text-white drop-shadow-lg" />
+            <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
           </Button>
           
           {/* Pulse effect */}
           <div className={`absolute inset-0 rounded-full ${currentContext.color} opacity-40 animate-ping pointer-events-none`} />
           
           {/* Tooltip */}
-          <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-            <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+          <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block">
+            <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
               {currentContext.title}
-              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
             </div>
           </div>
         </motion.div>
@@ -823,21 +1118,21 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
       {/* Context Modal - Design Moderno */}
       <Dialog open={isModalOpen} onOpenChange={(open) => !open && resetModal()}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-gray-50">
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-gray-200 dark:border-gray-700">
           <DialogHeader className="space-y-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className={`w-12 h-12 rounded-xl ${currentContext.color} flex items-center justify-center shadow-lg`}>
                 <IconComponent className="w-7 h-7 text-white" />
               </div>
-              <div className="flex-1">
-                <DialogTitle className="text-xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
                   {currentContext.title}
                 </DialogTitle>
-                <DialogDescription className="text-base text-gray-600 mt-1">
+                <DialogDescription className="text-base text-gray-600 dark:text-gray-400 mt-1">
                   {currentContext.description}
                 </DialogDescription>
               </div>
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700">
                 <Zap className="w-3 h-3 mr-1" />
                 {location.pathname.replace('/', '') || 'Home'}
               </Badge>
@@ -849,36 +1144,36 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             {location.pathname === '/calendar' && events.length > 0 && showEventSelector && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Calendar className="w-3 h-3 text-blue-600" />
+                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <label className="text-sm font-semibold text-gray-900">Selecionar Evento Agendado</label>
+                  <label className="text-sm font-semibold text-gray-900 dark:text-white">Selecionar Evento Agendado</label>
                 </div>
-                <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 rounded-xl p-4 bg-white">
+                <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-white dark:bg-gray-800">
                   {events.slice(0, 5).map((event) => (
                     <div
                       key={event.id}
                       onClick={() => handleEventSelect(event)}
-                      className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 cursor-pointer transition-all duration-200 group"
+                      className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 hover:border-blue-200 dark:hover:border-blue-600 cursor-pointer transition-all duration-200 group"
                     >
                       <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
                         <Calendar className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                           {event.title}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {new Date(event.event_date).toLocaleDateString()} • {event.platform}
                         </p>
                       </div>
                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Edit3 className="w-4 h-4 text-blue-600" />
+                        <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </Button>
                     </div>
                   ))}
                 </div>
-                <Separator className="bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+                <Separator className="bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-600 to-transparent" />
               </div>
             )}
 
@@ -889,7 +1184,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   <div className={`w-6 h-6 rounded-full ${pageData.color} flex items-center justify-center`}>
                     <pageData.icon className="w-3 h-3 text-white" />
                   </div>
-                  <label className="text-sm font-semibold text-gray-900">
+                  <label className="text-sm font-semibold text-gray-900 dark:text-white">
                     Assistente IA - {pageData.title}
                   </label>
                 </div>
@@ -898,31 +1193,31 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   // Se há dados, mostrar seletor
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Selecionar existente:</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Selecionar existente:</span>
                       <Badge variant="outline" className="text-xs">
                         {pageData.data.length} disponível{pageData.data.length !== 1 ? 'is' : ''}
                       </Badge>
                     </div>
-                    <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 rounded-xl p-4 bg-white">
+                    <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-white dark:bg-gray-800">
                       {pageData.data.slice(0, 5).map((item: any) => (
                         <div
                           key={item.id}
                           onClick={() => handleItemSelect(item)}
-                          className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 cursor-pointer transition-all duration-200 group"
+                          className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 hover:border-blue-200 dark:hover:border-blue-600 cursor-pointer transition-all duration-200 group"
                         >
                           <div className={`w-10 h-10 rounded-full ${pageData.color} flex items-center justify-center shadow-sm`}>
                             <pageData.icon className="w-5 h-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                               {item.name || item.title}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               {item.description || item.tone || 'Sem descrição'}
                             </p>
                           </div>
                           <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Edit3 className="w-4 h-4 text-blue-600" />
+                            <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                           </Button>
                         </div>
                       ))}
@@ -930,16 +1225,16 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   </div>
                 ) : (
                   // Se não há dados, oferecer criação com IA ou funcionalidades específicas
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <pageData.icon className="w-6 h-6 text-blue-600" />
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-600 rounded-xl p-6">
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                        <pageData.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-blue-900 mb-2">
+                        <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
                           {pageData.emptyMessage}
                         </h3>
-                        <p className="text-sm text-blue-700 mb-4">
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
                           {pageData.type === 'brand-voice' || pageData.type === 'persona' ? (
                             `Que tal criar sua primeira ${pageData.title.toLowerCase()} com a ajuda da IA? Ela vai te ajudar a definir características, tom de voz e personalidade.`
                           ) : pageData.type === 'idea' ? (
@@ -948,7 +1243,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                             `Que tal criar copy otimizada para ${pageData.title.toLowerCase()}? A IA vai te ajudar a criar conteúdo que converte.`
                           )}
                         </p>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3">
                           <Button 
                             onClick={() => {
                               setBriefing(pageData.createMessage);
@@ -966,7 +1261,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                                 setBriefing('Criar brand voice completa com IA: definir nome, descrição, tom de voz, características, público-alvo e exemplos de uso');
                                 setShowItemSelector(false);
                               }}
-                              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                              className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/20"
                             >
                               <Mic className="w-4 h-4 mr-2" />
                               Brand Voice Completa
@@ -978,20 +1273,20 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   </div>
                 )}
 
-                <Separator className="bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+                <Separator className="bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-600 to-transparent" />
               </div>
             )}
 
             {/* Quick Suggestions - Design Moderno */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <Lightbulb className="w-3 h-3 text-yellow-600" />
+                <div className="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                  <Lightbulb className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
                 </div>
-                <label className="text-sm font-semibold text-gray-900">
+                <label className="text-sm font-semibold text-gray-900 dark:text-white">
                   Sugestões Rápidas
                   {pageData && (
-                    <span className="text-xs text-gray-500 ml-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                       • {pageData.title}
                     </span>
                   )}
@@ -1003,13 +1298,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                     key={suggestion}
                     variant="outline"
                     onClick={() => setBriefing(suggestion)}
-                    className="justify-start h-auto p-4 text-left border-gray-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 transition-all duration-200 group"
+                    className="justify-start h-auto p-4 text-left border-gray-200 dark:border-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-200 group"
                   >
                     <div className="flex items-start gap-3 w-full">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-xs font-semibold text-blue-600">{index + 1}</span>
+                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{index + 1}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                         {suggestion}
                       </span>
                     </div>
@@ -1021,11 +1316,11 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             {/* Briefing - Design Moderno */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                  <FileText className="w-3 h-3 text-green-600" />
+                <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <FileText className="w-3 h-3 text-green-600 dark:text-green-400" />
                 </div>
-                <label className="text-sm font-semibold text-gray-900">Descrição do Conteúdo</label>
-                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                <label className="text-sm font-semibold text-gray-900 dark:text-white">Descrição do Conteúdo</label>
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-600 text-xs">
                   Obrigatório
                 </Badge>
               </div>
@@ -1034,28 +1329,28 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   placeholder="Descreva o que você quer comunicar, o objetivo da copy, público-alvo, tom de voz..."
                   value={briefing}
                   onChange={(e) => setBriefing(e.target.value)}
-                  className="min-h-[140px] resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl text-sm leading-relaxed"
+                  className="min-h-[140px] resize-none border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 rounded-xl text-sm leading-relaxed bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
-                <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                <div className="absolute bottom-3 right-3 text-xs text-gray-400 dark:text-gray-500">
                   {briefing.length}/500
                 </div>
               </div>
             </div>
 
             {/* Platform & Type Selection - Design Moderno */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Globe className="w-3 h-3 text-purple-600" />
+                  <div className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Globe className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <label className="text-sm font-semibold text-gray-900">Plataforma</label>
+                  <label className="text-sm font-semibold text-gray-900 dark:text-white">Plataforma</label>
                 </div>
                 <Select value={platform} onValueChange={setPlatform}>
-                  <SelectTrigger className="border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl">
+                  <SelectTrigger className="border-gray-200 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500 dark:focus:border-purple-400 dark:focus:ring-purple-400 rounded-xl bg-white dark:bg-gray-800">
                     <SelectValue placeholder="Escolha a plataforma" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
                     <SelectItem value="Instagram">📱 Instagram</SelectItem>
                     <SelectItem value="Facebook">📘 Facebook</SelectItem>
                     <SelectItem value="LinkedIn">💼 LinkedIn</SelectItem>
@@ -1068,16 +1363,16 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Target className="w-3 h-3 text-orange-600" />
+                  <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                    <Target className="w-3 h-3 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <label className="text-sm font-semibold text-gray-900">Tipo de Conteúdo</label>
+                  <label className="text-sm font-semibold text-gray-900 dark:text-white">Tipo de Conteúdo</label>
                 </div>
                 <Select value={copyType} onValueChange={setCopyType}>
-                  <SelectTrigger className="border-gray-200 focus:border-orange-500 focus:ring-orange-500 rounded-xl">
+                  <SelectTrigger className="border-gray-200 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-500 dark:focus:border-orange-400 dark:focus:ring-orange-400 rounded-xl bg-white dark:bg-gray-800">
                     <SelectValue placeholder="Tipo de conteúdo" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
                     <SelectItem value="Post Orgânico">📝 Post Orgânico</SelectItem>
                     <SelectItem value="Stories">📱 Stories</SelectItem>
                     <SelectItem value="Anúncio">💰 Anúncio</SelectItem>
@@ -1128,33 +1423,33 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                 className="space-y-6"
               >
                 {/* Header com Status */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                       <Wand2 className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Copy Gerada com IA</h3>
-                      <p className="text-sm text-gray-500">Pronta para usar</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">Copy Gerada com IA</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Pronta para usar</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-600">
                       {platform}
                     </Badge>
-                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-600">
                       {copyType}
                     </Badge>
                   </div>
                 </div>
 
                 {/* Preview da Copy - Design Moderno */}
-                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm overflow-hidden">
                   {/* Header do Preview */}
-                  <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
+                  <div className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-600 px-6 py-4 border-b border-gray-200 dark:border-gray-500">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center">
                           {platform === 'Instagram' && <Instagram className="w-4 h-4 text-pink-500" />}
                           {platform === 'Facebook' && <Facebook className="w-4 h-4 text-blue-600" />}
                           {platform === 'LinkedIn' && <Linkedin className="w-4 h-4 text-blue-700" />}
@@ -1163,22 +1458,22 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                           {platform === 'Web' && <Globe className="w-4 h-4 text-gray-600" />}
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-gray-900">{platform}</span>
-                          <span className="text-xs text-gray-500 ml-2">• {copyType}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{platform}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">• {copyType}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-xs text-gray-500">Pronto</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Pronto</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Conteúdo da Copy */}
                   <div className="p-6">
-                    <div className="bg-white rounded-lg border border-gray-100 p-4">
-                      <div className="prose prose-sm max-w-none">
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 font-medium">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-600 p-4">
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 dark:text-gray-200 font-medium">
                           {generatedCopy}
                         </div>
                       </div>
@@ -1189,7 +1484,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                 {/* Ações */}
                 <div className="space-y-3">
                   {/* Botões Principais */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Button 
                       onClick={handleCopyToClipboard} 
                       className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
@@ -1215,7 +1510,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   <Button 
                     variant="outline" 
                     onClick={resetModal}
-                    className="w-full border-gray-200 hover:bg-gray-50 transition-colors"
+                    className="w-full border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     size="lg"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -1224,14 +1519,14 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                 </div>
 
                 {/* Informações Adicionais */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-600 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Zap className="w-3 h-3 text-blue-600" />
+                    <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Zap className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="text-sm">
-                      <p className="font-medium text-blue-900 mb-1">Dica Pro</p>
-                      <p className="text-blue-700">
+                      <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">Dica Pro</p>
+                      <p className="text-blue-700 dark:text-blue-300">
                         {location.pathname === '/calendar' 
                           ? 'A copy foi otimizada para agendamento. Clique em "Agendar Post" para continuar.'
                           : 'A copy foi gerada com base no contexto da página atual. Use no Composer para editar.'
