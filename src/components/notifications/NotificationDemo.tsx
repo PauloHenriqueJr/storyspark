@@ -5,54 +5,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Bell, CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 export const NotificationDemo = () => {
-  const { addNotification } = useNotifications();
+  const { showSuccess, showError, showWarning, showInfo } = useSystemToastNotifications();
 
   const handleAddSuccessNotification = () => {
-    addNotification({
-      title: 'Campanha publicada com sucesso',
-      message: 'Sua campanha "Oferta Especial" foi publicada e está ativa.',
-      type: 'success',
-      action: {
-        label: 'Ver campanha',
-        onClick: () => console.log('Navegando para campanha...')
-      }
-    });
+    showSuccess(
+      'Campanha publicada com sucesso',
+      'Sua campanha "Oferta Especial" foi publicada e está ativa.',
+      4000
+    );
   };
 
   const handleAddErrorNotification = () => {
-    addNotification({
-      title: 'Erro ao processar pagamento',
-      message: 'Não foi possível processar o pagamento. Verifique os dados do cartão.',
-      type: 'error',
-      action: {
-        label: 'Tentar novamente',
-        onClick: () => console.log('Tentando novamente...')
-      }
-    });
+    showError(
+      'Erro ao processar pagamento',
+      'Não foi possível processar o pagamento. Verifique os dados do cartão.',
+      4000
+    );
   };
 
   const handleAddWarningNotification = () => {
-    addNotification({
-      title: 'Limite de uso próximo',
-      message: 'Você usou 85% do seu limite mensal de créditos.',
-      type: 'warning',
-      action: {
-        label: 'Upgrade do plano',
-        onClick: () => console.log('Navegando para billing...')
-      }
-    });
+    showWarning(
+      'Limite de uso próximo',
+      'Você usou 85% do seu limite mensal de créditos.',
+      4000
+    );
   };
 
   const handleAddInfoNotification = () => {
-    addNotification({
-      title: 'Nova funcionalidade disponível',
-      message: 'Agora você pode agendar posts para múltiplas redes sociais.',
-      type: 'info',
-      action: {
-        label: 'Explorar',
-        onClick: () => console.log('Navegando para social scheduler...')
-      }
-    });
+    showInfo(
+      'Nova funcionalidade disponível',
+      'Agora você pode agendar posts para múltiplas redes sociais.',
+      4000
+    );
   };
 
   return (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNotifications } from './useNotifications';
+import { useSystemToastNotifications } from './useSystemToastNotifications';
 import { useWorkspace } from './useWorkspace';
 
 interface MetricThresholds {
@@ -24,7 +24,7 @@ const DEFAULT_THRESHOLDS: MetricThresholds = {
 };
 
 export const useSystemNotifications = () => {
-  const { addNotification } = useNotifications();
+  const { showSuccess, showError, showWarning, showInfo } = useSystemToastNotifications();
   const { workspace } = useWorkspace();
   const [lastCheck, setLastCheck] = useState<Date>(new Date());
   const [thresholds] = useState<MetricThresholds>(DEFAULT_THRESHOLDS);
@@ -37,27 +37,19 @@ export const useSystemNotifications = () => {
 
     // Aviso crítico (95%+)
     if (usagePercent >= thresholds.creditUsageCritical) {
-      addNotification({
-        title: '⚠️ Créditos quase esgotados',
-        message: `Você usou ${usagePercent.toFixed(0)}% dos seus créditos mensais. Considere fazer upgrade do plano.`,
-        type: 'error',
-        action: {
-          label: 'Upgrade do plano',
-          onClick: () => console.log('Navegar para billing')
-        }
-      });
+      showError(
+        '⚠️ Créditos quase esgotados',
+        `Você usou ${usagePercent.toFixed(0)}% dos seus créditos mensais. Considere fazer upgrade do plano.`,
+        6000
+      );
     }
     // Aviso de atenção (80%+)
     else if (usagePercent >= thresholds.creditUsageWarning) {
-      addNotification({
-        title: '📊 Limite de créditos se aproximando',
-        message: `Você usou ${usagePercent.toFixed(0)}% dos seus créditos mensais. Monitore seu uso.`,
-        type: 'warning',
-        action: {
-          label: 'Ver detalhes',
-          onClick: () => console.log('Navegar para usage details')
-        }
-      });
+      showWarning(
+        '📊 Limite de créditos se aproximando',
+        `Você usou ${usagePercent.toFixed(0)}% dos seus créditos mensais. Monitore seu uso.`,
+        5000
+      );
     }
   };
 
@@ -68,15 +60,11 @@ export const useSystemNotifications = () => {
     const goalEngagement = thresholds.engagementThreshold;
 
     if (currentEngagement >= goalEngagement + 10) {
-      addNotification({
-        title: '🎉 Meta de engajamento superada!',
-        message: `Parabéns! Você atingiu ${currentEngagement}% de engajamento, superando sua meta de ${goalEngagement}%.`,
-        type: 'success',
-        action: {
-          label: 'Ver analytics',
-          onClick: () => console.log('Navegar para analytics')
-        }
-      });
+      showSuccess(
+        '🎉 Meta de engajamento superada!',
+        `Parabéns! Você atingiu ${currentEngagement}% de engajamento, superando sua meta de ${goalEngagement}%.`,
+        5000
+      );
     }
   };
 
@@ -105,39 +93,27 @@ export const useSystemNotifications = () => {
       if (Math.random() < event.probability) {
         switch (event.type) {
           case 'campaign_approved':
-            addNotification({
-              title: '✅ Campanha aprovada',
-              message: `Sua campanha "${event.campaignName}" foi aprovada e está ativa.`,
-              type: 'success',
-              action: {
-                label: 'Ver campanha',
-                onClick: () => console.log('Navegar para campanha')
-              }
-            });
+            showSuccess(
+              '✅ Campanha aprovada',
+              `Sua campanha "${event.campaignName}" foi aprovada e está ativa.`,
+              5000
+            );
             break;
           
           case 'campaign_budget_threshold':
-            addNotification({
-              title: '💰 Orçamento da campanha',
-              message: `A campanha "${event.campaignName}" atingiu 85% do orçamento.`,
-              type: 'warning',
-              action: {
-                label: 'Ajustar orçamento',
-                onClick: () => console.log('Ajustar orçamento')
-              }
-            });
+            showWarning(
+              '💰 Orçamento da campanha',
+              `A campanha "${event.campaignName}" atingiu 85% do orçamento.`,
+              5000
+            );
             break;
           
           case 'high_engagement_detected':
-            addNotification({
-              title: '📈 Alto engajamento detectado',
-              message: `A campanha "${event.campaignName}" está com performance excepcional!`,
-              type: 'info',
-              action: {
-                label: 'Ampliar campanha',
-                onClick: () => console.log('Ampliar campanha')
-              }
-            });
+            showInfo(
+              '📈 Alto engajamento detectado',
+              `A campanha "${event.campaignName}" está com performance excepcional!`,
+              5000
+            );
             break;
         }
       }
@@ -184,15 +160,13 @@ export const useSystemNotifications = () => {
             break;
         }
 
-        addNotification({
-          title,
-          message: event.message,
-          type,
-          action: {
-            label: 'Saiba mais',
-            onClick: () => console.log('Ver detalhes do evento')
-          }
-        });
+        if (type === 'success') {
+          showSuccess(title, event.message, 5000);
+        } else if (type === 'warning') {
+          showWarning(title, event.message, 5000);
+        } else {
+          showInfo(title, event.message, 5000);
+        }
       }
     });
   };
