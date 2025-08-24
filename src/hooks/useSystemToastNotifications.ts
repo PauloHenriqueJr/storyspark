@@ -40,6 +40,16 @@ export const useSystemToastNotifications = () => {
     return addNotification({ type: 'info', title, description, duration });
   }, [addNotification]);
 
+  // Função específica para notificações do sistema (login, logout, etc.)
+  const showSystemNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', title: string, description?: string) => {
+    return addNotification({ 
+      type, 
+      title, 
+      description, 
+      duration: 3000 // Duração mais curta para notificações do sistema
+    });
+  }, [addNotification]);
+
   return {
     notifications,
     addNotification,
@@ -49,5 +59,6 @@ export const useSystemToastNotifications = () => {
     showError,
     showWarning,
     showInfo,
+    showSystemNotification,
   };
 };
