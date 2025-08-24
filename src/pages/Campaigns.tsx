@@ -31,7 +31,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkspace } from '@/hooks/useWorkspace';
-import { FloatingButtonProvider } from '@/contexts/FloatingButtonContext';
+import { useRegisterFloatingButtonAction } from '@/contexts/FloatingButtonContext';
 
 // Dados agora vêm do hook useCampaigns conectado ao Supabase
 
@@ -47,6 +47,12 @@ const Campaigns = () => {
     setModalInitialDescription(description);
     setShowCreateModal(true);
   };
+
+  useRegisterFloatingButtonAction({
+    path: '/campaigns',
+    action: handleOpenModalWithDescription,
+    type: 'openCampaign'
+  });
   
   const { campaigns, loading, error, stats, createCampaign, updateCampaign, deleteCampaign, updateCampaignStatus, refetch } = useCampaigns();
   const { toast } = useToast();
@@ -241,10 +247,9 @@ const Campaigns = () => {
   ];
 
   return (
-    <FloatingButtonProvider value={{ openCampaignModalWithContent: handleOpenModalWithDescription }}>
-      <div className="space-y-8">
-        {/* Header */}
-        <motion.div
+    <div className="space-y-8">
+      {/* Header */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
@@ -512,7 +517,6 @@ const Campaigns = () => {
         }}
       />
     </div>
-    </FloatingButtonProvider>
   );
 };
 

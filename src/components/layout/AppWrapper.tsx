@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { NotificationProvider } from '@/hooks/useNotifications';
+import { FloatingButtonProvider } from '@/contexts/FloatingButtonContext';
 
 const queryClient = new QueryClient();
 
@@ -29,7 +30,9 @@ export const AppWrapper = ({ children }: AppWrapperProps) => {
           >
             <AuthProvider>
               <NotificationProvider>
-                {children}
+                <FloatingButtonProvider>
+                  {children}
+                </FloatingButtonProvider>
               </NotificationProvider>
             </AuthProvider>
           </BrowserRouter>

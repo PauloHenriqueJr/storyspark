@@ -29,7 +29,7 @@ import CreateEventModal from '@/components/modals/CreateEventModal';
 import DraggableCalendar from '@/components/calendar/DraggableCalendar';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useToast } from '@/hooks/use-toast';
-import { FloatingButtonProvider } from '@/contexts/FloatingButtonContext';
+import { useRegisterFloatingButtonAction } from '@/contexts/FloatingButtonContext';
 import type { CalendarEventWithStats } from '@/services/calendarService';
 import type { CalendarEvent } from '@/types/calendar';
 
@@ -102,6 +102,12 @@ const Calendar = () => {
     setModalInitialContent(content);
     setShowCreateModal(true);
   };
+
+  useRegisterFloatingButtonAction({
+    path: '/calendar',
+    action: handleOpenModalWithContent,
+    type: 'openCalendar'
+  });
 
   const { events, loading, error, stats, createEvent, deleteEvent, updateEventStatus, refetch } = useCalendar();
   const { toast } = useToast();
@@ -273,10 +279,9 @@ const Calendar = () => {
   }
 
   return (
-    <FloatingButtonProvider value={{ openCalendarModalWithContent: handleOpenModalWithContent }}>
-      <div className="space-y-8">
-        {/* Header */}
-        <motion.div
+    <div className="space-y-8">
+      {/* Header */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
@@ -503,7 +508,6 @@ const Calendar = () => {
         initialContent={modalInitialContent}
       />
     </div>
-    </FloatingButtonProvider>
   );
 };
 

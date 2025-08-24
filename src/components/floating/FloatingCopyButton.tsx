@@ -11,7 +11,9 @@ import {
   Instagram,
   Users,
   Target,
-  Zap
+  Zap,
+  Sparkles,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -44,10 +46,9 @@ interface ContextConfig {
   suggestions: string[];
   defaultPlatform?: string;
   defaultType?: string;
-  actionType: 'navigate' | 'openCalendar' | 'openCampaign';
 }
 
-const contextConfigs: Record<string, ContextConfig> = {
+const contextConfigs: Record<string, Omit<ContextConfig, 'suggestions'> & { suggestions: string[] }> = {
   '/calendar': {
     title: 'Copy para Calendário',
     icon: Calendar,
@@ -59,7 +60,6 @@ const contextConfigs: Record<string, ContextConfig> = {
       'Conteúdo de engajamento para a semana'
     ],
     defaultPlatform: 'Instagram',
-    actionType: 'openCalendar'
   },
   '/templates': {
     title: 'Copy para Templates',
@@ -72,7 +72,6 @@ const contextConfigs: Record<string, ContextConfig> = {
       'Template de engajamento'
     ],
     defaultType: 'Template',
-    actionType: 'navigate'
   },
   '/campaigns': {
     title: 'Copy para Campanhas',
@@ -85,7 +84,6 @@ const contextConfigs: Record<string, ContextConfig> = {
       'Campanha de retenção de clientes'
     ],
     defaultPlatform: 'Facebook',
-    actionType: 'openCampaign'
   },
   '/email-marketing': {
     title: 'Copy para E-mail Marketing',
@@ -99,7 +97,6 @@ const contextConfigs: Record<string, ContextConfig> = {
     ],
     defaultPlatform: 'Email',
     defaultType: 'Newsletter',
-    actionType: 'navigate'
   },
   '/social-media': {
     title: 'Copy para Social Media',
@@ -112,7 +109,6 @@ const contextConfigs: Record<string, ContextConfig> = {
       'Post promocional'
     ],
     defaultPlatform: 'Instagram',
-    actionType: 'navigate'
   },
   '/composer': {
     title: 'Composer - Criar Copy',
@@ -126,7 +122,6 @@ const contextConfigs: Record<string, ContextConfig> = {
     ],
     defaultPlatform: 'Instagram',
     defaultType: 'Post Orgânico',
-    actionType: 'navigate'
   },
   'default': {
     title: 'Criar Copy com IA',
@@ -138,7 +133,6 @@ const contextConfigs: Record<string, ContextConfig> = {
       'E-mail marketing',
       'Landing page'
     ],
-    actionType: 'navigate'
   }
 };
 
@@ -146,7 +140,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
   toastNotifications,
   systemToastNotifications,
 }) => {
-  const { openCalendarModalWithContent, openCampaignModalWithContent } = useFloatingButton();
+  const { getActionForPath } = useFloatingButton();
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [briefing, setBriefing] = useState('');
@@ -194,15 +188,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({
         systemToastNotifications.showSuccess("🎉 Copy gerada com sucesso!");
 
         // Ação pós-geração baseada no contexto
-        if (currentContext.actionType === 'openCalendar' && openCalendarModalWithContent) {
-          openCalendarModalWithContent(response.content);
-          systemToastNotifications.showInfo("Abrindo modal do calendário...");
+        const action = getActionForPath(location.pathname);
+        if (action) {
+          action(response.content);
+          systemToastNotifications.showInfo("Abrindo modal...");
           setTimeout(() => resetModal(), 500);
-        } else if (currentContext.actionType === 'openCampaign' && openCampaignModalWithContent) {
-          openCampaignModalWithContent(response.content);
-          systemToastNotifications.showInfo("Abrindo modal de campanha...");
-          setTimeout(() => resetModal(), 500);
-        } else {
+        }
+        else {
           // Ação padrão: navegar para o composer com a copy
           const encodedContent = encodeURIComponent(response.content);
           const targetUrl = `/composer?from=floating-button&content=${encodedContent}`;

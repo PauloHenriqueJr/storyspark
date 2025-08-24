@@ -1,19 +1,63 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
-interface FloatingButtonContextType {
-  openCalendarModalWithContent?: (content: string) => void;
-  openCampaignModalWithContent?: (content: string) => void;
+type ActionFunction = (content: string) => void;
+
+interface ActionPayload {
+  path: string;
+  action: ActionFunction;
+  type: 'openCalendar' | 'openCampaign';
 }
 
-export const FloatingButtonContext = createContext<FloatingButtonContextType | undefined>(undefined);
+interface FloatingButtonContextType {
+  actions: Record<string, ActionFunction>;
+  registerAction: (payload: ActionPayload) => void;
+  unregisterAction: (path: string) => void;
+  getActionForPath: (path: string) => ActionFunction | undefined;
+}
 
-export const FloatingButtonProvider = FloatingButtonContext.Provider;
+const FloatingButtonContext = createContext<FloatingButtonContextType | null>(null);
+
+export const FloatingButtonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [actions, setActions] = useState<Record<string, ActionFunction>>({});
+
+  const registerAction = useCallback((payload: ActionPayload) => {
+    setActions(prev => ({ ...prev, [payload.path]: payload.action }));
+  }, []);
+
+  const unregisterAction = useCallback((path: string) => {
+    setActions(prev => {
+      const newActions = { ...prev };
+      delete newActions[path];
+      return newActions;
+    });
+  }, []);
+
+  const getActionForPath = useCallback((path: string) => {
+    return actions[path];
+  }, [actions]);
+
+  return (
+    <FloatingButtonContext.Provider value={{ actions, registerAction, unregisterAction, getActionForPath }}>
+      {children}
+    </FloatingButtonContext.Provider>
+  );
+};
 
 export const useFloatingButton = () => {
   const context = useContext(FloatingButtonContext);
-  // Return a dummy function if not in provider, so it doesn't crash pages without it.
-  return context || {
-    openCalendarModalWithContent: () => console.warn('FloatingButtonContext not found for Calendar'),
-    openCampaignModalWithContent: () => console.warn('FloatingButtonContext not found for Campaign')
-  };
+  if (!context) {
+    throw new Error('useFloatingButton must be used within a FloatingButtonProvider');
+  }
+  return context;
+};
+
+export const useRegisterFloatingButtonAction = (payload: ActionPayload) => {
+  const { registerAction, unregisterAction } = useFloatingButton();
+
+  useEffect(() => {
+    registerAction(payload);
+    return () => {
+      unregisterAction(payload.path);
+    };
+  }, [registerAction, unregisterAction, payload]);
 };
