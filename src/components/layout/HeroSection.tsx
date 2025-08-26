@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
 import appDark from '@/assets/app-dark.png';
 import appLight from '@/assets/app-light.png';
+import { waitlistService } from '@/services/waitlistService';
+import { useToast } from '@/hooks/use-toast';
 
 const stats = [
   { icon: Users, value: '2.500+', label: 'Profissionais confiam' },
@@ -29,6 +31,10 @@ const staggerContainer = {
 
 export const HeroSection = () => {
   const { theme } = useTheme();
+  const { toast } = useToast();
+  const [email, setEmail] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitted, setSubmitted] = React.useState(false);
   
   // Determina qual imagem usar baseada no tema
   // Modo escuro = imagem clara, modo claro = imagem escura
@@ -88,26 +94,49 @@ export const HeroSection = () => {
 
             {/* CTA Form */}
             <motion.div className="mt-12" variants={fadeInUp}>
-              <form className="mx-auto max-w-md">
+              <form
+                className="mx-auto max-w-md"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (isSubmitting || submitted) return;
+                  setIsSubmitting(true);
+                  try {
+                    await waitlistService.join(email);
+                    toast({ title: 'Inscrição realizada', description: 'Você entrou na lista de espera!' });
+                    setSubmitted(true);
+                  } catch (err) {
+                    toast({
+                      title: 'Erro ao inscrever',
+                      description: 'Tente novamente mais tarde.',
+                      variant: 'destructive',
+                    });
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+              >
                 <div className="relative grid grid-cols-[1fr_auto] items-center rounded-2xl border border-border bg-card pr-2 shadow-elegant">
                   <Mail className="pointer-events-none absolute inset-y-0 left-4 my-auto h-5 w-5 text-muted-foreground" />
-                  
+
                   <input
                     placeholder="Seu melhor email"
                     className="h-14 w-full bg-transparent pl-12 pr-4 text-base focus:outline-none"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting || submitted}
+                    required
                   />
 
-                <Button
+                  <Button
                     type="submit"
                     size="lg"
                     className="bg-gradient-primary hover:shadow-glow h-10 px-6"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.href = '/auth';
-                    }}
+                    disabled={isSubmitting || submitted}
                   >
-                    <span className="hidden md:block">Começar agora (grátis)</span>
+                    <span className="hidden md:block">
+                      {submitted ? 'Enviado' : 'Entrar na lista'}
+                    </span>
                     <Send className="h-5 w-5 md:hidden" />
                   </Button>
                 </div>
