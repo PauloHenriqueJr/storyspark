@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Send, Play, Users, Zap, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
+import { trackWaitlistSignup } from '@/integrations/analytics/googleAnalytics';
 import appDark from '@/assets/app-dark.png';
 import appLight from '@/assets/app-light.png';
 
@@ -29,6 +30,13 @@ const staggerContainer = {
 
 export const HeroSection = () => {
   const { theme } = useTheme();
+  const [email, setEmail] = useState('');
+
+  const handleWaitlistSignup = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    trackWaitlistSignup(email);
+    window.location.href = '/auth';
+  };
   
   // Determina qual imagem usar baseada no tema
   // Modo escuro = imagem clara, modo claro = imagem escura
@@ -88,24 +96,22 @@ export const HeroSection = () => {
 
             {/* CTA Form */}
             <motion.div className="mt-12" variants={fadeInUp}>
-              <form className="mx-auto max-w-md">
+              <form className="mx-auto max-w-md" onSubmit={handleWaitlistSignup}>
                 <div className="relative grid grid-cols-[1fr_auto] items-center rounded-2xl border border-border bg-card pr-2 shadow-elegant">
                   <Mail className="pointer-events-none absolute inset-y-0 left-4 my-auto h-5 w-5 text-muted-foreground" />
-                  
+
                   <input
                     placeholder="Seu melhor email"
                     className="h-14 w-full bg-transparent pl-12 pr-4 text-base focus:outline-none"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
 
-                <Button
+                  <Button
                     type="submit"
                     size="lg"
                     className="bg-gradient-primary hover:shadow-glow h-10 px-6"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.href = '/auth';
-                    }}
                   >
                     <span className="hidden md:block">Começar agora (grátis)</span>
                     <Send className="h-5 w-5 md:hidden" />
