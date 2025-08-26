@@ -563,9 +563,27 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
-            referencedColumns: ["id"]
+          referencedColumns: ["id"]
           },
         ]
+      }
+      waitlist: {
+        Row: {
+          id: string
+          email: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
