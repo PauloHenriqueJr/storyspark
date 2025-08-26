@@ -73,7 +73,7 @@ Ser a principal plataforma de IA para criação de conteúdo no mercado brasilei
 
 ### 🔌 Integrações Externas
 - **Redes Sociais**: Meta API, Twitter API, LinkedIn API
-- **Analytics**: Google Analytics, Facebook Insights
+- **Analytics**: Google Analytics (ver [docs/ANALYTICS_SETUP.md](docs/ANALYTICS_SETUP.md)), Facebook Insights
 - **Pagamentos**: Stripe
 - **Automação**: Zapier, Webhooks customizados
 
