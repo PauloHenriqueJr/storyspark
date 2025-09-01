@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import './AdminEmailTemplates.css';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +78,57 @@ interface NewEmailTemplate {
   category: string;
 }
 
+// Componente de preview isolado em iframe para evitar vazamento de CSS no app
+const EmailPreview = ({ html, width }: { html: string; width?: number }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+
+    try {
+      doc.open();
+      doc.write(html || '<div style="padding:16px;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#6b7280">Sem conteúdo HTML</div>');
+      doc.close();
+    } catch {}
+
+    const resize = () => {
+      if (!iframe.contentDocument) return;
+      const body = iframe.contentDocument.body;
+      const htmlEl = iframe.contentDocument.documentElement;
+      const height = Math.max(
+        body?.scrollHeight || 0,
+        body?.offsetHeight || 0,
+        htmlEl?.clientHeight || 0,
+        htmlEl?.scrollHeight || 0,
+        htmlEl?.offsetHeight || 0
+      );
+      iframe.style.height = Math.min(Math.max(height, 300), 1400) + 'px';
+    };
+
+    const t1 = setTimeout(resize, 50);
+    const t2 = setTimeout(resize, 250);
+    let observer: MutationObserver | null = null;
+    try {
+      observer = new MutationObserver(() => resize());
+      observer.observe(doc.documentElement, { childList: true, subtree: true, attributes: true });
+    } catch {}
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      observer?.disconnect();
+    };
+  }, [html]);
+
+  return (
+    <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-900" style={{ width: width ? width : '100%' }}>
+      <iframe ref={iframeRef} title="Email Preview" className="w-full" style={{ height: 300, border: 'none' }} />
+    </div>
+  );
+};
+
 const AdminEmailTemplates = () => {
   const {
     templates,
@@ -89,7 +139,8 @@ const AdminEmailTemplates = () => {
     updateTemplate,
     deleteTemplate,
     duplicateTemplate,
-    detectTemplateVariables
+    detectTemplateVariables,
+    loadTemplates // Adicionado para recarregar templates
   } = useEmailTemplates();
 
   // Estados para templates
@@ -111,6 +162,8 @@ const AdminEmailTemplates = () => {
   const [newTemplateVars, setNewTemplateVars] = useState<Record<string, string>>({});
   const [editTemplateVars, setEditTemplateVars] = useState<Record<string, string>>({});
   const [testRecipient, setTestRecipient] = useState('');
+  const [newPreviewWidth, setNewPreviewWidth] = useState<number>(600);
+  const [editPreviewWidth, setEditPreviewWidth] = useState<number>(600);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -2293,28 +2346,91 @@ Equipe StorySpark
 
               <TabsContent value="preview" className="space-y-2">
                 <Label>Preview do Email</Label>
+                <div className="flex items-center gap-2 mb-2">
+                  <Label className="text-xs">Visualizar como:</Label>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant={newPreviewWidth===360? 'default':'outline'} onClick={() => setNewPreviewWidth(360)}>Mobile</Button>
+                    <Button size="sm" variant={newPreviewWidth===600? 'default':'outline'} onClick={() => setNewPreviewWidth(600)}>Tablet</Button>
+                    <Button size="sm" variant={newPreviewWidth===800? 'default':'outline'} onClick={() => setNewPreviewWidth(800)}>Desktop</Button>
+                  </div>
+                </div>
                 <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-[200px]">
                   {newTemplate.subject && (
                     <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-                      <strong>Assunto:</strong> {newTemplate.subject}
+                      <strong>Assunto:</strong> {(() => { 
+                        let s = newTemplate.subject; 
+                        Object.entries(newTemplateVars).forEach(([k,v])=>{ 
+                          s = s.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
+                        }); 
+                        return s; 
+                      })()}
                     </div>
                   )}
                   {newTemplate.html_content ? (
-                    <div
-                      className="email-preview max-w-full overflow-x-auto"
-                      style={{
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                        lineHeight: '1.6'
-                      }}
-                      dangerouslySetInnerHTML={{
-                        __html: newTemplate.html_content
-                      }}
+                    <EmailPreview 
+                      html={(() => {
+                        let html = newTemplate.html_content;
+                        Object.entries(newTemplateVars).forEach(([k,v])=>{
+                          html = html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                        });
+                        return html;
+                      })()} 
+                      width={newPreviewWidth} 
                     />
                   ) : (
                     <div className="text-muted-foreground text-center py-8">
                       Digite o conteúdo HTML para ver o preview
                     </div>
                   )}
+                </div>
+                {newTemplate.variables.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <Label>Variáveis para Preview/Teste</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {newTemplate.variables.map((variable) => (
+                        <div key={variable} className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">{`{{${variable}}}`}</Label>
+                          <Input
+                            value={newTemplateVars[variable] ?? ''}
+                            onChange={(e) => setNewTemplateVars({ ...newTemplateVars, [variable]: e.target.value })}
+                            placeholder={`Valor para ${variable}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 pt-2">
+                  <Input
+                    placeholder="Enviar teste para..."
+                    value={testRecipient}
+                    onChange={(e) => setTestRecipient(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <Button variant="outline" onClick={async () => {
+                    try {
+                      const vars = newTemplateVars;
+                      let subject = newTemplate.subject;
+                      let html = newTemplate.html_content;
+                      Object.entries(vars).forEach(([k,v])=>{ 
+                        subject=subject.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
+                        html=html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                      });
+                      const res = await emailService.sendEmail({ 
+                        to:[{email:testRecipient}], 
+                        subject: subject||'(sem assunto)', 
+                        html, 
+                        text:newTemplate.text_content, 
+                        category:'template_test' 
+                      });
+                      if(res.success) toast.success('Teste enviado'); 
+                      else toast.error(res.error||'Falha ao enviar teste');
+                    } catch(e:any){ 
+                      toast.error(e?.message||'Erro ao enviar teste'); 
+                    }
+                  }}>
+                    Enviar teste
+                  </Button>
                 </div>
               </TabsContent>
             </Tabs>
@@ -2421,16 +2537,7 @@ Equipe StorySpark
                   <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
                     <strong>Assunto:</strong> {selectedTemplate.metadata?.subject}
                   </div>
-                  <div
-                    className="email-preview max-w-full overflow-x-auto"
-                    style={{
-                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                      lineHeight: '1.6'
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: selectedTemplate.metadata?.html_content || ''
-                    }}
-                  />
+                  <EmailPreview html={selectedTemplate.metadata?.html_content || ''} />
                 </div>
               </TabsContent>
 
@@ -2551,28 +2658,91 @@ Equipe StorySpark
 
                 <TabsContent value="preview" className="space-y-2">
                   <Label>Preview do Email</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label className="text-xs">Visualizar como:</Label>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant={editPreviewWidth===360? 'default':'outline'} onClick={() => setEditPreviewWidth(360)}>Mobile</Button>
+                      <Button size="sm" variant={editPreviewWidth===600? 'default':'outline'} onClick={() => setEditPreviewWidth(600)}>Tablet</Button>
+                      <Button size="sm" variant={editPreviewWidth===800? 'default':'outline'} onClick={() => setEditPreviewWidth(800)}>Desktop</Button>
+                    </div>
+                  </div>
                   <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-[200px]">
                     {selectedTemplate.metadata?.subject && (
                       <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-                        <strong>Assunto:</strong> {selectedTemplate.metadata.subject}
+                        <strong>Assunto:</strong> {(() => { 
+                          let s = selectedTemplate.metadata!.subject as string; 
+                          Object.entries(editTemplateVars).forEach(([k,v])=>{ 
+                            s = s.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
+                          }); 
+                          return s; 
+                        })()}
                       </div>
                     )}
                     {selectedTemplate.metadata?.html_content ? (
-                      <div
-                        className="email-preview max-w-full overflow-x-auto"
-                        style={{
-                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                          lineHeight: '1.6'
-                        }}
-                        dangerouslySetInnerHTML={{
-                          __html: selectedTemplate.metadata?.html_content
-                        }}
+                      <EmailPreview 
+                        html={(() => {
+                          let html = selectedTemplate.metadata?.html_content as string;
+                          Object.entries(editTemplateVars).forEach(([k,v])=>{
+                            html = html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                          });
+                          return html;
+                        })()} 
+                        width={editPreviewWidth} 
                       />
                     ) : (
                       <div className="text-muted-foreground text-center py-8">
                         Digite o conteúdo HTML para ver o preview
                       </div>
                     )}
+                  </div>
+                  {selectedTemplate.variables.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <Label>Variáveis para Preview/Teste</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {selectedTemplate.variables.map((variable) => (
+                          <div key={variable} className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">{`{{${variable}}}`}</Label>
+                            <Input
+                              value={editTemplateVars[variable] ?? ''}
+                              onChange={(e) => setEditTemplateVars({ ...editTemplateVars, [variable]: e.target.value })}
+                              placeholder={`Valor para ${variable}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 pt-2">
+                    <Input
+                      placeholder="Enviar teste para..."
+                      value={testRecipient}
+                      onChange={(e) => setTestRecipient(e.target.value)}
+                      className="max-w-xs"
+                    />
+                    <Button variant="outline" onClick={async () => {
+                      try {
+                        const vars = editTemplateVars;
+                        let subject = selectedTemplate.metadata!.subject as string;
+                        let html = selectedTemplate.metadata!.html_content as string;
+                        Object.entries(vars).forEach(([k,v])=>{ 
+                          subject=subject.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
+                          html=html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                        });
+                        const res = await emailService.sendEmail({ 
+                          to:[{email:testRecipient}], 
+                          subject: subject||'(sem assunto)', 
+                          html, 
+                          text:selectedTemplate.metadata!.text_content as string, 
+                          category:`${selectedTemplate.id}_test` 
+                        });
+                        if(res.success) toast.success('Teste enviado'); 
+                        else toast.error(res.error||'Falha ao enviar teste');
+                      } catch(e:any){ 
+                        toast.error(e?.message||'Erro ao enviar teste'); 
+                      }
+                    }}>
+                      Enviar teste
+                    </Button>
                   </div>
                 </TabsContent>
               </Tabs>
