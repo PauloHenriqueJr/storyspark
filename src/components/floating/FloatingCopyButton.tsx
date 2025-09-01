@@ -40,6 +40,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { copyGenerationService } from '@/services/copyGenerationService';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useFloatingButton } from '@/contexts/FloatingButtonContext';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useBrandVoices } from '@/hooks/useBrandVoices';
 import { usePersonas } from '@/hooks/usePersonas';
@@ -602,8 +603,7 @@ const contextConfigs: Record<string, ContextConfig> = {
 };
 
 const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotifications, systemToastNotifications, onOpenScheduleModal }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { isModalOpen, contextualBriefing, openModal, closeModal } = useFloatingButton();
   const [briefing, setBriefing] = useState('');
   const [platform, setPlatform] = useState('');
   const [copyType, setCopyType] = useState('');
@@ -632,6 +632,19 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const currentContext = contextConfigs[location.pathname] || contextConfigs['default'];
 
   // Auto-configurar baseado no contexto
+  useEffect(() => {
+    if (contextualBriefing) {
+      setBriefing(contextualBriefing);
+      setCustomBriefing(contextualBriefing);
+      setCustomizationMode(true);
+    } else {
+      // Reset or use default behavior when no specific context is provided
+      setBriefing('');
+      setCustomBriefing('');
+      setCustomizationMode(false);
+    }
+  }, [contextualBriefing, isModalOpen]);
+
   useEffect(() => {
     if (currentContext.defaultPlatform) setPlatform(currentContext.defaultPlatform);
     if (currentContext.defaultType) setCopyType(currentContext.defaultType);
@@ -767,7 +780,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setShowItemSelector(false);
     setCustomizationMode(false);
     setCustomBriefing('');
-    setIsModalOpen(false);
+    closeModal();
   };
 
   const handleDataExtracted = (data: Record<string, unknown>) => {
@@ -1301,7 +1314,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setIsModalOpen(true);
+              openModal(); // Open with no specific context
             }}
             className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${currentContext.color} border-4 border-white/30 dark:border-gray-800/30 relative z-10 backdrop-blur-sm`}
             size="lg"
