@@ -92,7 +92,7 @@ const EmailPreview = ({ html, width }: { html: string; width?: number }) => {
 
     try {
       doc.open();
-      doc.write(html || '<div style="padding:16px;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#6b7280">Sem conteúdo HTML</div>');
+      doc.write(html || '<html><head><style>body{margin:0;padding:16px;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#6b7280;background-color:#ffffff}</style></head><body>Sem conteúdo HTML</body></html>');
       doc.close();
     } catch { }
 
@@ -343,7 +343,7 @@ const AdminEmailTemplates = () => {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
             min-height: 100vh;
         }
         
@@ -358,21 +358,22 @@ const AdminEmailTemplates = () => {
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 3px solid #f97316;
         }
         
         .logo {
             font-size: 32px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
         
         .highlight-box {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            background: #f8fafc;
+            border: 2px solid #f97316;
+            color: #1f2937;
             padding: 25px;
             border-radius: 12px;
             margin: 30px 0;
@@ -381,7 +382,7 @@ const AdminEmailTemplates = () => {
         
         .position-box {
             background: #f8fafc;
-            border: 2px solid #667eea;
+            border: 2px solid #f97316;
             padding: 25px;
             border-radius: 12px;
             text-align: center;
@@ -389,7 +390,7 @@ const AdminEmailTemplates = () => {
         }
         
         .cta-button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             color: white;
             padding: 16px 32px;
             text-decoration: none;
@@ -408,9 +409,37 @@ const AdminEmailTemplates = () => {
         }
         
         .footer-links a {
-            color: #667eea;
+            color: #f97316;
             text-decoration: none;
             margin: 0 15px;
+        }
+        
+        /* Responsividade para mobile */
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px !important;
+            }
+            
+            .container {
+                padding: 20px !important;
+            }
+            
+            .logo {
+                font-size: 24px !important;
+            }
+            
+            .header h1 {
+                font-size: 20px !important;
+            }
+            
+            .position-box div {
+                font-size: 24px !important;
+            }
+            
+            .cta-button {
+                padding: 12px 24px !important;
+                font-size: 14px !important;
+            }
         }
     </style>
 </head>
@@ -432,7 +461,7 @@ const AdminEmailTemplates = () => {
             
             <div class="position-box">
                 <p>Sua posição na fila:</p>
-                <div style="font-size: 48px; font-weight: 700; color: #667eea;">{{position}}</div>
+                <div style="font-size: 32px; font-weight: 700; color: #f97316; line-height: 1.2;">{{position}}</div>
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
@@ -443,7 +472,7 @@ const AdminEmailTemplates = () => {
         </div>
         
         <div class="footer">
-            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
                 <a href="https://storyspark.com">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
@@ -478,7 +507,7 @@ const AdminEmailTemplates = () => {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
         }
         .container {
             background: white;
@@ -493,13 +522,13 @@ const AdminEmailTemplates = () => {
         .logo {
             font-size: 32px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
         .promo-box {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             color: white;
             padding: 30px;
             border-radius: 12px;
@@ -513,7 +542,7 @@ const AdminEmailTemplates = () => {
         }
         .button {
             background: white;
-            color: #667eea;
+            color: #f97316;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 8px;
@@ -530,7 +559,7 @@ const AdminEmailTemplates = () => {
             color: #6b7280;
         }
         .footer a {
-            color: #667eea;
+            color: #f97316;
             text-decoration: none;
             margin: 0 5px;
         }
@@ -570,7 +599,7 @@ const AdminEmailTemplates = () => {
         </p>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="{{offerUrl}}" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+            <a href="{{offerUrl}}" style="background: linear-gradient(135deg, #f97316, #fb923c); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
                 🚀 COMEÇAR AGORA
             </a>
         </div>
@@ -581,7 +610,7 @@ const AdminEmailTemplates = () => {
         <strong>Equipe StorySpark</strong></p>
         
         <div class="footer">
-            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
                 <a href="https://storyspark.com">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
@@ -941,7 +970,7 @@ const AdminEmailTemplates = () => {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
         }
         .container {
             background: white;
@@ -956,13 +985,13 @@ const AdminEmailTemplates = () => {
         .logo {
             font-size: 32px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
         .highlight-box {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             color: white;
             padding: 25px;
             border-radius: 12px;
@@ -970,7 +999,7 @@ const AdminEmailTemplates = () => {
             margin: 30px 0;
         }
         .cta-button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             color: white;
             padding: 16px 32px;
             text-decoration: none;
@@ -988,7 +1017,7 @@ const AdminEmailTemplates = () => {
             color: #6b7280;
         }
         .footer a {
-            color: #667eea;
+            color: #f97316;
             text-decoration: none;
             margin: 0 5px;
         }
@@ -1023,7 +1052,7 @@ const AdminEmailTemplates = () => {
         </p>
         
         <div class="footer">
-            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
                 <a href="https://storyspark.com">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
@@ -1077,7 +1106,7 @@ Preferências: {{preferencesUrl}}`
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
         }
         .container {
             background: white;
@@ -1092,13 +1121,13 @@ Preferências: {{preferencesUrl}}`
         .logo {
             font-size: 32px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
         .welcome-box {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             color: white;
             padding: 25px;
             border-radius: 12px;
@@ -1106,7 +1135,7 @@ Preferências: {{preferencesUrl}}`
             margin: 30px 0;
         }
         .cta-button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             color: white;
             padding: 16px 32px;
             text-decoration: none;
@@ -1125,10 +1154,10 @@ Preferências: {{preferencesUrl}}`
             padding: 20px;
             background: #f8fafc;
             border-radius: 12px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #f97316;
         }
         .step-number {
-            background: #667eea;
+            background: #f97316;
             color: white;
             width: 28px;
             height: 28px;
@@ -1148,7 +1177,7 @@ Preferências: {{preferencesUrl}}`
             color: #6b7280;
         }
         .footer a {
-            color: #667eea;
+            color: #f97316;
             text-decoration: none;
             margin: 0 5px;
         }
@@ -1199,7 +1228,7 @@ Preferências: {{preferencesUrl}}`
             </div>
         </div>
         
-        <p>Se você tiver alguma dúvida, nossa equipe está sempre disponível em <a href="mailto:{{supportEmail}}" style="color: #667eea;">{{supportEmail}}</a>.</p>
+        <p>Se você tiver alguma dúvida, nossa equipe está sempre disponível em <a href="mailto:{{supportEmail}}" style="color: #f97316;">{{supportEmail}}</a>.</p>
         
         <p>Vamos criar algo incrível juntos!</p>
         
@@ -1209,7 +1238,7 @@ Preferências: {{preferencesUrl}}`
         </p>
         
         <div class="footer">
-            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
                 <a href="https://storyspark.com">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
@@ -1262,7 +1291,7 @@ Primeiros passos:
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
         }
         .container {
             background: white;
@@ -1277,7 +1306,7 @@ Primeiros passos:
         .logo {
             font-size: 32px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
@@ -1296,7 +1325,7 @@ Primeiros passos:
             padding: 20px;
             border-radius: 8px;
             margin: 25px 0;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #f97316;
         }
         .order-item {
             display: flex;
@@ -1305,7 +1334,7 @@ Primeiros passos:
             border-bottom: 1px solid #e5e7eb;
         }
         .cta-button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f97316, #fb923c);
             color: white;
             padding: 16px 32px;
             text-decoration: none;
@@ -1323,7 +1352,7 @@ Primeiros passos:
             color: #6b7280;
         }
         .footer a {
-            color: #667eea;
+            color: #f97316;
             text-decoration: none;
             margin: 0 5px;
         }
@@ -1364,7 +1393,7 @@ Primeiros passos:
         
         <p>Seu pedido está sendo processado e você receberá uma confirmação em breve.</p>
         
-        <p>Se você tiver alguma dúvida sobre seu pedido, entre em contato conosco em <a href="mailto:{{supportEmail}}" style="color: #667eea;">{{supportEmail}}</a>.</p>
+        <p>Se você tiver alguma dúvida sobre seu pedido, entre em contato conosco em <a href="mailto:{{supportEmail}}" style="color: #f97316;">{{supportEmail}}</a>.</p>
         
         <p style="text-align: center; margin-top: 30px;">
             Atenciosamente,<br>
@@ -1372,7 +1401,7 @@ Primeiros passos:
         </p>
         
         <div class="footer">
-            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
                 <a href="https://storyspark.com">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
@@ -1443,8 +1472,10 @@ Equipe StorySpark
 
       // Waitlist
       waitlistPosition: '42',
+      position: '42',
       selectedIdeas: 'IA para Copywriting, Analytics Avançados, Integração com CRM',
       inviteCode: 'INV-1756616099-c110b08c',
+      website_url: 'https://storyspark.com',
 
       // Newsletter  
       productName: 'StorySpark Premium',
@@ -1819,21 +1850,22 @@ Equipe StorySpark
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Email Marketing</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Email Marketing</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Gerencie campanhas, templates, listas e analytics de email marketing
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             onClick={() => loadTemplates()}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1846,6 +1878,7 @@ Equipe StorySpark
           <Button
             variant="outline"
             onClick={() => setIsCreateCampaignModalOpen(true)}
+            className="w-full sm:w-auto"
           >
             <Send className="h-4 w-4 mr-2" />
             Nova Campanha
@@ -1855,6 +1888,7 @@ Equipe StorySpark
             variant="outline"
             onClick={handleUpdateTemplates}
             disabled={isUpdatingTemplates}
+            className="w-full sm:w-auto"
           >
             {isUpdatingTemplates ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1866,7 +1900,7 @@ Equipe StorySpark
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Template
               </Button>
@@ -1877,29 +1911,33 @@ Equipe StorySpark
 
       {/* Abas principais */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="campaigns" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            Campanhas
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsTrigger value="campaigns" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Campanhas</span>
+            <span className="sm:hidden">Camp.</span>
           </TabsTrigger>
-          <TabsTrigger value="lists" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Listas
+          <TabsTrigger value="lists" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Listas</span>
+            <span className="sm:hidden">Listas</span>
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Templates
+          <TabsTrigger value="templates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Templates</span>
+            <span className="sm:hidden">Temp.</span>
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
+          <TabsTrigger value="analytics" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Analytics</span>
+            <span className="sm:hidden">Anal.</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Conteúdo das Abas */}
-        <TabsContent value="campaigns" className="space-y-6">
+        <TabsContent value="campaigns" className="space-y-4 sm:space-y-6">
           {/* Estatísticas de Campanhas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Enviados</CardTitle>
@@ -1951,9 +1989,9 @@ Equipe StorySpark
             <CardContent>
               <div className="space-y-4">
                 {campaigns.map((campaign) => (
-                  <div key={campaign.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div key={campaign.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <h3 className="font-medium">{campaign.name}</h3>
                         <Badge className={getStatusColor(campaign.status)}>
                           {campaign.status === 'sent' ? 'Enviada' :
@@ -1963,7 +2001,7 @@ Equipe StorySpark
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{campaign.subject}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
                           {campaign.recipients.toLocaleString()} destinatários
@@ -2018,7 +2056,7 @@ Equipe StorySpark
 
         <TabsContent value="lists" className="space-y-6">
           {/* Estatísticas de Listas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Listas</CardTitle>
@@ -2114,61 +2152,63 @@ Equipe StorySpark
           </Card>
         </TabsContent>
 
-        <TabsContent value="templates" className="space-y-6">
+        <TabsContent value="templates" className="space-y-4 sm:space-y-6">
           {/* Filtros e Busca */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar templates..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 w-64"
+                  className="pl-8 w-full sm:w-64"
                 />
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Categoria
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setSelectedCategory('all')}>
-                    Todas
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedCategory('Sistema')}>
-                    Sistema
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedCategory('Marketing')}>
-                    Marketing
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedCategory('Transacional')}>
-                    Transacional
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Categoria
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setSelectedCategory('all')}>
+                      Todas
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSelectedCategory('Sistema')}>
+                      Sistema
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSelectedCategory('Marketing')}>
+                      Marketing
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSelectedCategory('Transacional')}>
+                      Transacional
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Status
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setSelectedStatus('all')}>
-                    Todos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedStatus('active')}>
-                    Ativos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedStatus('inactive')}>
-                    Inativos
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Status
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setSelectedStatus('all')}>
+                      Todos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSelectedStatus('active')}>
+                      Ativos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSelectedStatus('inactive')}>
+                      Inativos
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
 
@@ -2183,7 +2223,7 @@ Equipe StorySpark
           </div>
 
           {/* Grid de Templates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {filteredTemplates.map((template) => (
               <Card key={template.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
@@ -2241,19 +2281,19 @@ Equipe StorySpark
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{template.category}</Badge>
-                      <Badge variant="secondary">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="text-xs">{template.category}</Badge>
+                      <Badge variant="secondary" className="text-xs">
                         {template.variables?.length || 0} variáveis
                       </Badge>
-                      <Badge variant={template.is_active ? "default" : "secondary"}>
+                      <Badge variant={template.is_active ? "default" : "secondary"} className="text-xs">
                         {template.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {template.subject}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-1">
                       <span>Criado em {new Date(template.created_at).toLocaleDateString('pt-BR')}</span>
                       <span className="flex items-center gap-1">
                         <Mail className="h-3 w-3" />
@@ -2285,7 +2325,7 @@ Equipe StorySpark
 
         <TabsContent value="analytics" className="space-y-6">
           {/* Métricas Principais */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Taxa de Abertura Média</CardTitle>
@@ -2392,7 +2432,7 @@ Equipe StorySpark
 
       {/* Dialog de Criação de Template */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Criar Novo Template de Email</DialogTitle>
             <DialogDescription>
@@ -2407,7 +2447,7 @@ Equipe StorySpark
               <p className="text-sm text-muted-foreground">
                 Escolha um template padrão para começar ou crie do zero
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {defaultTemplates.map((template, index) => (
                   <Card
                     key={index}
@@ -2428,7 +2468,7 @@ Equipe StorySpark
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Nome do Template</Label>
                 <Input
@@ -2542,7 +2582,7 @@ Equipe StorySpark
                 {newTemplate.variables.length > 0 && (
                   <div className="mt-4 space-y-2">
                     <Label>Variáveis para Preview/Teste</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                       {newTemplate.variables.map((variable) => (
                         <div key={variable} className="space-y-1">
                           <Label className="text-xs text-muted-foreground">{`{{${variable}}}`}</Label>
@@ -2672,7 +2712,7 @@ Equipe StorySpark
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Visualizar Template</DialogTitle>
             <DialogDescription>
@@ -2715,7 +2755,7 @@ Equipe StorySpark
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Template</DialogTitle>
             <DialogDescription>
@@ -2725,7 +2765,7 @@ Equipe StorySpark
 
           {selectedTemplate && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-name">Nome do Template</Label>
                   <Input
@@ -2854,7 +2894,7 @@ Equipe StorySpark
                   {selectedTemplate.variables.length > 0 && (
                     <div className="mt-4 space-y-2">
                       <Label>Variáveis para Preview/Teste</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                         {selectedTemplate.variables.map((variable) => (
                           <div key={variable} className="space-y-1">
                             <Label className="text-xs text-muted-foreground">{`{{${variable}}}`}</Label>
