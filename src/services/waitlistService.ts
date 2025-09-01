@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { emailQueueService } from './emailQueueService';
 // UTM type removed because it's not referenced directly in this module
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import SignupCounter from '@/components/layout/landpage-waitlist/SignupCounter';
+// Counter removed for waitlist
 import { useUTM } from "@/hooks/useUTM";
 import { analytics } from "@/services/analytics";
 import { addToWaitlist } from "@/services/waitlistService";
@@ -273,10 +273,7 @@ const EmailCapture = () => {
                 </p>
               </form>
 
-              {/* Social proof */}
-              <div className="mt-8 text-center">
-                <SignupCounter />
-              </div>
+              {/* Social proof removed */}
             </div>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-import SignupCounter from '@/components/layout/landpage-waitlist/SignupCounter';
-import TestimonialsGrid from '@/components/layout/landpage-waitlist/TestimonialsGrid';
+// Counters and testimonials removed for waitlist
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,9 +156,7 @@ const Hero = () => {
                           </>
                         )}
                       </div>
-                      <div className="flex justify-center sm:justify-end">
-                        <SignupCounter />
-                      </div>
+                      {/* Counter removed */}
                     </div>
                   </motion.div>
                 )}
@@ -173,11 +170,7 @@ const Hero = () => {
                 <span>Acesso antecipado à convites por e-mail</span>
               </div>
             </motion.div>
-            <div className="mt-8 lg:mt-12">
-              <div className="max-w-3xl mx-auto lg:mx-0">
-                <TestimonialsGrid />
-              </div>
-            </div>
+            {/* Testimonials removed */}
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="relative flex justify-center">
