@@ -39,17 +39,25 @@ const Hero = () => {
     setIsLoading(false);
     if (res.ok) {
       // Diferenciar entre inserção nova e já existente
-      const wasAlready = (res as any).info === 'already_exists';
+      const wasAlready = res.info === 'already_exists';
       setAlreadyExists(wasAlready);
       setIsSubmitted(true);
       analytics.track("waitlist_success", { source: "hero", already_exists: wasAlready });
       // Mostrar notificação ao usuário — distinto para novo cadastro vs já existente
       if (wasAlready) {
-        try { toast({ title: 'Você já está na lista', description: 'Recebemos seu e‑mail anteriormente.' }); } catch { }
-        try { analytics.track('waitlist_already_exists', { source: 'hero' }); } catch { }
+        try { toast({ title: 'Você já está na lista', description: 'Recebemos seu e‑mail anteriormente.' }); } catch {
+          // Ignore toast errors
+        }
+        try { analytics.track('waitlist_already_exists', { source: 'hero' }); } catch {
+          // Ignore analytics errors
+        }
       } else {
-        try { toast({ title: 'Inscrição confirmada', description: 'Você entrou na lista de espera.' }); } catch { }
-        try { analytics.track('waitlist_confirmed', { source: 'hero' }); } catch { }
+        try { toast({ title: 'Inscrição confirmada', description: 'Você entrou na lista de espera.' }); } catch {
+          // Ignore toast errors  
+        }
+        try { analytics.track('waitlist_confirmed', { source: 'hero' }); } catch {
+          // Ignore analytics errors
+        }
       }
       setEmail("");
     } else {
@@ -60,12 +68,16 @@ const Hero = () => {
         const prev = JSON.parse(localStorage.getItem(key) || "[]");
         prev.push({ email, at: Date.now(), variant: "hero", error: res.error });
         localStorage.setItem(key, JSON.stringify(prev));
-      } catch { }
+      } catch {
+        // Ignore localStorage errors
+      }
       // Mostrar erro temporário (simples): usar alert para não adicionar dependências
       try {
         // mensurar para o time: use um toast real se disponível
         alert("Houve um problema ao salvar seu e-mail. Por favor, tente novamente.");
-      } catch { }
+      } catch {
+        // Ignore alert errors
+      }
       // manter o formulário aberto para o usuário tentar novamente
     }
   };

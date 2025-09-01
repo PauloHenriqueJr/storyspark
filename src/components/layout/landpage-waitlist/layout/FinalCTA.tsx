@@ -35,10 +35,32 @@ const FinalCTA = () => {
     const res = await addToWaitlist({ email, consent, utm, variant: "final_cta" });
     setIsLoading(false);
     if (res.ok) {
-      const wasAlready = (res as any).info === 'already_exists';
+      const wasAlready = res.info === 'already_exists';
       setAlreadyExists(wasAlready);
-      if (wasAlready) { try { toast({ title: 'Você já está na lista', description: 'Recebemos seu e‑mail anteriormente.' }); } catch { } try { analytics.track('waitlist_already_exists', { source: 'final_cta' }); } catch { } }
-      else { try { toast({ title: 'Inscrição confirmada', description: 'Você entrou na lista de espera.' }); } catch { } try { analytics.track('waitlist_confirmed', { source: 'final_cta' }); } catch { } }
+      if (wasAlready) { 
+        try { 
+          toast({ title: 'Você já está na lista', description: 'Recebemos seu e‑mail anteriormente.' }); 
+        } catch {
+          // Ignore toast errors
+        }
+        try { 
+          analytics.track('waitlist_already_exists', { source: 'final_cta' }); 
+        } catch {
+          // Ignore analytics errors
+        }
+      }
+      else { 
+        try { 
+          toast({ title: 'Inscrição confirmada', description: 'Você entrou na lista de espera.' }); 
+        } catch {
+          // Ignore toast errors
+        }
+        try { 
+          analytics.track('waitlist_confirmed', { source: 'final_cta' }); 
+        } catch {
+          // Ignore analytics errors
+        }
+      }
       setIsSubmitted(true);
       analytics.track("waitlist_success", { source: "final_cta", already_exists: wasAlready });
       setEmail("");

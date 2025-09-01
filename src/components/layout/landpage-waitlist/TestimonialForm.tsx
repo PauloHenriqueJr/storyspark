@@ -77,14 +77,20 @@ const TestimonialForm: React.FC = () => {
       const prev = JSON.parse(localStorage.getItem('storyspark-testimonials') || '[]');
       prev.unshift(item);
       localStorage.setItem('storyspark-testimonials', JSON.stringify(prev));
-    } catch {}
+    } catch {
+      // Ignore localStorage errors
+    }
 
     try {
       analytics.track('testimonial_submitted_local', { id: item.id, hasImage: Boolean(item.imageDataUrl), consent_text: item.consent_text, consent_image: item.consent_image });
-    } catch {}
+    } catch {
+      // Ignore analytics errors
+    }
 
     toast({ title: 'Obrigado', description: 'Seu depoimento foi salvo como rascunho (pendente de revisão).' });
-    try { window.dispatchEvent(new CustomEvent('testimonial:submitted', { detail: item })); } catch {}
+    try { window.dispatchEvent(new CustomEvent('testimonial:submitted', { detail: item })); } catch {
+      // Ignore event dispatch errors
+    }
 
     setName(''); setEmail(''); setRole(''); setText(''); setConsentText(false); setConsentImage(false); handleImageChange(null);
   };

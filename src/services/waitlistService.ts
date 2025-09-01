@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { emailQueueService } from './emailQueueService';
-// UTM type removed because it's not referenced directly in this module
+import type { WaitlistPayload, WaitlistResponse } from '@/types/waitlist';
 
 const payloadSchema = z.object({
   email: z.string().email(),
@@ -21,9 +21,9 @@ const payloadSchema = z.object({
   variant: z.string().optional(),
 });
 
-export type WaitlistPayload = z.infer<typeof payloadSchema>;
+export type { WaitlistPayload };
 
-export async function addToWaitlist(payload: WaitlistPayload) {
+export async function addToWaitlist(payload: WaitlistPayload): Promise<WaitlistResponse> {
   const parsed = payloadSchema.safeParse(payload);
   if (!parsed.success) {
     return {
@@ -33,7 +33,7 @@ export async function addToWaitlist(payload: WaitlistPayload) {
   }
 
   const { email, consent, utm, variant, ideas } = parsed.data;
-  const referralCode = (parsed.data as any).referralCode;
+  const referralCode = parsed.data.referralCode;
 
   try {
     const { data, error } = await supabase.rpc("add_waitlist_entry", {
@@ -77,14 +77,20 @@ export async function addToWaitlist(payload: WaitlistPayload) {
           );
           try {
             localStorage.setItem("storyspark-waitlist-last-email", email);
-          } catch {}
+          } catch {
+            // Ignore localStorage errors
+          }
           try {
             window.dispatchEvent(
               new CustomEvent("waitlist:added", { detail: { email } })
             );
-          } catch {}
+          } catch {
+            // Ignore event dispatch errors
+          }
         }
-      } catch {}
+      } catch {
+        // Ignore localStorage/window access errors in server environments
+      }
       // If there is a referral code, attempt to claim it atomically after successful signup
       try {
         if (referralCode) {
@@ -94,11 +100,13 @@ export async function addToWaitlist(payload: WaitlistPayload) {
             p_referred_email: email,
           });
         }
-      } catch {}
+      } catch {
+        // Ignore referral claim errors - not critical to signup success
+      }
       return { ok: true };
     }
     return { ok: true, info: "already_exists" };
-  } catch (err: any) {
-    return { ok: false, error: err.message ?? String(err) };
+  } catch (err: unknown) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

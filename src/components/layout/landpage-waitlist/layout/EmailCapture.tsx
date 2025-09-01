@@ -86,14 +86,22 @@ const EmailCapture = () => {
     setIsLoading(false);
     if (res.ok) {
       // Distinção entre novo cadastro e já existente
-      const wasAlready = (res as any).info === 'already_exists';
+      const wasAlready = res.info === 'already_exists';
       setAlreadyExists(wasAlready);
       if (wasAlready) {
-        try { toast({ title: 'Você já está na lista', description: 'Recebemos seu e‑mail anteriormente.' }); } catch { }
-        try { analytics.track('waitlist_already_exists', { source: 'email_capture' }); } catch { }
+        try { toast({ title: 'Você já está na lista', description: 'Recebemos seu e‑mail anteriormente.' }); } catch {
+          // Ignore toast errors
+        }
+        try { analytics.track('waitlist_already_exists', { source: 'email_capture' }); } catch {
+          // Ignore analytics errors
+        }
       } else {
-        try { toast({ title: 'Inscrição confirmada!', description: 'Você entrou na lista de espera.' }); } catch { }
-        try { analytics.track('waitlist_confirmed', { source: 'email_capture' }); } catch { }
+        try { toast({ title: 'Inscrição confirmada!', description: 'Você entrou na lista de espera.' }); } catch {
+          // Ignore toast errors
+        }
+        try { analytics.track('waitlist_confirmed', { source: 'email_capture' }); } catch {
+          // Ignore analytics errors
+        }
       }
       setIsSubmitted(true);
       analytics.track('waitlist_success', { source: 'email_capture', already_exists: wasAlready });
@@ -262,7 +270,9 @@ const EmailCapture = () => {
                     size="lg"
                     className="bg-primary text-primary-foreground hover:bg-primary/90 px-8"
                     disabled={isLoading || !consent || isBlocked}
-                    onClick={() => { try { (document.activeElement as HTMLElement)?.blur(); } catch { } }}
+                    onClick={() => { try { (document.activeElement as HTMLElement)?.blur(); } catch {
+                      // Ignore blur errors
+                    } }}
                   >
                     {isLoading ? "Enviando..." : "Entrar na Lista"}
                   </Button>

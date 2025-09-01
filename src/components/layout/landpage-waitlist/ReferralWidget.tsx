@@ -13,7 +13,9 @@ const ReferralWidget: React.FC<{ initialCode?: string }> = ({ initialCode }) => 
         const key = `ref_prog_${code}`;
         const v = Number(localStorage.getItem(key) || '0');
         setProgress(v);
-      } catch {}
+      } catch {
+        // Ignore localStorage errors
+      }
     }
   }, [code]);
 
@@ -22,7 +24,7 @@ const ReferralWidget: React.FC<{ initialCode?: string }> = ({ initialCode }) => 
     try {
       // ... try to run RPC client-side if SUPABASE key available
       const { supabase } = await import('@/lib/supabase');
-      const resp: any = await supabase.rpc('create_referral', { p_referrer_email: localStorage.getItem('storyspark-waitlist-last-email') || null });
+      const resp = await supabase.rpc('create_referral', { p_referrer_email: localStorage.getItem('storyspark-waitlist-last-email') || null });
       const newCode = Array.isArray(resp.data) ? resp.data[0] : resp.data;
       setCode(newCode);
       toast({ title: 'Código gerado', description: 'Seu link de convite foi criado.' });
@@ -37,7 +39,13 @@ const ReferralWidget: React.FC<{ initialCode?: string }> = ({ initialCode }) => 
   const copy = async () => {
     if (!code) return;
     const url = `${location.origin}${location.pathname}?ref=${code}`;
-    try { await navigator.clipboard.writeText(url); toast({ title: 'Link copiado', description: url }); } catch { try { prompt('Copie o link abaixo', url); } catch {} }
+    try { await navigator.clipboard.writeText(url); toast({ title: 'Link copiado', description: url }); } catch { 
+      try { 
+        prompt('Copie o link abaixo', url); 
+      } catch {
+        // Ignore prompt errors
+      } 
+    }
   };
 
   return (
