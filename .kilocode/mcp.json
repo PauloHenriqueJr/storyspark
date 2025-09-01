@@ -92,6 +92,21 @@
       ],
       "disabled": true,
       "alwaysAllow": []
+    },
+    "mailtrap": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-mailtrap"
+      ],
+      "env": {
+        "MAILTRAP_API_TOKEN": "552c751d51d3c55f146fc238df0264c9",
+        "DEFAULT_FROM_EMAIL": "notifications@storyspark.com",
+        "MAILTRAP_ACCOUNT_ID": "2428199"
+      },
+      "type": "stdio",
+      "disabled": false,
+      "alwaysAllow": ["send-email"]
     }
   }
 }

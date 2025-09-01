@@ -13,6 +13,10 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 export const PWAPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -40,7 +44,7 @@ export const PWAPrompt = () => {
 
     // Detecta se já está instalado como PWA
     const standalone = window.matchMedia('(display-mode: standalone)').matches || 
-                     (window.navigator as any).standalone === true;
+                     (navigator as NavigatorWithStandalone).standalone === true;
     setIsStandalone(standalone);
 
     // Só adiciona listener se não for iOS e não estiver instalado

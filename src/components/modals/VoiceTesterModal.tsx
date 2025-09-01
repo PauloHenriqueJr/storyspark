@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { TestTube, Sparkles, Copy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { BrandVoice } from '@/services/brandVoicesService';
 
 interface VoiceTesterModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  voice: any;
+  voice: BrandVoice | null;
 }
 
 const VoiceTesterModal = ({ open, onOpenChange, voice }: VoiceTesterModalProps) => {

@@ -34,7 +34,9 @@ import {
   Crown,
   ChevronDown,
   ChevronRight,
-  Key
+  Key,
+  Mail,
+  Activity
 } from 'lucide-react';
 import {
   Sidebar,
@@ -52,8 +54,24 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useRole } from '@/hooks/useRole';
 
+// Define the navigation item interface
+interface NavItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+}
+
+// Define the navigation section interface
+interface NavSection {
+  id: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavItem[];
+}
+
 // Navigation sections with organized structure
-const navSections = [
+const navSections: NavSection[] = [
   {
     id: 'principal',
     title: 'Principal',
@@ -131,7 +149,7 @@ const navSections = [
 ];
 
 // Admin section - separate for security and maintainability
-const adminSection = {
+const adminSection: NavSection = {
   id: 'admin',
   title: 'Administração',
   icon: Shield,
@@ -139,6 +157,10 @@ const adminSection = {
     { title: 'Admin Dashboard', url: '/admin', icon: Shield },
     { title: 'Clientes', url: '/admin/users', icon: UserCog },
     { title: 'Gerentes', url: '/admin/managers', icon: Crown },
+    { title: 'Email Marketing', url: '/admin/email-templates', icon: Mail },
+    { title: 'Waitlist', url: '/admin/waitlist', icon: Mail },
+    { title: 'Jobs', url: '/admin/jobs', icon: FileText },
+    { title: 'Logs', url: '/admin/logs', icon: Activity },
     { title: 'Sistema', url: '/admin/settings', icon: Database },
     { title: 'Segurança', url: '/admin/security', icon: Shield },
     { title: 'Permissões', url: '/admin/permissions', icon: Key },
@@ -161,7 +183,7 @@ export const AppSidebar = () => {
   const isActive = (path: string) => currentPath === path;
   
   // Check if any item in a section is active to keep section open
-  const isSectionActive = (items: any[]) => {
+  const isSectionActive = (items: NavItem[]) => {
     return items.some(item => isActive(item.url));
   };
   

@@ -41,7 +41,7 @@ sequenceDiagram
 **Problema**: Consultas malformadas na tabela `profiles` retornando erro 400.
 
 ```
-HEAD https://qgtgvqfikqfjbeixzbyb.supabase.co/rest/v1/profiles?select=count%28*%29 400 (Bad Request)
+HEAD https://<SUPABASE_PROJECT>.supabase.co/rest/v1/profiles?select=count%28*%29 400 (Bad Request)
 ```
 
 ### 4. Vulnerabilidades de Segurança

@@ -10,19 +10,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import {
-  CalendarIcon,
-  Target,
-  DollarSign,
-  Users,
-  Zap,
-  X
-} from 'lucide-react';
+import { Target, DollarSign, Calendar as CalendarIcon, X, Users, Zap } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type CreateCampaignInput = Database['public']['Tables']['campaigns']['Insert'];
 
 interface CreateCampaignModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateCampaign?: (campaign: any) => void;
+  onCreateCampaign?: (campaign: Partial<CreateCampaignInput>) => void;
 }
 
 const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({

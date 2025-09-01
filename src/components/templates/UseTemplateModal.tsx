@@ -6,22 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Copy,
-  FileText,
-  Wand2,
-  ArrowRight,
-  Sparkles,
+import { 
+  Wand2, 
+  Sparkles, 
   CheckCircle,
-  ExternalLink,
-  AlertCircle
+  Copy
 } from 'lucide-react';
+import type { TemplateWithStats } from '@/services/templatesService';
 
 interface UseTemplateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  template: any;
-  onTemplateProcessed: (processedContent: string, template: any) => void;
+  template: TemplateWithStats | null;
+  onTemplateProcessed: (processedContent: string, template: TemplateWithStats | null) => void;
 }
 
 const UseTemplateModal: React.FC<UseTemplateModalProps> = ({

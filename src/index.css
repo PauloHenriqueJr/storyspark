@@ -141,3 +141,256 @@ All colors MUST be HSL.
 .animate-glow-pulse {
   animation: glow-pulse 2s ease-in-out infinite;
 }
+
+/* Landing (waitlist) specific utility and component helpers */
+@layer components {
+  .hero-gradient {
+    background: var(--gradient-hero);
+    background-size: 300% 300%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  .card-gradient { background: var(--gradient-card); }
+
+  .glass-effect {
+    backdrop-filter: blur(20px);
+    background: hsl(var(--card) / 0.8);
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+
+  .glass-effect-dark {
+    backdrop-filter: blur(20px);
+    background: hsl(var(--card) / 0.9);
+    border: 1px solid hsl(var(--primary) / 0.2);
+  }
+
+  .interactive-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+  .interactive-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-elegant); }
+
+  .feature-icon { background: var(--gradient-subtle); transition: all 0.3s ease; }
+  .feature-icon:hover { transform: scale(1.05); box-shadow: var(--shadow-glow); }
+}
+
+@layer utilities {
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.4); }
+    50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.6); }
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* Email Template Preview Styles */
+@layer components {
+  .email-preview {
+    @apply w-full bg-background text-foreground rounded-lg border p-4;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  
+  .email-preview * {
+    @apply max-w-full;
+  }
+  
+  .email-preview img {
+    @apply max-w-full h-auto rounded;
+  }
+  
+  .email-preview table {
+    @apply w-full border-collapse;
+  }
+  
+  .email-preview td,
+  .email-preview th {
+    @apply p-2 border border-border;
+  }
+  
+  .email-preview h1,
+  .email-preview h2,
+  .email-preview h3,
+  .email-preview h4,
+  .email-preview h5,
+  .email-preview h6 {
+    @apply font-semibold mb-2 text-foreground;
+  }
+  
+  .email-preview p {
+    @apply mb-4 text-foreground;
+  }
+  
+  .email-preview a {
+    @apply text-primary hover:text-primary/80 underline;
+  }
+  
+  .email-preview button,
+  .email-preview .btn {
+    @apply inline-block px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors;
+  }
+  
+  /* Adaptação específica para modo escuro */
+  .dark .email-preview {
+    color-scheme: dark;
+    background-color: #1f2937 !important;
+    color: #e5e7eb !important;
+  }
+  
+  /* Força cores de texto para serem visíveis no modo escuro */
+  .dark .email-preview,
+  .dark .email-preview *:not([style*="color: #f"]):not([style*="color: #e"]):not([style*="color: #d"]):not([style*="color: #c"]):not([style*="color: #b"]):not([style*="color: #a"]):not([style*="color: #9"]):not([style*="color: #8"]) {
+    color: #e5e7eb !important;
+  }
+  
+  /* Cores de texto escuras -> claras no modo escuro */
+  .dark .email-preview [style*="color: #000"],
+  .dark .email-preview [style*="color: black"],
+  .dark .email-preview [style*="color: rgb(0"],
+  .dark .email-preview [style*="color: #333"],
+  .dark .email-preview [style*="color: #222"],
+  .dark .email-preview [style*="color: #1f2937"] {
+    color: #e5e7eb !important;
+  }
+  
+  /* Fundos claros -> escuros no modo escuro */
+  .dark .email-preview [style*="background-color: #fff"],
+  .dark .email-preview [style*="background-color: white"],
+  .dark .email-preview [style*="background-color: rgb(255"],
+  .dark .email-preview [style*="background-color: #f9f9f9"],
+  .dark .email-preview [style*="background-color: #f5f5f5"],
+  .dark .email-preview [style*="background-color: #f8fafc"] {
+    background-color: #1f2937 !important;
+  }
+  
+  /* Bordas escuras -> claras no modo escuro */
+  .dark .email-preview [style*="border-color: #000"],
+  .dark .email-preview [style*="border-color: black"],
+  .dark .email-preview [style*="border-color: #ddd"],
+  .dark .email-preview [style*="border-color: #ccc"],
+  .dark .email-preview [style*="border-color: #e5e7eb"] {
+    border-color: #374151 !important;
+  }
+  
+  /* Melhoria para elementos com cores inline - mais sutil */
+  .dark .email-preview [style*="color:"] {
+    filter: brightness(1.1) contrast(0.95);
+  }
+  
+  /* Preservar cores de marca importantes */
+  .dark .email-preview [style*="color: #ff6b35"],
+  .dark .email-preview [style*="color: #FF6B35"],
+  .dark .email-preview [style*="color: #f97316"],
+  .dark .email-preview [style*="background-color: #ff6b35"],
+  .dark .email-preview [style*="background-color: #FF6B35"],
+  .dark .email-preview [style*="background-color: #f97316"] {
+    filter: none !important;
+  }
+  
+  /* Força visibilidade de elementos importantes */
+  .dark .email-preview h1,
+  .dark .email-preview h2,
+  .dark .email-preview h3,
+  .dark .email-preview h4,
+  .dark .email-preview h5,
+  .dark .email-preview h6 {
+    color: #f9fafb !important;
+  }
+  
+  .dark .email-preview p,
+  .dark .email-preview div,
+  .dark .email-preview span,
+  .dark .email-preview td {
+    color: #e5e7eb !important;
+  }
+  
+  /* Melhoria para containers e tabelas */
+  .dark .email-preview table {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+  }
+  
+  .dark .email-preview .container,
+  .dark .email-preview .email-container {
+    background-color: #1f2937 !important;
+  }
+
+  /* Monaco Editor styles for better dark mode support */
+  .monaco-editor-container {
+    @apply border rounded-md overflow-hidden;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--border));
+    min-height: 300px;
+    position: relative;
+  }
+
+  .dark .monaco-editor-container {
+    border-color: hsl(var(--border));
+  }
+
+  /* Remove background forcing to let Monaco handle its own themes */
+  .monaco-editor {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Monaco Editor scrollbar styling */
+  .monaco-editor .monaco-scrollable-element > .scrollbar {
+    background-color: transparent;
+  }
+
+  .monaco-editor .monaco-scrollable-element > .scrollbar > .slider {
+    background: hsl(var(--muted-foreground)) !important;
+    border-radius: 4px;
+  }
+
+  .monaco-editor .monaco-scrollable-element > .scrollbar > .slider:hover {
+    background: hsl(var(--foreground)) !important;
+  }
+
+  /* Ensure proper sizing and positioning */
+  .monaco-editor-container .monaco-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  /* Fix for line numbers and gutter */
+  .monaco-editor .margin {
+    background-color: transparent !important;
+  }
+
+  /* Ensure consistent text rendering */
+  .monaco-editor .view-lines {
+    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace !important;
+  }
+
+  /* Responsive design for mobile */
+  @media (max-width: 768px) {
+    .email-preview {
+      @apply p-4 text-sm;
+    }
+    
+    .monaco-editor-container {
+      min-height: 200px;
+    }
+    
+    .email-preview .btn,
+    .email-preview button,
+    .email-preview [role="button"] {
+      @apply px-4 py-2 text-sm;
+    }
+  }
+}

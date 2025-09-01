@@ -12,6 +12,7 @@ import { Users, Target, Search, Plus, MoreHorizontal, Edit, Trash2, Copy, X, Eye
 import { usePersonas } from '@/hooks/usePersonas';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+import type { PersonaWithStats } from '@/services/personasService';
 
 type CreatePersonaInput = Database['public']['Tables']['target_personas']['Insert'];
 
@@ -20,7 +21,7 @@ const Personas = () => {
   const [filterSegment, setFilterSegment] = useState('Todos');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedPersona, setSelectedPersona] = useState<any>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Database['public']['Tables']['target_personas']['Row'] | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -92,7 +93,7 @@ const Personas = () => {
     }
   };
 
-  const handleEditPersona = (persona: any) => {
+  const handleEditPersona = (persona: Database['public']['Tables']['target_personas']['Row']) => {
     setSelectedPersona(persona);
     setFormData({
       name: persona.name || '',
@@ -356,7 +357,7 @@ const Personas = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEditPersona(persona)}>
+                    <DropdownMenuItem onClick={() => handleEditPersona(persona as Database["public"]["Tables"]["target_personas"]["Row"])}>
                       <Edit className="h-4 w-4 mr-2" />
                       Editar
                     </DropdownMenuItem>
@@ -671,200 +672,9 @@ const Personas = () => {
 };
 
 export default Personas;
-  });
-
-  // Separar por tabs
-  const activePersonas = filteredPersonas;
-  const topPerformers = filteredPersonas.filter(p => (p.campaigns || 0) > 5);
-
-  if (loading) {
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Personas</h1>
-            <p className="text-muted-foreground">Carregando personas...</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Personas</h1>
-            <p className="text-destructive">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Personas</h1>
-          <p className="text-muted-foreground">
-            Defina e gerencie personas para criar conteúdo direcionado
-          </p>
-        </div>
-        <Button 
-          className="bg-gradient-primary"
-          onClick={() => setShowCreateModal(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Persona
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Personas</p>
-                <p className="text-2xl font-bold text-foreground">{personas.length}</p>
-              </div>
-              <Users className="w-8 h-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Personas Ativas</p>
-                <p className="text-2xl font-bold text-foreground">{activePersonas.length}</p>
-              </div>
-              <UserCheck className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Top Performers</p>
-                <p className="text-2xl font-bold text-foreground">{topPerformers.length}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg. Campanhas</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {personas.length > 0 ? Math.round(personas.reduce((acc, p) => acc + (p.campaigns || 0), 0) / personas.length) : 0}
-                </p>
-              </div>
-              <Target className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou profissão..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={filterAge} onValueChange={setFilterAge}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Filtrar por idade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Todos">Todas as idades</SelectItem>
-            <SelectItem value="18-24">18-24 anos</SelectItem>
-            <SelectItem value="25-34">25-34 anos</SelectItem>
-            <SelectItem value="35-44">35-44 anos</SelectItem>
-            <SelectItem value="45-54">45-54 anos</SelectItem>
-            <SelectItem value="55-64">55-64 anos</SelectItem>
-            <SelectItem value="65+">65+ anos</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Tabs and Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="all">Todas ({personas.length})</TabsTrigger>
-          <TabsTrigger value="active">Ativas ({activePersonas.length})</TabsTrigger>
-          <TabsTrigger value="top">Top Performers ({topPerformers.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="space-y-6">
-          <PersonasGrid 
-            personas={filteredPersonas} 
-            onEdit={handleEditPersona}
-            onDelete={handleDeletePersona}
-            onDuplicate={handleDuplicatePersona}
-          />
-        </TabsContent>
-
-        <TabsContent value="active" className="space-y-6">
-          <PersonasGrid 
-            personas={activePersonas.filter(p => matchesFilters(p, searchTerm, filterAge))} 
-            onEdit={handleEditPersona}
-            onDelete={handleDeletePersona}
-            onDuplicate={handleDuplicatePersona}
-          />
-        </TabsContent>
-
-        <TabsContent value="top" className="space-y-6">
-          <PersonasGrid 
-            personas={topPerformers.filter(p => matchesFilters(p, searchTerm, filterAge))} 
-            onEdit={handleEditPersona}
-            onDelete={handleDeletePersona}
-            onDuplicate={handleDuplicatePersona}
-          />
-        </TabsContent>
-      </Tabs>
-
-      {/* Create Persona Modal */}
-      <CreatePersonaModal 
-        open={showCreateModal}
-        onOpenChange={(open) => {
-          setShowCreateModal(open);
-          if (!open) setEditingPersona(null);
-        }}
-        onCreatePersona={handleCreatePersona}
-        editingPersona={editingPersona}
-      />
-    </div>
-  );
-};
 
 // Helper function for filtering
-const matchesFilters = (persona: any, searchTerm: string, filterAge: string) => {
+const matchesFilters = (persona: Database['public']['Tables']['target_personas']['Row'], searchTerm: string, filterAge: string) => {
   const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        (persona.occupation && persona.occupation.toLowerCase().includes(searchTerm.toLowerCase()));
   const matchesAge = filterAge === 'Todos' || persona.age_range === filterAge;
@@ -874,8 +684,8 @@ const matchesFilters = (persona: any, searchTerm: string, filterAge: string) => 
 
 // Component for rendering personas grid
 interface PersonasGridProps {
-  personas: any[];
-  onEdit: (persona: any) => void;
+  personas: Database['public']['Tables']['target_personas']['Row'][];
+  onEdit: (persona: Database['public']['Tables']['target_personas']['Row']) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
 }
@@ -901,12 +711,12 @@ const PersonasGrid: React.FC<PersonasGridProps> = ({ personas, onEdit, onDelete,
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <CardTitle className="text-lg">{persona.name}</CardTitle>
-                <CardDescription>{persona.occupation || 'Profissão não informada'}</CardDescription>
+                <p className='text-sm text-muted-foreground'>{persona.occupation || 'Profissão não informada'}</p>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
-                    <MoreVertical className="w-4 h-4" />
+                    <MoreHorizontal className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -994,7 +804,7 @@ const PersonasGrid: React.FC<PersonasGridProps> = ({ personas, onEdit, onDelete,
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="text-sm text-muted-foreground">
                 <Target className="w-4 h-4 inline mr-1" />
-                {persona.campaigns || 0} campanhas
+                {(persona as PersonaWithStats).campaigns || 0} campanhas
               </div>
               <Button variant="outline" size="sm">
                 Usar Persona
@@ -1006,5 +816,3 @@ const PersonasGrid: React.FC<PersonasGridProps> = ({ personas, onEdit, onDelete,
     </div>
   );
 };
-
-export default Personas;

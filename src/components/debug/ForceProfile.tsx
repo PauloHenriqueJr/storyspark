@@ -7,9 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const ForceProfile = () => {
-  const { supabaseUser, setUser } = useAuth() as any; // Acesso direto ao setUser
+  const { supabaseUser, setUser } = useAuth(); // Acesso direto ao setUser
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
 
   const forceLoadProfile = async () => {
     if (!supabaseUser) {

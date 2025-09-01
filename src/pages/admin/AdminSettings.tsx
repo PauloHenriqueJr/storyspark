@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { emailService } from '@/services/emailService';
 import {
   Select,
   SelectContent,
@@ -89,12 +90,19 @@ const AdminSettings = () => {
     maxRetryAttempts: 3,
     retryDelaySeconds: 5,
     
-    // Configurações de Email
+    // Configurações de Email - Mailtrap
+    mailtrapApiToken: '',
+    mailtrapAccountId: '',
+    defaultFromEmail: 'notifications@storyspark.com',
+    defaultFromName: 'StorySpark',
+    emailsEnabled: true,
+    emailProvider: 'mailtrap', // 'mailtrap' | 'smtp'
+    
+    // Configurações SMTP (fallback)
     smtpHost: 'smtp.storyspark.com',
     smtpPort: 587,
     smtpUser: 'notifications@storyspark.com',
     smtpPassword: '',
-    emailsEnabled: true,
     
     // Configurações de Segurança
     passwordMinLength: 8,
@@ -292,7 +300,52 @@ const AdminSettings = () => {
     }
   };
 
-  // Definir modelos disponíveis para cada provedor
+  // Função para testar configuração de e-mail
+  const testEmailConfiguration = async () => {
+    setTestingProvider('email');
+    
+    try {
+      // Configurar o EmailService com as configurações atuais
+      if (settings.emailProvider === 'mailtrap') {
+        if (!settings.mailtrapApiToken || !settings.mailtrapAccountId) {
+          throw new Error('Token da API e Account ID do Mailtrap são obrigatórios');
+        }
+        
+        await emailService.configure({
+          apiToken: settings.mailtrapApiToken,
+          accountId: settings.mailtrapAccountId,
+          defaultFromEmail: settings.defaultFromEmail || 'notifications@storyspark.com',
+          defaultFromName: settings.defaultFromName || 'StorySpark'
+        });
+      } else {
+        throw new Error('Apenas o provedor Mailtrap é suportado atualmente');
+      }
+      
+      // Enviar e-mail de teste usando o template
+      const result = await emailService.sendTestEmail(settings.defaultFromEmail || 'test@storyspark.com');
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Falha ao enviar e-mail de teste');
+      }
+      
+      toast({
+        title: "E-mail de teste enviado com sucesso!",
+        description: `Um e-mail de teste foi enviado para ${settings.defaultFromEmail || 'test@storyspark.com'}. Verifique sua caixa de entrada.`,
+      });
+      
+    } catch (error: any) {
+      console.error('Erro ao testar configuração de e-mail:', error);
+      toast({
+        title: "Erro ao testar configuração de e-mail",
+        description: error.message || "Verifique as configurações e tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+       setTestingProvider(null);
+     }
+   };
+
+   // Definir modelos disponíveis para cada provedor
   const providerModels = {
     openai: [
       { value: 'gpt-4o', label: 'GPT-4o' },
@@ -945,52 +998,132 @@ const AdminSettings = () => {
         {/* Configurações de Email */}
         <TabsContent value="email">
           <div className="grid gap-6">
+            {/* Configurações do Mailtrap */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="w-5 h-5" />
-                  Configurações de Email
+                  Configurações do Mailtrap
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure o Mailtrap para envio de e-mails transacionais
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="smtpHost">SMTP Host</Label>
-                    <Input
-                      id="smtpHost"
-                      value={settings.smtpHost}
-                      onChange={(e) => handleSettingChange('smtpHost', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="smtpPort">SMTP Port</Label>
-                    <Input
-                      id="smtpPort"
-                      type="number"
-                      value={settings.smtpPort}
-                      onChange={(e) => handleSettingChange('smtpPort', parseInt(e.target.value))}
-                    />
+                    <Label htmlFor="emailProvider">Provedor de Email</Label>
+                    <Select
+                      value={settings.emailProvider}
+                      onValueChange={(value) => handleSettingChange('emailProvider', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o provedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mailtrap">Mailtrap (Recomendado)</SelectItem>
+                        <SelectItem value="smtp">SMTP Personalizado</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="smtpUser">SMTP User</Label>
-                    <Input
-                      id="smtpUser"
-                      value={settings.smtpUser}
-                      onChange={(e) => handleSettingChange('smtpUser', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="smtpPassword">SMTP Password</Label>
-                    <Input
-                      id="smtpPassword"
-                      type="password"
-                      value={settings.smtpPassword}
-                      onChange={(e) => handleSettingChange('smtpPassword', e.target.value)}
-                    />
-                  </div>
-                </div>
+                
+                {settings.emailProvider === 'mailtrap' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="mailtrapApiToken">API Token do Mailtrap</Label>
+                        <Input
+                          id="mailtrapApiToken"
+                          type="password"
+                          placeholder="Seu token da API do Mailtrap"
+                          value={settings.mailtrapApiToken}
+                          onChange={(e) => handleSettingChange('mailtrapApiToken', e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Encontre em: Mailtrap → API Tokens
+                        </p>
+                      </div>
+                      <div>
+                        <Label htmlFor="mailtrapAccountId">Account ID do Mailtrap</Label>
+                        <Input
+                          id="mailtrapAccountId"
+                          placeholder="ID da sua conta Mailtrap"
+                          value={settings.mailtrapAccountId}
+                          onChange={(e) => handleSettingChange('mailtrapAccountId', e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Encontre em: Mailtrap → Settings → Account
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="defaultFromEmail">Email Remetente Padrão</Label>
+                        <Input
+                          id="defaultFromEmail"
+                          type="email"
+                          placeholder="notifications@storyspark.com"
+                          value={settings.defaultFromEmail}
+                          onChange={(e) => handleSettingChange('defaultFromEmail', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="defaultFromName">Nome Remetente Padrão</Label>
+                        <Input
+                          id="defaultFromName"
+                          placeholder="StorySpark"
+                          value={settings.defaultFromName}
+                          onChange={(e) => handleSettingChange('defaultFromName', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {settings.emailProvider === 'smtp' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="smtpHost">SMTP Host</Label>
+                        <Input
+                          id="smtpHost"
+                          value={settings.smtpHost}
+                          onChange={(e) => handleSettingChange('smtpHost', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="smtpPort">SMTP Port</Label>
+                        <Input
+                          id="smtpPort"
+                          type="number"
+                          value={settings.smtpPort}
+                          onChange={(e) => handleSettingChange('smtpPort', parseInt(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="smtpUser">SMTP User</Label>
+                        <Input
+                          id="smtpUser"
+                          value={settings.smtpUser}
+                          onChange={(e) => handleSettingChange('smtpUser', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="smtpPassword">SMTP Password</Label>
+                        <Input
+                          id="smtpPassword"
+                          type="password"
+                          value={settings.smtpPassword}
+                          onChange={(e) => handleSettingChange('smtpPassword', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="emailsEnabled">Emails Habilitados</Label>
@@ -1001,6 +1134,28 @@ const AdminSettings = () => {
                     checked={settings.emailsEnabled}
                     onCheckedChange={(checked) => handleSettingChange('emailsEnabled', checked)}
                   />
+                </div>
+                
+                {/* Botão de teste */}
+                <div className="pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => testEmailConfiguration()}
+                    disabled={testingProvider === 'email'}
+                    className="w-full"
+                  >
+                    {testingProvider === 'email' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Testando Configuração...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Testar Configuração de Email
+                      </>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

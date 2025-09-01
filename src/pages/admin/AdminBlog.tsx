@@ -308,7 +308,7 @@ export default function AdminBlog() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select value={newPost.status} onValueChange={(value: any) => setNewPost({...newPost, status: value})}>
+                  <Select value={newPost.status} onValueChange={(value: "draft" | "published" | "scheduled") => setNewPost({...newPost, status: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

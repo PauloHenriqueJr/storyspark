@@ -49,30 +49,137 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { Separator } from '@/components/ui/separator';
 import DocumentUploadModal from '@/components/upload/DocumentUploadModal';
 
+// Interfaces para tipar corretamente as props e estados
+interface ToastNotifications {
+  showSuccess: (title: string, description?: string, duration?: number) => string;
+  showError: (title: string, description?: string, duration?: number) => string;
+  showInfo: (title: string, description?: string, duration?: number) => string;
+}
+
+interface SystemToastNotifications extends ToastNotifications {
+  showWarning: (title: string, description?: string, duration?: number) => string;
+}
+
 interface FloatingCopyButtonProps {
-  toastNotifications: {
-    showSuccess: (title: string, description?: string, duration?: number) => string;
-    showError: (title: string, description?: string, duration?: number) => string;
-    showInfo: (title: string, description?: string, duration?: number) => string;
-  };
-  systemToastNotifications: {
-    showSuccess: (title: string, description?: string, duration?: number) => string;
-    showError: (title: string, description?: string, duration?: number) => string;
-    showInfo: (title: string, description?: string, duration?: number) => string;
-    showWarning: (title: string, description?: string, duration?: number) => string;
-  };
+  toastNotifications: ToastNotifications;
+  systemToastNotifications: SystemToastNotifications;
   onOpenScheduleModal?: (copyContent: string, platform: string, copyType: string) => void;
 }
 
 interface ContextConfig {
   title: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   description: string;
   suggestions: string[];
   defaultPlatform?: string;
   defaultType?: string;
   targetPage?: string;
+}
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  platform: string;
+  time: string;
+  date: Date;
+  status: 'Agendado' | 'Publicado' | 'Rascunho';
+  color: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface BrandVoice {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  tone: string;
+  style: string;
+  examples: string[];
+  guidelines: string;
+  usage_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  personality_traits?: string[];
+  audience?: string;
+  platform?: string;
+  context?: string;
+  writing_style?: string;
+  avoid?: string;
+  good_example?: string;
+  bad_example?: string;
+  keywords?: string[];
+}
+
+interface Persona {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  name: string;
+  age_range?: string;
+  location?: string;
+  occupation?: string;
+  goals?: string[];
+  pain_points?: string[];
+  interests?: string[];
+  preferred_channels?: string[];
+  usage_count: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+interface Template {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  type: string;
+  content: string;
+  blocks: any[]; // Você pode tipar isso melhor se souber a estrutura
+  usage_count: number;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  workspace_id: string;
+  version: number;
+  tags?: string[];
+  thumbnail_url?: string;
+  performance_score?: number;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  budget: number;
+  spent: number;
+  roi: number;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  workspace_id: string;
+  target_personas?: string[];
+  brand_voice_id?: string;
+  template_id?: string;
+}
+
+interface PageData {
+  hasData: boolean;
+  data: Array<BrandVoice | Persona | Template | Campaign | any>;
+  type: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  emptyMessage: string;
+  createMessage: string;
+  suggestions: string[];
+  getContext: (item: BrandVoice | Persona | Template | Campaign | any) => string;
 }
 
 const contextConfigs: Record<string, ContextConfig> = {
@@ -110,12 +217,65 @@ const contextConfigs: Record<string, ContextConfig> = {
     description: 'E-mails que convertem e engajam',
     suggestions: [
       'E-mail de boas-vindas',
-      'Newsletter promocional',
-      'E-mail de reativação'
+      'E-mail de promoção',
+      'E-mail de feedback'
     ],
-    defaultPlatform: 'Email',
-    defaultType: 'Newsletter',
+    defaultPlatform: 'E-mail',
     targetPage: '/email-marketing'
+  },
+
+  '/social-media': {
+    title: 'Copy para Mídias Sociais',
+    icon: TrendingUp,
+    color: 'bg-pink-600',
+    description: 'Mídias Sociais que geram engajamento',
+    suggestions: [
+      'Post de Instagram',
+      'Tópico do Twitter',
+      'Story do Facebook'
+    ],
+    defaultPlatform: 'Instagram',
+    targetPage: '/social-media'
+  },
+  '/ads': {
+    title: 'Copy para Anúncios',
+    icon: Zap,
+    color: 'bg-orange-600',
+    description: 'Anúncios que destacam os melhores do seu negócio',
+    suggestions: [
+      'Anúncio Google',
+      'Anúncio Facebook',
+      'Anúncio Instagram'
+    ],
+    defaultPlatform: 'Google Ads',
+    defaultType: 'Anúncio',
+    targetPage: '/ads'
+  },
+  '/webpages': {
+    title: 'Copy para Páginas Web',
+    icon: Globe,
+    color: 'bg-sky-600',
+    description: 'Páginas que levam conversas em sua plataforma',
+    suggestions: [
+      'Landing page de lead generation',
+      'Página de contato',
+      'Página de produto ou serviço'
+    ],
+    targetPage: '/webpages'
+  },
+
+  '/people': {
+    title: 'Pessoas e Contatos',
+    icon: Users,
+    color: 'bg-slate-600',
+    description: 'Gerenciamento e categorização de contatos e segmentação de clientes',
+    suggestions: [
+      'Gerencie e classifique clientes',
+      'Segmente leads potenciais',
+      'Aproveite oportunidades',
+      'Identifique melhores segmentações de marketing'
+    ],
+    targetPage: '/people'
   },
   '/social-scheduler': {
     title: 'Copy para Social Scheduler',
@@ -449,13 +609,14 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const [copyType, setCopyType] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCopy, setGeneratedCopy] = useState('');
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventSelector, setShowEventSelector] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<BrandVoice | Persona | Template | Campaign | null>(null);
   const [showItemSelector, setShowItemSelector] = useState(false);
   const [customizationMode, setCustomizationMode] = useState(false);
   const [customBriefing, setCustomBriefing] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
+
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -609,7 +770,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     setIsModalOpen(false);
   };
 
-  const handleDataExtracted = (data: any) => {
+  const handleDataExtracted = (data: Record<string, unknown>) => {
     // Aqui você implementaria a lógica para aplicar os dados extraídos
     // Por exemplo, criar brand voices, personas, etc.
     console.log('Dados extraídos:', data);
@@ -619,11 +780,11 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
       // Criar brand voice automaticamente
       toastNotifications.showSuccess(
         "Brand Voice criada!",
-        `Brand voice "${data.brandVoice.name}" foi criada automaticamente.`
+        `Brand voice "${(data.brandVoice as BrandVoice).name}" foi criada automaticamente.`
       );
     }
     
-    if (data.personas && data.personas.length > 0) {
+    if (data.personas && Array.isArray(data.personas)) {
       // Criar personas automaticamente
       toastNotifications.showSuccess(
         "Personas criadas!",
@@ -640,7 +801,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     }
   };
 
-  const handleEventSelect = (event: any) => {
+  const handleEventSelect = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setBriefing(`Gerar copy para o evento: ${event.title}`);
     setPlatform(event.platform || 'Instagram');
@@ -660,12 +821,12 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
       // Aqui você pode implementar a lógica para aplicar a copy ao item selecionado
       toastNotifications.showSuccess(
         "Copy aplicada!",
-        `A copy foi aplicada ao item "${selectedItem.name || selectedItem.title}"`
+        `A copy foi aplicada ao item "${selectedItem.name || (selectedItem as any).title}"`
       );
     }
   };
 
-  const handleItemSelect = (item: any) => {
+  const handleItemSelect = (item: BrandVoice | Persona | Template | Campaign) => {
     setSelectedItem(item);
     
     // Usar contexto específico da página se disponível
@@ -691,13 +852,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
           baseContext = `Gerar copy usando a voice: ${item.name}`;
           break;
         case '/ai-ideas':
-          baseContext = `Desenvolver copy baseada na ideia: ${item.topic || item.content?.[0] || 'Ideia IA'}`;
+          baseContext = `Desenvolver copy baseada na ideia: ${(item as any).topic || (item as any).content?.[0] || 'Ideia IA'}`;
           break;
         case '/trending-hooks':
-          baseContext = `Criar copy usando o hook: ${item.hook}`;
+          baseContext = `Criar copy usando o hook: ${(item as any).hook}`;
           break;
         default:
-          baseContext = `Gerar copy para: ${item.name || item.title}`;
+          baseContext = `Gerar copy para: ${item.name || (item as any).title}`;
       }
     }
     
@@ -727,7 +888,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Brand voice para consultoria',
             'Brand voice para educação'
           ],
-          getContext: (item: any) => `Usando a brand voice "${item.name}" com tom ${item.tone || 'profissional'}. ${item.description || ''}`
+          getContext: (item: BrandVoice) => `Usando a brand voice "${item.name}" com tom ${item.tone || 'profissional'}. ${item.description || ''}`
         };
       case '/personas':
         return {
@@ -745,7 +906,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Persona estudante universitário',
             'Persona dona de casa'
           ],
-          getContext: (item: any) => `Direcionado para a persona "${item.name}" - ${item.description || 'Sem descrição'}`
+          getContext: (item: Persona) => `Direcionado para a persona "${item.name}" - ${item.description || 'Sem descrição'}`
         };
       case '/templates':
         return {
@@ -763,7 +924,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Template para engajamento',
             'Template para conversão'
           ],
-          getContext: (item: any) => `Baseado no template "${item.name}" - ${item.description || 'Template profissional'}`
+          getContext: (item: Template) => `Baseado no template "${item.name}" - ${item.description || 'Template profissional'}`
         };
       case '/campaigns':
         return {
@@ -781,7 +942,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Copy para campanha sazonal',
             'Copy para campanha de engajamento'
           ],
-          getContext: (item: any) => `Para a campanha "${item.name}" - ${item.description || 'Campanha ativa'}`
+          getContext: (item: Campaign) => `Para a campanha "${item.name}" - ${item.description || 'Campanha ativa'}`
         };
       case '/ai-ideas':
         return {
@@ -871,7 +1032,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Copy sobre resultados',
             'Copy sobre insights'
           ],
-          getContext: (item: any) => `Baseado nos dados de ${item.name}: ${item.value}`
+          getContext: (item: { name: string; value: unknown }) => `Baseado nos dados de ${item.name}: ${item.value}`
         };
       case '/social-scheduler':
         return {
@@ -1244,9 +1405,9 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                       </Badge>
                     </div>
                     <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-white dark:bg-gray-800">
-                      {pageData.data.slice(0, 5).map((item: any) => (
+                      {pageData.data.slice(0, 5).map((item: BrandVoice | Persona | Template | Campaign) => (
                         <div
-                          key={item.id}
+                          key={(item as any).id}
                           onClick={() => handleItemSelect(item)}
                           className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 hover:border-blue-200 dark:hover:border-blue-600 cursor-pointer transition-all duration-200 group"
                         >
@@ -1255,10 +1416,10 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
-                              {item.name || item.title}
+                              {(item as any).name || (item as any).title}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {item.description || item.tone || 'Sem descrição'}
+                              {(item as any).description || (item as any).tone || 'Sem descrição'}
                             </p>
                           </div>
                           <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">

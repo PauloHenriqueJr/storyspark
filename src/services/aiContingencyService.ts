@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from '@/integrations/supabase/client';
 
 // Tipos para o sistema de contingência
 interface AIProvider {
@@ -60,20 +60,33 @@ class AIContingencyService {
       const { data, error } = await supabase
         .from("admin_llm_settings")
         .select("*")
-        .single();
+        .limit(1);
 
       if (error) {
         console.error("Erro ao carregar configurações de contingência:", error);
         return;
       }
 
-      if (data) {
+      // Se não há dados, criar configurações padrão
+      if (!data || data.length === 0) {
         this.settings = {
-          contingencyEnabled: data.contingency_enabled ?? false,
-          fallbackPriority: data.fallback_priority ?? {},
-          autoRetryEnabled: data.auto_retry_enabled ?? true,
-          maxRetryAttempts: data.max_retry_attempts ?? 3,
-          retryDelaySeconds: data.retry_delay_seconds ?? 5,
+          contingencyEnabled: false,
+          fallbackPriority: {},
+          autoRetryEnabled: true,
+          maxRetryAttempts: 3,
+          retryDelaySeconds: 5
+        };
+        return;
+      }
+
+      const settingsData = data[0];
+      if (settingsData) {
+        this.settings = {
+          contingencyEnabled: settingsData.contingency_enabled ?? false,
+          fallbackPriority: settingsData.fallback_priority ?? {},
+          autoRetryEnabled: settingsData.auto_retry_enabled ?? true,
+          maxRetryAttempts: settingsData.max_retry_attempts ?? 3,
+          retryDelaySeconds: settingsData.retry_delay_seconds ?? 5,
         };
 
         // Carregar provedores ativos

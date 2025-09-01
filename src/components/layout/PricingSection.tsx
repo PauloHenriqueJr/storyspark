@@ -56,7 +56,7 @@ const plans = [
 
 export const PricingSection = () => {
   return (
-    <section id="precos" className="py-24">
+    <section id="pricing" className="py-24">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <Badge variant="outline" className="mb-4">
@@ -73,11 +73,10 @@ export const PricingSection = () => {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
-            <Card 
-              key={index} 
-              className={`border-0 shadow-elegant hover:shadow-glow transition-all duration-300 hover:-translate-y-1 ${
-                plan.popular ? 'ring-2 ring-primary relative' : ''
-              }`}
+            <Card
+              key={index}
+              className={`border-0 shadow-elegant hover:shadow-glow transition-all duration-300 hover:-translate-y-1 ${plan.popular ? 'ring-2 ring-primary relative' : ''
+                }`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -87,7 +86,7 @@ export const PricingSection = () => {
                   </Badge>
                 </div>
               )}
-              
+
               <CardHeader className="text-center pb-8">
                 <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
                 <div className="mt-4">
@@ -109,13 +108,12 @@ export const PricingSection = () => {
                   ))}
                 </ul>
 
-                <Button 
+                <Button
                   asChild
-                  className={`w-full ${
-                    plan.popular 
-                      ? 'bg-gradient-primary hover:shadow-glow' 
+                  className={`w-full ${plan.popular
+                      ? 'bg-gradient-primary hover:shadow-glow'
                       : 'variant-outline'
-                  }`}
+                    }`}
                   variant={plan.popular ? 'default' : 'outline'}
                 >
                   <Link to="/register">

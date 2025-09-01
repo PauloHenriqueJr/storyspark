@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Bot, 
-  Wand2, 
-  Copy, 
-  Download, 
-  Share2, 
+import {
+  Bot,
+  Wand2,
+  Copy,
+  Download,
+  Share2,
   Sparkles,
   Target,
   Users,
@@ -53,7 +53,7 @@ const copyTypes = [
 ];
 
 const tones = [
-  'Profissional', 'Casual', 'Divertido', 'Inspirador', 
+  'Profissional', 'Casual', 'Divertido', 'Inspirador',
   'Urgente', 'Educativo', 'Emocional', 'Minimalista'
 ];
 
@@ -71,6 +71,25 @@ interface Project {
     timestamp: Date;
   }>;
   lastModified: Date;
+}
+
+interface ContextConfig {
+  title?: string;
+  // Add other properties as needed
+}
+
+interface LocationStateContext {
+  page?: string;
+  contextConfig?: ContextConfig;
+  // Add other properties as needed
+}
+
+interface LocationState {
+  briefing: string;
+  platform: string;
+  copyType: string;
+  generatedCopy: string;
+  context: LocationStateContext;
 }
 
 const Composer = () => {
@@ -101,15 +120,15 @@ const Composer = () => {
   // Handle incoming data from FloatingCopyButton
   useEffect(() => {
     if (location.state) {
-      const { briefing, platform, copyType, generatedCopy, context } = location.state as any;
-      
+      const { briefing, platform, copyType, generatedCopy, context } = location.state as LocationState;
+
       if (briefing && generatedCopy) {
         // Criar nome do projeto baseado no contexto
         let projectName = `Copy - ${platform} ${copyType}`;
         if (context?.contextConfig?.title) {
           projectName = `${context.contextConfig.title} - ${platform} ${copyType}`;
         }
-        
+
         // Criar novo projeto com os dados recebidos
         const newProject: Project = {
           id: Date.now().toString(),
@@ -129,17 +148,17 @@ const Composer = () => {
 
         setProjects(prev => [newProject, ...prev]);
         setActiveProjectId(newProject.id);
-        
+
         // Limpar o state para evitar recriação
         navigate(location.pathname, { replace: true });
-        
+
         // Mensagem personalizada baseada no contexto
         let description = "Copy do botão flutuante foi carregada no Composer.";
         if (context?.page) {
           const pageName = context.page.replace('/', '').replace('-', ' ');
           description = `Copy contextual de ${pageName} foi carregada no Composer.`;
         }
-        
+
         toast({
           title: "Projeto criado!",
           description: description,
@@ -150,6 +169,24 @@ const Composer = () => {
 
   const [searchParams] = useSearchParams();
 
+  // Função para criar novo projeto (declarada antes do useEffect)
+  const createNewProject = () => {
+    const newProject: Project = {
+      id: `project_${Date.now()}`,
+      name: `Projeto ${projects.length + 1}`,
+      briefing: '',
+      platform: '',
+      copyType: '',
+      tone: '',
+      generatedCopy: '',
+      versions: [],
+      lastModified: new Date()
+    };
+
+    setProjects(prev => [...prev, newProject]);
+    setActiveProjectId(newProject.id);
+  };
+
   // Load projects from localStorage on mount and handle template URL parameters
   useEffect(() => {
     const loadTemplate = async () => {
@@ -157,7 +194,7 @@ const Composer = () => {
       const templateName = searchParams.get('name');
       const content = searchParams.get('content');
       const fromTemplate = searchParams.get('from');
-      
+
       // Prioridade para conteúdo processado do template
       if (content && templateName && fromTemplate === 'template') {
         const processedProject: Project = {
@@ -174,14 +211,14 @@ const Composer = () => {
 
         setProjects([processedProject]);
         setActiveProjectId(processedProject.id);
-        
+
         toast({
           title: "✅ Template carregado no briefing!",
           description: `Template "${decodeURIComponent(templateName)}" está pronto para você configurar plataforma e gerar a copy.`,
         });
         return;
       }
-      
+
       // Fallback para template original (compatibilidade)
       if (templateId) {
         try {
@@ -194,7 +231,7 @@ const Composer = () => {
               name: templateName ? decodeURIComponent(templateName) : template.name,
               briefing: template.description || 'Template importado',
               platform: (template.metadata && typeof template.metadata === 'object' && template.metadata !== null && 'platform' in template.metadata)
-                ? String((template.metadata as any).platform) : '',
+                ? String((template.metadata as Record<string, unknown>).platform) : '',
               copyType: template.type || '',
               tone: '',
               generatedCopy: template.content,
@@ -208,7 +245,7 @@ const Composer = () => {
 
             setProjects([templateProject]);
             setActiveProjectId(templateProject.id);
-            
+
             toast({
               title: "Template carregado!",
               description: `Template "${template.name}" está pronto para usar no Composer.`,
@@ -224,7 +261,7 @@ const Composer = () => {
           });
         }
       }
-      
+
       // Carregar projetos normalmente se não houver template na URL
       const saved = localStorage.getItem('composer-projects');
       if (saved) {
@@ -238,30 +275,13 @@ const Composer = () => {
         createNewProject();
       }
     };
-    
+
     loadTemplate();
   }, [searchParams, toast]);
 
-  const createNewProject = () => {
-    const newProject: Project = {
-      id: `project_${Date.now()}`,
-      name: `Projeto ${projects.length + 1}`,
-      briefing: '',
-      platform: '',
-      copyType: '',
-      tone: '',
-      generatedCopy: '',
-      versions: [],
-      lastModified: new Date()
-    };
-    
-    setProjects(prev => [...prev, newProject]);
-    setActiveProjectId(newProject.id);
-  };
-
   const updateActiveProject = (updates: Partial<Project>) => {
-    setProjects(prev => prev.map(project => 
-      project.id === activeProjectId 
+    setProjects(prev => prev.map(project =>
+      project.id === activeProjectId
         ? { ...project, ...updates, lastModified: new Date() }
         : project
     ));
@@ -290,10 +310,10 @@ const Composer = () => {
     }
 
     setIsGenerating(true);
-    
+
     try {
       console.log('🤖 Iniciando geração de copy com IA...');
-      
+
       // Usar o serviço real de geração de copy
       const response = await copyGenerationService.generateCopy({
         briefing: activeProject.briefing,
@@ -322,23 +342,23 @@ const Composer = () => {
       } else {
         throw new Error(response.error || 'Falha na geração de copy');
       }
-      
+
     } catch (error) {
       console.error('❌ Erro na geração de copy:', error);
-      
+
       toast({
         title: "Erro na geração",
         description: error instanceof Error ? error.message : "Erro desconhecido. Tente novamente.",
         variant: "destructive"
       });
-      
+
       // Fallback - ainda criar uma versão básica se a IA falhar completamente
       const fallbackText = `Copy para ${activeProject.platform} - ${activeProject.copyType}
 
 ${activeProject.briefing}
 
 #marketing #${activeProject.platform.toLowerCase()}`;
-      
+
       const newVersion = {
         id: `version_${Date.now()}`,
         copy: fallbackText,
@@ -349,7 +369,7 @@ ${activeProject.briefing}
         generatedCopy: fallbackText,
         versions: [...(activeProject.versions || []), newVersion]
       });
-      
+
     } finally {
       setIsGenerating(false);
     }
@@ -366,13 +386,13 @@ ${activeProject.briefing}
     }
 
     setIsGenerating(true);
-    
+
     try {
       console.log('🔄 Gerando variações da copy...');
-      
+
       const variations = await copyGenerationService.generateVariations(
-        activeProject.generatedCopy, 
-        3, 
+        activeProject.generatedCopy,
+        3,
         user?.id
       );
 
@@ -394,7 +414,7 @@ ${activeProject.briefing}
       } else {
         throw new Error('Falha na geração de variações');
       }
-      
+
     } catch (error) {
       console.error('❌ Erro na geração de variações:', error);
       toast({
@@ -418,10 +438,10 @@ ${activeProject.briefing}
     }
 
     setIsGenerating(true);
-    
+
     try {
       console.log('⚡ Otimizando copy...');
-      
+
       const response = await copyGenerationService.optimizeCopy(
         activeProject.generatedCopy,
         activeProject.platform,
@@ -448,7 +468,7 @@ ${activeProject.briefing}
       } else {
         throw new Error(response.error || 'Falha na otimização');
       }
-      
+
     } catch (error) {
       console.error('❌ Erro na otimização:', error);
       toast({
@@ -473,7 +493,7 @@ ${activeProject.briefing}
 
   const exportProject = () => {
     if (!activeProject) return;
-    
+
     const exportData = {
       projectName: activeProject.name,
       briefing: activeProject.briefing,
@@ -503,7 +523,7 @@ ${activeProject.briefing}
 
   const loadVersion = (versionId: string) => {
     if (!activeProject) return;
-    
+
     const version = activeProject.versions.find(v => v.id === versionId);
     if (version) {
       updateActiveProject({ generatedCopy: version.copy });
@@ -568,8 +588,8 @@ ${activeProject.briefing}
               <div className="flex items-center gap-2 mb-4 overflow-x-auto">
                 <TabsList className="flex-1 grid grid-cols-none grid-flow-col">
                   {projects.map((project) => (
-                    <TabsTrigger 
-                      key={project.id} 
+                    <TabsTrigger
+                      key={project.id}
                       value={project.id}
                       className="relative group flex-shrink-0 min-w-[140px]"
                     >
@@ -759,7 +779,7 @@ ${activeProject.briefing}
                 </Select>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
                 className="w-full bg-gradient-primary"
@@ -799,22 +819,22 @@ ${activeProject.briefing}
                 </div>
                 {activeProject.generatedCopy && (
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => updateActiveProject({ generatedCopy: '' })}
                     >
                       <RefreshCw className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={handleCopy}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={exportProject}
                     >
@@ -832,7 +852,7 @@ ${activeProject.briefing}
                       {activeProject.generatedCopy}
                     </pre>
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button className="flex-1" onClick={exportProject}>
                       <Download className="w-4 h-4 mr-2" />

@@ -102,20 +102,8 @@ O arquivo `insert_seeds_safe.sql` contém 2 personas detalhadas:
   averagePerformance: `${(Math.random() * 10 + 10).toFixed(1)}%`
   ```
 
-### ✅ Seeds Já Preparados:
-O arquivo `seed_templates.sql` contém templates prontos para:
-- Instagram Posts
-- LinkedIn Posts  
-- Email Marketing
-- Stories
-- Anúncios Facebook/Google
-- WhatsApp Business
-- YouTube
-- TikTok
-
 ### 🔧 Ação Necessária:
-1. Executar `seed_templates.sql`
-2. Criar tabela `template_stats` para dados reais:
+1. Criar tabela `template_stats` para dados reais:
    ```sql
    CREATE TABLE template_stats (
      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

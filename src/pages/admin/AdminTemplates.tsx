@@ -33,10 +33,12 @@ import {
   FileText,
   Heart,
   Loader2,
-  AlertCircle
+  AlertCircle,
+
 } from 'lucide-react';
 import { useTemplates } from '@/hooks/useTemplates';
 import { toast } from 'sonner';
+
 
 const AdminTemplates = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -275,6 +277,7 @@ const AdminTemplates = () => {
           <TabsTrigger value="email">E-mail</TabsTrigger>
           <TabsTrigger value="ads">Anúncios</TabsTrigger>
           <TabsTrigger value="blog">Blog Posts</TabsTrigger>
+
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
@@ -382,6 +385,8 @@ const AdminTemplates = () => {
             )}
           </div>
         </TabsContent>
+
+
       </Tabs>
     </div>
   );

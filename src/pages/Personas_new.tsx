@@ -19,7 +19,7 @@ const Personas = () => {
   const [filterSegment, setFilterSegment] = useState('Todos');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedPersona, setSelectedPersona] = useState<any>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Database['public']['Tables']['target_personas']['Row'] | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -91,7 +91,7 @@ const Personas = () => {
     }
   };
 
-  const handleEditPersona = (persona: any) => {
+  const handleEditPersona = (persona: Database['public']['Tables']['target_personas']['Row']) => {
     setSelectedPersona(persona);
     setFormData({
       name: persona.name || '',
@@ -355,7 +355,7 @@ const Personas = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEditPersona(persona)}>
+                    <DropdownMenuItem onClick={() => handleEditPersona(persona as Database["public"]["Tables"]["target_personas"]["Row"])}>
                       <Edit className="h-4 w-4 mr-2" />
                       Editar
                     </DropdownMenuItem>

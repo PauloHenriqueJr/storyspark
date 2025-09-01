@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Mail, Phone, MapPin } from 'lucide-react';
+import { Sparkles, Mail, Phone, MapPin, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -65,10 +65,10 @@ export const Footer = () => {
             <div className="lg:col-span-2">
               <Link to="/" className="flex items-center space-x-2 mb-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-                  <Sparkles className="h-4 w-4 text-primary-foreground" />
+                  <Flame className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  Dialeto
+                  StorySpark
                 </span>
               </Link>
               
@@ -80,7 +80,7 @@ export const Footer = () => {
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  <span>contato@dialeto.ai</span>
+                  <span>contato@storyspark.ai</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
@@ -164,7 +164,7 @@ export const Footer = () => {
         <div className="border-t border-border/50 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              © 2024 Dialeto. Todos os direitos reservados.
+              © 2024 StorySpark. Todos os direitos reservados.
             </p>
             
             <div className="flex items-center gap-6 mt-4 md:mt-0">
