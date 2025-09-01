@@ -2,28 +2,45 @@ name: Generate a build and push to another branch
 
 on:
   push:
-    branches:
-      - main # The branch name your are commit the new changes
+    branches: [ main ]
+
+permissions:
+  contents: write  # garante que o job possa fazer push
 
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Build and Push
     steps:
-      - name: git-checkout
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Install all dependencies
-        run: npm install
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-      - name: Build
-        run: npm run build # The build command of your project
+      - name: Install
+        run: npm ci
 
-      - name: Push
+      - name: Build (Vite)
+        run: npm run build
+
+      - name: Debug build output
+        run: |
+          pwd
+          ls -la
+          echo "---- dist ----"
+          ls -la dist
+
+      - name: Push dist/ to branch
         uses: s0/git-publish-subdir-action@develop
         env:
           REPO: self
-          BRANCH: build # The branch name where you want to push the assets
-          FOLDER: build # The directory where your assets are generated
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub will automatically add this - you don't need to bother getting a token
-          MESSAGE: "Build: ({sha}) {msg}" # The commit message
+          BRANCH: dist              # branch de destino (será criada se não existir)
+          FOLDER: dist              # pasta gerada pelo Vite
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MESSAGE: "dist: ({sha}) {msg}"
