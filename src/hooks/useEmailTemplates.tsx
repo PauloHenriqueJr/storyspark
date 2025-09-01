@@ -66,28 +66,33 @@ export const useEmailTemplates = () => {
       }
 
       // Mapear dados do banco para o formato do hook
-      const mappedTemplates: EmailTemplate[] = (data || []).map(template => ({
-        id: template.id,
-        name: template.name,
-        description: template.description || '',
-        subject: template.metadata?.subject || template.metadata?.subject_line || template.name,
-        html_content: template.metadata?.html_content || template.content || '',
-        text_content: template.metadata?.text_content || template.content || '',
-        template_variables: template.variables || [],
-        variables: template.variables || [], // Adicionar campo variables para compatibilidade
-        category: template.category,
-        is_active: template.is_public !== false, // Mapear is_public para is_active
-        usage_count: template.usage_count || 0, // Adicionar campo usage_count
-        created_at: template.created_at,
-        updated_at: template.updated_at,
-        workspace_id: template.workspace_id,
-        metadata: {
-          ...template.metadata,
+      const mappedTemplates: EmailTemplate[] = (data || []).map(template => {
+        const htmlContent = template.metadata?.html_content || template.content || '';
+        const detectedVariables = detectTemplateVariables(htmlContent);
+        
+        return {
+          id: template.id,
+          name: template.name,
+          description: template.description || '',
           subject: template.metadata?.subject || template.metadata?.subject_line || template.name,
-          html_content: template.metadata?.html_content || template.content || '',
-          text_content: template.metadata?.text_content || template.content || ''
-        }
-      }));
+          html_content: htmlContent,
+          text_content: template.metadata?.text_content || template.content || '',
+          template_variables: template.variables || detectedVariables,
+          variables: template.variables || detectedVariables, // Adicionar campo variables para compatibilidade
+          category: template.category || 'Sistema',
+          is_active: template.is_public !== false, // Mapear is_public para is_active
+          usage_count: template.usage_count || 0, // Adicionar campo usage_count
+          created_at: template.created_at,
+          updated_at: template.updated_at,
+          workspace_id: template.workspace_id,
+          metadata: {
+            ...template.metadata,
+            subject: template.metadata?.subject || template.metadata?.subject_line || template.name,
+            html_content: htmlContent,
+            text_content: template.metadata?.text_content || template.content || ''
+          }
+        };
+      });
 
       setTemplates(mappedTemplates);
     } catch (err) {
@@ -291,6 +296,8 @@ export const useEmailTemplates = () => {
 
   // Função utilitária para detectar variáveis no template
   const detectTemplateVariables = (htmlContent: string): string[] => {
+    if (!htmlContent) return [];
+    
     const variableRegex = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
     const variables: string[] = [];
     let match;

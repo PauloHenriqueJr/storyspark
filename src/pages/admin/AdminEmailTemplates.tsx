@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './AdminEmailTemplates.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +60,8 @@ import {
   TrendingUp,
   UserPlus,
   Activity,
+  RefreshCw,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEmailTemplates, EmailTemplate, CreateEmailTemplateInput } from '@/hooks/useEmailTemplates';
@@ -92,6 +95,7 @@ const AdminEmailTemplates = () => {
   // Estados para templates
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
@@ -107,6 +111,9 @@ const AdminEmailTemplates = () => {
   const [newTemplateVars, setNewTemplateVars] = useState<Record<string, string>>({});
   const [editTemplateVars, setEditTemplateVars] = useState<Record<string, string>>({});
   const [testRecipient, setTestRecipient] = useState('');
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Dados mockados para campanhas
   const [campaigns] = useState([
@@ -1305,11 +1312,28 @@ Equipe StorySpark
 
   // Criar novo template
   const handleCreateTemplate = async () => {
+    // Validação básica
+    if (!newTemplate.name.trim()) {
+      toast.error('Nome do template é obrigatório');
+      return;
+    }
+    
+    if (!newTemplate.subject.trim()) {
+      toast.error('Assunto do email é obrigatório');
+      return;
+    }
+    
+    if (!newTemplate.html_content.trim()) {
+      toast.error('Conteúdo HTML é obrigatório');
+      return;
+    }
+
+    setIsCreating(true);
     try {
       const templateInput: CreateEmailTemplateInput = {
-        name: newTemplate.name,
-        description: newTemplate.description,
-        subject: newTemplate.subject,
+        name: newTemplate.name.trim(),
+        description: newTemplate.description.trim(),
+        subject: newTemplate.subject.trim(),
         html_content: newTemplate.html_content,
         text_content: newTemplate.text_content,
         category: newTemplate.category,
@@ -1329,9 +1353,13 @@ Equipe StorySpark
           tags: ['email'],
           category: 'Sistema'
         });
+        setNewTemplateVars({});
+        setTestRecipient('');
       }
     } catch (error) {
       console.error('Erro ao criar template:', error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -1339,12 +1367,29 @@ Equipe StorySpark
   const handleUpdateTemplate = async () => {
     if (!selectedTemplate) return;
 
+    // Validação básica
+    if (!selectedTemplate.name.trim()) {
+      toast.error('Nome do template é obrigatório');
+      return;
+    }
+    
+    if (!selectedTemplate.metadata?.subject?.trim()) {
+      toast.error('Assunto do email é obrigatório');
+      return;
+    }
+    
+    if (!selectedTemplate.metadata?.html_content?.trim()) {
+      toast.error('Conteúdo HTML é obrigatório');
+      return;
+    }
+
+    setIsUpdating(true);
     try {
       const success = await updateTemplate({
         id: selectedTemplate.id,
-        name: selectedTemplate.name,
-        description: selectedTemplate.description,
-        subject: selectedTemplate.metadata?.subject,
+        name: selectedTemplate.name.trim(),
+        description: selectedTemplate.description?.trim(),
+        subject: selectedTemplate.metadata?.subject?.trim(),
         html_content: selectedTemplate.metadata?.html_content,
         text_content: selectedTemplate.metadata?.text_content,
         category: selectedTemplate.category,
@@ -1354,20 +1399,45 @@ Equipe StorySpark
       if (success) {
         setIsEditDialogOpen(false);
         setSelectedTemplate(null);
+        setEditTemplateVars({});
+        setTestRecipient('');
       }
     } catch (error) {
       console.error('Erro ao atualizar template:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   // Excluir template
   const handleDeleteTemplate = async (templateId: string) => {
-    await deleteTemplate(templateId);
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    if (confirm(`Tem certeza que deseja excluir o template "${template.name}"? Esta ação não pode ser desfeita.`)) {
+      await deleteTemplate(templateId);
+    }
   };
 
   // Duplicar template
   const handleDuplicateTemplate = async (template: EmailTemplate) => {
     await duplicateTemplate(template.id);
+  };
+
+  // Ativar/Desativar template
+  const handleToggleActive = async (template: EmailTemplate) => {
+    try {
+      const success = await updateTemplate({
+        id: template.id,
+        is_active: !template.is_active
+      });
+      
+      if (success) {
+        toast.success(`Template ${template.is_active ? 'desativado' : 'ativado'} com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Erro ao alterar status do template:', error);
+    }
   };
 
   // Preview template
@@ -1418,7 +1488,7 @@ Equipe StorySpark
     return ((clicks / recipients) * 100).toFixed(1);
   };
 
-  // Filtrar templates (busca + categoria)
+  // Filtrar templates (busca + categoria + status)
   const filteredTemplates = templates.filter((template) => {
     const matchesSearch = (
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1428,7 +1498,11 @@ Equipe StorySpark
     const norm = (s: string | undefined | null) => (s || '').toLowerCase();
     const hasCategoryFilter = selectedCategory && selectedCategory !== 'all';
     const matchesCategory = !hasCategoryFilter || norm(template.category) === norm(selectedCategory);
-    return matchesSearch && matchesCategory;
+    const hasStatusFilter = selectedStatus && selectedStatus !== 'all';
+    const matchesStatus = !hasStatusFilter || 
+      (selectedStatus === 'active' && template.is_active) ||
+      (selectedStatus === 'inactive' && !template.is_active);
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   // Atualizar variáveis automaticamente quando o conteúdo HTML muda
@@ -1439,6 +1513,7 @@ Equipe StorySpark
       setSelectedTemplate({
         ...selectedTemplate,
         variables,
+        template_variables: variables,
         metadata: {
           ...selectedTemplate.metadata,
           html_content: content
@@ -1485,6 +1560,8 @@ Equipe StorySpark
       toast.error('Informe um e-mail para envio de teste');
       return;
     }
+    
+    setIsSendingTest(true);
     try {
       if (mode === 'new') {
         const { subject, html } = applyVars(newTemplate.subject, newTemplate.html_content, newTemplateVars);
@@ -1495,20 +1572,35 @@ Equipe StorySpark
           text: newTemplate.text_content,
           category: 'template_test'
         });
-        if (res.success) toast.success('Teste enviado'); else toast.error(res.error || 'Falha ao enviar teste');
+        if (res.success) {
+          toast.success('E-mail de teste enviado com sucesso!');
+        } else {
+          toast.error(res.error || 'Falha ao enviar teste');
+        }
       } else if (selectedTemplate) {
-        const { subject, html } = applyVars(selectedTemplate.metadata.subject || selectedTemplate.subject, selectedTemplate.metadata.html_content || selectedTemplate.html_content, editTemplateVars);
+        const { subject, html } = applyVars(
+          selectedTemplate.metadata?.subject || selectedTemplate.subject, 
+          selectedTemplate.metadata?.html_content || selectedTemplate.html_content, 
+          editTemplateVars
+        );
         const res = await emailService.sendEmail({
           to: [{ email: testRecipient }],
           subject: subject || '(sem assunto)',
           html,
-          text: selectedTemplate.metadata.text_content || selectedTemplate.text_content,
+          text: selectedTemplate.metadata?.text_content || selectedTemplate.text_content,
           category: `${selectedTemplate.id}_test`
         });
-        if (res.success) toast.success('Teste enviado'); else toast.error(res.error || 'Falha ao enviar teste');
+        if (res.success) {
+          toast.success('E-mail de teste enviado com sucesso!');
+        } else {
+          toast.error(res.error || 'Falha ao enviar teste');
+        }
       }
     } catch (e: any) {
+      console.error('Erro ao enviar teste:', e);
       toast.error(e?.message || 'Erro ao enviar teste');
+    } finally {
+      setIsSendingTest(false);
     }
   };
 
@@ -1542,6 +1634,19 @@ Equipe StorySpark
         </div>
 
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => loadTemplates()}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {loading ? 'Carregando...' : 'Recarregar'}
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => setIsCreateCampaignModalOpen(true)}
@@ -1821,7 +1926,7 @@ Equipe StorySpark
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setSelectedCategory('')}>
+                  <DropdownMenuItem onClick={() => setSelectedCategory('all')}>
                     Todas
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setSelectedCategory('Sistema')}>
@@ -1835,7 +1940,37 @@ Equipe StorySpark
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Status
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setSelectedStatus('all')}>
+                    Todos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSelectedStatus('active')}>
+                    Ativos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSelectedStatus('inactive')}>
+                    Inativos
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
+          </div>
+
+          {/* Contador de Templates */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-muted-foreground">
+              {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''} encontrado{filteredTemplates.length !== 1 ? 's' : ''}
+              {searchTerm && ` para "${searchTerm}"`}
+              {selectedCategory && selectedCategory !== 'all' && ` na categoria "${selectedCategory}"`}
+              {selectedStatus && selectedStatus !== 'all' && ` com status "${selectedStatus === 'active' ? 'ativo' : 'inativo'}"`}
+            </p>
           </div>
 
           {/* Grid de Templates */}
@@ -1870,6 +2005,21 @@ Equipe StorySpark
                           Duplicar
                         </DropdownMenuItem>
                         <DropdownMenuItem
+                          onClick={() => handleToggleActive(template)}
+                        >
+                          {template.is_active ? (
+                            <>
+                              <X className="h-4 w-4 mr-2" />
+                              Desativar
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 mr-2" />
+                              Ativar
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => handleDeleteTemplate(template.id)}
                         >
@@ -1886,6 +2036,9 @@ Equipe StorySpark
                       <Badge variant="outline">{template.category}</Badge>
                       <Badge variant="secondary">
                         {template.variables?.length || 0} variáveis
+                      </Badge>
+                      <Badge variant={template.is_active ? "default" : "secondary"}>
+                        {template.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">
@@ -2148,7 +2301,11 @@ Equipe StorySpark
                   )}
                   {newTemplate.html_content ? (
                     <div
-                      className="email-preview"
+                      className="email-preview max-w-full overflow-x-auto"
+                      style={{
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                        lineHeight: '1.6'
+                      }}
                       dangerouslySetInnerHTML={{
                         __html: newTemplate.html_content
                       }}
@@ -2172,17 +2329,70 @@ Equipe StorySpark
                     </Badge>
                   ))}
                 </div>
+                
+                {/* Seção de teste de email */}
+                <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+                  <Label className="text-sm font-medium">Testar Template</Label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Envie um e-mail de teste para verificar como o template ficará
+                  </p>
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="E-mail para teste"
+                      value={testRecipient}
+                      onChange={(e) => setTestRecipient(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendTest('new')}
+                      disabled={!testRecipient || !newTemplate.html_content || isSendingTest}
+                    >
+                      {isSendingTest ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      {isSendingTest ? 'Enviando...' : 'Enviar Teste'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
           <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setNewTemplate({
+                  name: '',
+                  description: '',
+                  subject: '',
+                  html_content: '',
+                  text_content: '',
+                  variables: [],
+                  tags: ['email'],
+                  category: 'Sistema'
+                });
+                setNewTemplateVars({});
+                setTestRecipient('');
+              }}
+            >
+              Limpar
+            </Button>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleCreateTemplate} disabled={!newTemplate.name || !newTemplate.subject}>
-              <Save className="h-4 w-4 mr-2" />
-              Criar Template
+            <Button onClick={handleCreateTemplate} disabled={!newTemplate.name || !newTemplate.subject || !newTemplate.html_content || isCreating}>
+              {isCreating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {isCreating ? 'Criando...' : 'Criar Template'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2212,7 +2422,11 @@ Equipe StorySpark
                     <strong>Assunto:</strong> {selectedTemplate.metadata?.subject}
                   </div>
                   <div
-                    className="email-preview"
+                    className="email-preview max-w-full overflow-x-auto"
+                    style={{
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                      lineHeight: '1.6'
+                    }}
                     dangerouslySetInnerHTML={{
                       __html: selectedTemplate.metadata?.html_content || ''
                     }}
@@ -2345,7 +2559,11 @@ Equipe StorySpark
                     )}
                     {selectedTemplate.metadata?.html_content ? (
                       <div
-                        className="email-preview"
+                        className="email-preview max-w-full overflow-x-auto"
+                        style={{
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                          lineHeight: '1.6'
+                        }}
                         dangerouslySetInnerHTML={{
                           __html: selectedTemplate.metadata?.html_content
                         }}
@@ -2369,18 +2587,74 @@ Equipe StorySpark
                       </Badge>
                     ))}
                   </div>
+                  
+                  {/* Seção de teste de email */}
+                  <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+                    <Label className="text-sm font-medium">Testar Template</Label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Envie um e-mail de teste para verificar como o template ficará
+                    </p>
+                    
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="E-mail para teste"
+                        value={testRecipient}
+                        onChange={(e) => setTestRecipient(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSendTest('edit')}
+                        disabled={!testRecipient || !selectedTemplate.metadata?.html_content || isSendingTest}
+                      >
+                        {isSendingTest ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" />
+                        )}
+                        {isSendingTest ? 'Enviando...' : 'Enviar Teste'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           )}
 
           <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (selectedTemplate) {
+                  setSelectedTemplate({
+                    ...selectedTemplate,
+                    name: selectedTemplate.name,
+                    description: selectedTemplate.description,
+                    metadata: {
+                      ...selectedTemplate.metadata,
+                      subject: selectedTemplate.metadata?.subject,
+                      html_content: selectedTemplate.metadata?.html_content,
+                      text_content: selectedTemplate.metadata?.text_content
+                    }
+                  });
+                }
+                setEditTemplateVars({});
+                setTestRecipient('');
+              }}
+            >
+              Restaurar
+            </Button>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateTemplate}>
-              <Save className="h-4 w-4 mr-2" />
-              Salvar Alterações
+            <Button onClick={handleUpdateTemplate} disabled={!selectedTemplate?.name || !selectedTemplate?.metadata?.subject || !selectedTemplate?.metadata?.html_content || isUpdating}>
+              {isUpdating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </DialogFooter>
         </DialogContent>
