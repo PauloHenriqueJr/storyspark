@@ -104,25 +104,27 @@ export default function SignupCounter({ seed = 2847 }: { seed?: number }) {
   return (
     <div 
       className="inline-flex flex-col items-center sm:flex-row sm:items-center gap-3 text-sm sm:text-base text-muted-foreground bg-gradient-to-r from-primary/5 to-transparent p-4 rounded-lg border border-primary/10" 
+      role="status"
       aria-live="polite"
+      aria-label="Estatísticas da lista de espera"
     >
       <div className="flex items-center gap-2">
-        <Users className="w-5 h-5 text-primary" />
-        <div className="text-2xl sm:text-3xl font-bold text-primary" aria-hidden>
+        <Users className="w-5 h-5 text-primary" aria-hidden="true" />
+        <div className="text-2xl sm:text-3xl font-bold text-primary">
           {count.toLocaleString()}
         </div>
         <span className="text-sm font-medium text-foreground">inscritos</span>
       </div>
       
-      <div className="hidden sm:block w-px h-6 bg-border"></div>
+      <div className="hidden sm:block w-px h-6 bg-border" aria-hidden="true"></div>
       
       <div className="flex items-center gap-2 text-xs sm:text-sm">
-        <Clock className="w-4 h-4 text-muted-foreground" />
+        <Clock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
         <span>última: <span className="font-medium">{formatDate(lastAt)}</span></span>
       </div>
       
       {/* Screen readers: announce updates */}
-      <span className="sr-only" role="status">
+      <span className="sr-only">
         {count} inscritos na lista de espera; última inscrição: {formatDate(lastAt)}
       </span>
     </div>
