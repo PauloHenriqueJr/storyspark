@@ -49,47 +49,47 @@ export const useEmailTemplates = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Carregar templates do banco de dados
+  // Carregar templates do banco de dados usando SQL raw
   const loadTemplates = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error: supabaseError } = await supabase
-        .from('templates')
-        .select('*')
-        .eq('type', 'EMAIL')
-        .order('created_at', { ascending: false });
+      // Usar SQL direta para evitar problemas de schema TypeScript
+      const { data: rawData, error: rawError } = await supabase
+        .rpc('execute_sql', {
+          query: 'SELECT * FROM email_templates ORDER BY created_at DESC'
+        });
 
-      if (supabaseError) {
-        throw supabaseError;
+      if (rawError) {
+        console.error('Erro ao carregar templates:', rawError);
+        throw rawError;
       }
 
       // Mapear dados do banco para o formato do hook
-      const mappedTemplates: EmailTemplate[] = (data || []).map(template => {
-        const htmlContent = template.metadata?.html_content || template.content || '';
+      const mappedTemplates: EmailTemplate[] = (rawData || []).map((template: any) => {
+        const htmlContent = template.html_content || '';
         const detectedVariables = detectTemplateVariables(htmlContent);
-        
+
         return {
           id: template.id,
           name: template.name,
           description: template.description || '',
-          subject: template.metadata?.subject || template.metadata?.subject_line || template.name,
+          subject: template.subject || template.name,
           html_content: htmlContent,
-          text_content: template.metadata?.text_content || template.content || '',
+          text_content: template.text_content || '',
           template_variables: template.variables || detectedVariables,
-          variables: template.variables || detectedVariables, // Adicionar campo variables para compatibilidade
+          variables: template.variables || detectedVariables,
           category: template.category || 'Sistema',
-          is_active: template.is_public !== false, // Mapear is_public para is_active
-          usage_count: template.usage_count || 0, // Adicionar campo usage_count
-          created_at: template.created_at,
-          updated_at: template.updated_at,
-          workspace_id: template.workspace_id,
+          is_active: template.is_active !== false,
+          usage_count: 0,
+          created_at: template.created_at || '',
+          updated_at: template.updated_at || '',
+          workspace_id: template.created_by,
           metadata: {
-            ...template.metadata,
-            subject: template.metadata?.subject || template.metadata?.subject_line || template.name,
+            subject: template.subject || template.name,
             html_content: htmlContent,
-            text_content: template.metadata?.text_content || template.content || ''
+            text_content: template.text_content || ''
           }
         };
       });
@@ -113,22 +113,16 @@ export const useEmailTemplates = () => {
 
       const templateData = {
         name: input.name,
-        description: input.description,
-        category: input.category || 'custom',
-        content: input.html_content, // Usar 'content' ao invés de 'html_content'
-        type: 'EMAIL',
+        subject: input.subject,
+        html_content: input.html_content,
+        text_content: input.text_content,
+        category: input.category || 'Sistema',
         variables: allVariables,
-        is_public: input.is_active ?? true, // Usar 'is_public' ao invés de 'is_active'
-        metadata: {
-          subject: input.subject,
-          html_content: input.html_content,
-          text_content: input.text_content,
-          ...(input.metadata || {})
-        }
+        is_active: input.is_active ?? true
       };
 
       const { data, error: supabaseError } = await supabase
-        .from('templates')
+        .from('email_templates')
         .insert([templateData])
         .select()
         .single();
@@ -141,16 +135,22 @@ export const useEmailTemplates = () => {
         id: data.id,
         name: data.name,
         description: data.description || '',
-        subject: data.metadata?.subject || data.name,
-        html_content: data.metadata?.html_content || data.content || '',
-        text_content: data.metadata?.text_content || data.content || '',
+        subject: data.subject,
+        html_content: data.html_content,
+        text_content: data.text_content || '',
         template_variables: data.variables || [],
+        variables: data.variables || [],
         category: data.category,
-        is_active: data.is_public !== false,
+        is_active: data.is_active !== false,
+        usage_count: 0,
         created_at: data.created_at,
         updated_at: data.updated_at,
-        workspace_id: data.workspace_id,
-        metadata: data.metadata
+        workspace_id: data.created_by,
+        metadata: {
+          subject: data.subject,
+          html_content: data.html_content,
+          text_content: data.text_content || ''
+        }
       };
 
       setTemplates(prev => [newTemplate, ...prev]);
@@ -297,7 +297,7 @@ export const useEmailTemplates = () => {
   // Função utilitária para detectar variáveis no template
   const detectTemplateVariables = (htmlContent: string): string[] => {
     if (!htmlContent) return [];
-    
+
     const variableRegex = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
     const variables: string[] = [];
     let match;

@@ -63,9 +63,11 @@ import {
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useEmailTemplates, EmailTemplate, CreateEmailTemplateInput } from '@/hooks/useEmailTemplates';
+import { useEmailTemplatesFixed as useEmailTemplates, EmailTemplate } from '@/hooks/useEmailTemplatesFixed';
 import CreateEmailCampaignModal from '@/components/modals/CreateEmailCampaignModal';
 import { emailService } from '@/services/emailService';
+import { waitlistInviteTemplate } from '@/services/emailTemplates';
+import { updateDatabaseTemplates } from '@/services/updateTemplatesService';
 
 interface NewEmailTemplate {
   name: string;
@@ -92,7 +94,7 @@ const EmailPreview = ({ html, width }: { html: string; width?: number }) => {
       doc.open();
       doc.write(html || '<div style="padding:16px;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#6b7280">Sem conteúdo HTML</div>');
       doc.close();
-    } catch {}
+    } catch { }
 
     const resize = () => {
       if (!iframe.contentDocument) return;
@@ -114,7 +116,7 @@ const EmailPreview = ({ html, width }: { html: string; width?: number }) => {
     try {
       observer = new MutationObserver(() => resize());
       observer.observe(doc.documentElement, { childList: true, subtree: true, attributes: true });
-    } catch {}
+    } catch { }
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -123,8 +125,8 @@ const EmailPreview = ({ html, width }: { html: string; width?: number }) => {
   }, [html]);
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-900" style={{ width: width ? width : '100%' }}>
-      <iframe ref={iframeRef} title="Email Preview" className="w-full" style={{ height: 300, border: 'none' }} />
+    <div className="border rounded-lg overflow-hidden" style={{ width: width ? width : '100%', backgroundColor: 'transparent' }}>
+      <iframe ref={iframeRef} title="Email Preview" className="w-full" style={{ height: 300, border: 'none', backgroundColor: 'white' }} />
     </div>
   );
 };
@@ -134,12 +136,9 @@ const AdminEmailTemplates = () => {
     templates,
     loading,
     error,
-    stats,
     createTemplate,
     updateTemplate,
     deleteTemplate,
-    duplicateTemplate,
-    detectTemplateVariables,
     loadTemplates // Adicionado para recarregar templates
   } = useEmailTemplates();
 
@@ -166,7 +165,19 @@ const AdminEmailTemplates = () => {
   const [editPreviewWidth, setEditPreviewWidth] = useState<number>(600);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdatingTemplates, setIsUpdatingTemplates] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Inicializar variáveis de edição quando template for selecionado
+  useEffect(() => {
+    if (selectedTemplate && isEditDialogOpen) {
+      const initialVars: Record<string, string> = {};
+      selectedTemplate.variables.forEach(v => {
+        initialVars[v] = getDefaultTestValues(v);
+      });
+      setEditTemplateVars(initialVars);
+    }
+  }, [selectedTemplate, isEditDialogOpen]);
 
   // Dados mockados para campanhas
   const [campaigns] = useState([
@@ -289,8 +300,30 @@ const AdminEmailTemplates = () => {
     category: 'Sistema'
   });
 
+  const handleUpdateTemplates = async () => {
+    setIsUpdatingTemplates(true);
+    try {
+      await updateDatabaseTemplates();
+      await loadTemplates(); // Recarregar templates após atualização
+      toast.success('Templates atualizados com design StorySpark!');
+    } catch (error) {
+      console.error('Erro ao atualizar templates:', error);
+      toast.error('Erro ao atualizar templates');
+    } finally {
+      setIsUpdatingTemplates(false);
+    }
+  };
+
   // Templates padrão com design responsivo e seguro
   const defaultTemplates = [
+    {
+      name: 'Convite da Waitlist',
+      category: 'Sistema',
+      description: 'Template para convites de saída da waitlist com acesso à plataforma',
+      subject: waitlistInviteTemplate.subject,
+      html_content: waitlistInviteTemplate.html,
+      text_content: waitlistInviteTemplate.text
+    },
     {
       name: 'Confirmação da Waitlist',
       category: 'Sistema',
@@ -299,264 +332,297 @@ const AdminEmailTemplates = () => {
       html_content: `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmação da Waitlist - StorySpark</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f8fafc;
-    }
-    .container {
-      background: white;
-      border-radius: 12px;
-      padding: 40px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .logo {
-      font-size: 28px;
-      font-weight: bold;
-      color: #f97316;
-      margin-bottom: 10px;
-    }
-    .title {
-      font-size: 24px;
-      font-weight: 600;
-      color: #1f2937;
-      margin-bottom: 10px;
-    }
-    .subtitle {
-      color: #6b7280;
-      font-size: 16px;
-    }
-    .content {
-      margin: 30px 0;
-    }
-    .highlight-box {
-      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      margin: 25px 0;
-    }
-    .position-number {
-      font-size: 32px;
-      font-weight: bold;
-      margin: 10px 0;
-    }
-    .ideas-section {
-      background: #f8fafc;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 25px 0;
-      border-left: 4px solid #f97316;
-    }
-    .idea-item {
-      background: white;
-      padding: 10px 15px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #e5e7eb;
-    }
-    .benefits {
-      margin: 30px 0;
-    }
-    .benefit {
-      display: flex;
-      align-items: center;
-      margin: 15px 0;
-      padding: 10px;
-      background: #f8fafc;
-      border-radius: 6px;
-    }
-    .benefit-icon {
-      width: 20px;
-      height: 20px;
-      margin-right: 12px;
-      color: #f97316;
-    }
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      text-align: center;
-      color: #6b7280;
-      font-size: 14px;
-    }
-    .social-links {
-      margin: 20px 0;
-    }
-    .social-links a {
-      color: #f97316;
-      text-decoration: none;
-      margin: 0 10px;
-    }
-  </style>
-  </head>
-  <body>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmação da Waitlist - StorySpark</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .position-box {
+            background: #f8fafc;
+            border: 2px solid #667eea;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 25px 0;
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 30px 0 20px 0;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+    </style>
+</head>
+<body>
     <div class="container">
-      <div class="header">
-        <div class="logo">StorySpark</div>
-        <h1 class="title">Bem-vindo à nossa waitlist! 🎉</h1>
-        <p class="subtitle">Sua inscrição foi confirmada com sucesso</p>
-      </div>
-      
-      <div class="content">
-        <p>Olá,</p>
-        
-        <p>Obrigado por se juntar à waitlist do StorySpark! Estamos muito animados em tê-lo conosco na jornada para revolucionar a criação de copies com IA.</p>
-        
-        <div class="highlight-box">
-          <p style="margin: 0; font-size: 16px;">Sua posição na waitlist:</p>
-          <div class="position-number">#{{waitlistPosition}}</div>
-          <p style="margin: 0; font-size: 14px; opacity: 0.9;">Você está cada vez mais perto do acesso!</p>
+        <div class="header">
+            <div class="logo">StorySpark</div>
+            <h1>Obrigado por se juntar à nossa waitlist!</h1>
+            <p>Você está na nossa lista de espera exclusiva</p>
         </div>
         
-        {{#if selectedIdeas}}
-        <div class="ideas-section">
-          <h3 style="color: #1f2937; margin-bottom: 15px;">💡 Suas ideias selecionadas:</h3>
-          <p style="color: #6b7280; margin-bottom: 15px;">Obrigado por compartilhar seus interesses! Isso nos ajuda a priorizar as funcionalidades mais importantes.</p>
-          {{selectedIdeas}}
-        </div>
-        {{/if}}
-        
-        <div class="benefits">
-          <h3 style="color: #1f2937; margin-bottom: 20px;">O que esperar do StorySpark:</h3>
-          
-          <div class="benefit">
-            <span class="benefit-icon">🤖</span>
-            <span>IA avançada para criação de copies persuasivos</span>
-          </div>
-          
-          <div class="benefit">
-            <span class="benefit-icon">⚡</span>
-            <span>Geração de conteúdo em segundos</span>
-          </div>
-          
-          <div class="benefit">
-            <span class="benefit-icon">🎯</span>
-            <span>Templates otimizados para conversão</span>
-          </div>
-          
-          <div class="benefit">
-            <span class="benefit-icon">📊</span>
-            <span>Analytics e insights de performance</span>
-          </div>
-          
-          <div class="benefit">
-            <span class="benefit-icon">🚀</span>
-            <span>Integração com principais plataformas</span>
-          </div>
+        <div>
+            <p>Olá <strong>{{name}}</strong>,</p>
+            
+            <div class="highlight-box">
+                <h3>🎉 Você está na lista!</h3>
+                <p>Em breve você receberá acesso exclusivo</p>
+            </div>
+            
+            <div class="position-box">
+                <p>Sua posição na fila:</p>
+                <div style="font-size: 48px; font-weight: 700; color: #667eea;">{{position}}</div>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{website_url}}" class="cta-button">Visitar Site</a>
+            </div>
+            
+            <p>Atenciosamente,<br><strong>Equipe StorySpark</strong></p>
         </div>
         
-        <p><strong>Próximos passos:</strong></p>
-        <ul style="color: #6b7280;">
-          <li>Manteremos você atualizado sobre nosso progresso</li>
-          <li>Você receberá acesso prioritário quando lançarmos</li>
-          <li>Compartilharemos dicas e conteúdos exclusivos</li>
-        </ul>
-        
-        <p>Enquanto isso, fique de olho em seu e-mail para atualizações importantes!</p>
-        
-        <p>Se você tiver alguma dúvida, nossa equipe está sempre disponível em <a href="mailto:{{supportEmail}}" style="color: #f97316;">{{supportEmail}}</a>.</p>
-        
-        <p style="margin-top: 30px;">
-          Atenciosamente,<br>
-          <strong>Equipe StorySpark</strong>
-        </p>
-      </div>
-      
-      <div class="footer">
-        <div class="social-links">
-          <a href="#">Website</a> |
-          <a href="#">Blog</a> |
-          <a href="#">Suporte</a>
+        <div class="footer">
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="margin: 20px 0;">
+                <a href="https://storyspark.com">Website</a> |
+                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="mailto:suporte@storyspark.com">Suporte</a>
+            </div>
+            <p>© 2024 StorySpark. Todos os direitos reservados.</p>
+            <div style="margin-top: 20px; font-size: 12px;">
+                <a href="{{unsubscribe_url}}">Cancelar inscrição</a>
+            </div>
         </div>
-        <p>© 2024 StorySpark. Todos os direitos reservados.</p>
-        <p style="font-size: 12px; margin-top: 10px;">
-          Você está recebendo este e-mail porque se inscreveu em nossa waitlist.
-          <a href="#" style="color: #f97316;">Cancelar inscrição</a>
-        </p>
-      </div>
     </div>
-  </body>
-  </html>`,
-      text_content: `
-Bem-vindo à waitlist do StorySpark!
-
-Olá,
-
-Obrigado por se juntar à waitlist do StorySpark! Estamos muito animados em tê-lo conosco na jornada para revolucionar a criação de copies com IA.
-
-Sua posição na waitlist: #{{waitlistPosition}}
-
-{{#if selectedIdeas}}
-Suas ideias selecionadas:
-{{selectedIdeas}}
-{{/if}}
-
-O que esperar do StorySpark:
-🤖 IA avançada para criação de copies persuasivos
-⚡ Geração de conteúdo em segundos
-🎯 Templates otimizados para conversão
-📊 Analytics e insights de performance
-🚀 Integração com principais plataformas
-
-Próximos passos:
-- Manteremos você atualizado sobre nosso progresso
-- Você receberá acesso prioritário quando lançarmos
-- Compartilharemos dicas e conteúdos exclusivos
-
-Enquanto isso, fique de olho em seu e-mail para atualizações importantes!
-
-Se você tiver alguma dúvida, nossa equipe está sempre disponível em {{supportEmail}}.
-
-Atenciosamente,
-Equipe StorySpark
-
-© 2024 StorySpark. Todos os direitos reservados.`
+</body>
+</html>`,
+      text_content: 'Obrigado por se juntar à nossa waitlist! Posição: {{position}}. Visite: {{website_url}}'
     },
     {
       name: 'Newsletter Promocional',
       category: 'Marketing',
-      description: 'Template responsivo para newsletters promocionais com design moderno e compatível com modo escuro',
-      subject: 'Oferta especial só para você! 🎉',
+      description: 'Template para campanhas promocionais e ofertas especiais',
+      subject: '🎯 Oferta Especial StorySpark - {{discountPercentage}} de desconto!',
+      html_content: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oferta Especial - StorySpark</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .promo-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .discount {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .button {
+            background: white;
+            color: #667eea;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">StorySpark</div>
+            <p style="color: #6b7280; margin: 0;">Transforme suas ideias em histórias incríveis</p>
+        </div>
+        
+        <h1 style="color: #1f2937; text-align: center;">🎯 Oferta Especial StorySpark</h1>
+        
+        <p>Olá {{nome}},</p>
+        
+        <p>Temos uma oferta especial para você! Por tempo limitado, você pode acessar todos os recursos premium do StorySpark com um desconto incrível.</p>
+        
+        <div class="promo-box">
+            <h2 style="margin: 0 0 10px 0;">OFERTA ESPECIAL</h2>
+            <div class="discount">{{discountPercentage}}% OFF</div>
+            <p style="margin: 0;">Em todos os planos anuais</p>
+            <a href="{{offerUrl}}" class="button">APROVEITAR OFERTA</a>
+        </div>
+        
+        <h3>✨ O que você vai ter acesso:</h3>
+        <ul style="color: #4b5563;">
+            <li>Geração ilimitada de conteúdo com IA</li>
+            <li>Templates premium exclusivos</li>
+            <li>Análises avançadas de performance</li>
+            <li>Suporte prioritário 24/7</li>
+            <li>Integração com todas as redes sociais</li>
+        </ul>
+        
+        <p style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+            ⚡ <strong>Atenção:</strong> Esta oferta é válida apenas até {{expirationDate}}. Não perca!
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{offerUrl}}" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                🚀 COMEÇAR AGORA
+            </a>
+        </div>
+        
+        <p>Tem dúvidas? Entre em contato conosco respondendo este e-mail ou através do nosso suporte.</p>
+        
+        <p>Atenciosamente,<br>
+        <strong>Equipe StorySpark</strong></p>
+        
+        <div class="footer">
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="margin: 20px 0;">
+                <a href="https://storyspark.com">Website</a> |
+                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="mailto:suporte@storyspark.com">Suporte</a>
+            </div>
+            <p>© 2024 StorySpark. Todos os direitos reservados.</p>
+            <div style="margin-top: 20px; font-size: 12px;">
+                <a href="{{unsubscribe_url}}">Cancelar inscrição</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`,
+      text_content: 'Oferta especial: {{discountPercentage}}% OFF em todos os planos anuais do StorySpark. Aproveite até {{expirationDate}}!'
+    },
+    {
+      name: 'Convite da Waitlist',
+      category: 'Sistema',
+      description: 'Template para convite de usuários que saíram da waitlist',
+      subject: 'Bem-vindo ao StorySpark! Sua conta está pronta 🚀',
       html_content: `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Newsletter Promocional</title>
-  <!--[if mso]>
-  <noscript>
-    <xml>
-      <o:OfficeDocumentSettings>
-        <o:PixelsPerInch>96</o:PixelsPerInch>
-      </o:OfficeDocumentSettings>
-    </xml>
-  </noscript>
-  <![endif]-->
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Bem-vindo ao futuro do marketing! - StorySpark</title>
   <style>
-    /* Reset styles */
+    /* Reset e base */
     body, table, td, p, a, li, blockquote {
       -webkit-text-size-adjust: 100%;
       -ms-text-size-adjust: 100%;
     }
+    
     table, td {
       mso-table-lspace: 0pt;
       mso-table-rspace: 0pt;
     }
+    
     img {
       -ms-interpolation-mode: bicubic;
       border: 0;
@@ -566,7 +632,7 @@ Equipe StorySpark
       text-decoration: none;
     }
     
-    /* Base styles */
+    /* Estilos da marca StorySpark */
     body {
       margin: 0 !important;
       padding: 0 !important;
@@ -577,32 +643,36 @@ Equipe StorySpark
       color: #374151 !important;
     }
     
-    /* Container */
+    /* Container principal */
     .email-container {
       max-width: 600px;
       margin: 0 auto;
       background-color: #ffffff !important;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
     
     .content-wrapper {
       padding: 40px 30px;
     }
     
-    /* Header */
-    .header {
+    /* Header com marca */
+    .brand-header {
       text-align: center;
       margin-bottom: 30px;
     }
     
-    .logo {
+    .brand-logo {
       font-size: 28px;
       font-weight: bold;
       color: #f97316 !important;
       margin-bottom: 10px;
       text-decoration: none;
+      display: inline-block;
     }
     
-    .title {
+    .brand-title {
       font-size: 24px;
       font-weight: 600;
       color: #1f2937 !important;
@@ -610,13 +680,13 @@ Equipe StorySpark
       line-height: 1.3;
     }
     
-    .subtitle {
+    .brand-subtitle {
       color: #6b7280 !important;
       font-size: 16px;
       margin: 0;
     }
     
-    /* Content */
+    /* Elementos de conteúdo */
     .content p {
       margin: 16px 0;
       color: #374151 !important;
@@ -644,343 +714,25 @@ Equipe StorySpark
       color: #ffffff !important;
     }
     
-    /* CTA Button */
-    .cta-container {
-      text-align: center;
-      margin: 30px 0;
-    }
-    
-    .cta-button {
-      display: inline-block;
-      background-color: #f97316 !important;
-      color: #ffffff !important;
-      padding: 16px 32px;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 16px;
-      border: none;
-      cursor: pointer;
-    }
-    
-    .cta-button:hover {
-      background-color: #ea580c !important;
-    }
-    
-    /* Footer */
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      text-align: center;
-      color: #6b7280 !important;
-      font-size: 14px;
-    }
-    
-    .footer p {
-      margin: 8px 0;
-      color: #6b7280 !important;
-    }
-    
-    .footer a {
-      color: #f97316 !important;
-      text-decoration: none;
-    }
-    
-    /* Responsive */
-    @media only screen and (max-width: 600px) {
-      .email-container {
-        width: 100% !important;
-      }
-      
-      .content-wrapper {
-        padding: 20px 15px !important;
-      }
-      
-      .title {
-        font-size: 20px !important;
-      }
-      
-      .logo {
-        font-size: 24px !important;
-      }
-      
-      .cta-button {
-        padding: 14px 24px !important;
-        font-size: 14px !important;
-      }
-      
-      .highlight-box {
-        padding: 20px 15px !important;
-      }
-    }
-    
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-      .email-container {
-        background-color: #1f2937 !important;
-      }
-      
-      .content p {
-        color: #e5e7eb !important;
-      }
-      
-      .title {
-        color: #f9fafb !important;
-      }
-      
-      .subtitle {
-        color: #d1d5db !important;
-      }
-      
-      .footer {
-        border-top-color: #374151 !important;
-      }
-      
-      .footer p {
-        color: #9ca3af !important;
-      }
-    }
-  </style>
-</head>
-<body>
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-    <tr>
-      <td style="padding: 20px 0;">
-        <table class="email-container" role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
-          <tr>
-            <td class="content-wrapper">
-              <!-- Header -->
-              <div class="header">
-                <div class="logo">{{companyName}}</div>
-                <h1 class="title">{{title}}</h1>
-                <p class="subtitle">{{subtitle}}</p>
-              </div>
-              
-              <!-- Content -->
-              <div class="content">
-                <p>Olá {{userName}},</p>
-                
-                <p>{{mainMessage}}</p>
-                
-                <div class="highlight-box">
-                  <h3>{{offerTitle}}</h3>
-                  <p>{{offerDescription}}</p>
-                </div>
-                
-                <div class="cta-container">
-                  <a href="{{ctaUrl}}" class="cta-button">{{ctaText}}</a>
-                </div>
-                
-                <p>{{closingMessage}}</p>
-                
-                <p style="margin-top: 30px;">
-                   Atenciosamente,<br>
-                   <strong>{{senderName}}</strong>
-                 </p>
-               </div>
-               
-               <!-- Footer -->
-               <div class="footer">
-                 <p>© 2024 {{companyName}}. Todos os direitos reservados.</p>
-                 <p><a href="{{unsubscribeUrl}}">Cancelar inscrição</a> | <a href="{{preferencesUrl}}">Preferências</a></p>
-               </div>
-             </td>
-           </tr>
-         </table>
-       </td>
-     </tr>
-   </table>
- </body>
- </html>`,
-      text_content: `{{title}}\n\nOlá {{userName}},\n\n{{mainMessage}}\n\n{{offerTitle}}\n{{offerDescription}}\n\n{{ctaText}}: {{ctaUrl}}\n\n{{closingMessage}}\n\nAtenciosamente,\n{{senderName}}\n\n© 2024 {{companyName}}. Todos os direitos reservados.\n\nCancelar inscrição: {{unsubscribeUrl}}\nPreferências: {{preferencesUrl}}`
-    },
-    {
-      name: 'E-mail de Boas-vindas',
-      category: 'Transacional',
-      description: 'Template de boas-vindas para novos usuários com design responsivo e compatível com modo escuro',
-      subject: 'Bem-vindo(a) ao {{companyName}}! 🎉',
-      html_content: `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="format-detection" content="telephone=no">
-  <meta name="format-detection" content="date=no">
-  <meta name="format-detection" content="address=no">
-  <meta name="format-detection" content="email=no">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
-  <title>Bem-vindo</title>
-  <!--[if mso]>
-  <noscript>
-    <xml>
-      <o:OfficeDocumentSettings>
-        <o:PixelsPerInch>96</o:PixelsPerInch>
-      </o:OfficeDocumentSettings>
-    </xml>
-  </noscript>
-  <![endif]-->
-  <style>
-    /* Reset styles */
-    body, table, td, p, a, li, blockquote {
-      -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-    }
-    table, td {
-      mso-table-lspace: 0pt;
-      mso-table-rspace: 0pt;
-    }
-    img {
-      -ms-interpolation-mode: bicubic;
-      border: 0;
-      height: auto;
-      line-height: 100%;
-      outline: none;
-      text-decoration: none;
-    }
-    
-    /* Base styles */
-    body {
-      margin: 0 !important;
-      padding: 0 !important;
-      background-color: #f8fafc !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif !important;
-      font-size: 16px;
-      line-height: 1.6;
-      color: #374151 !important;
-    }
-    
-    /* Container */
-    .email-container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff !important;
-    }
-    
-    .content-wrapper {
-      padding: 40px 30px;
-    }
-    
-    /* Header */
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-      padding: 40px 30px;
-      text-align: center;
-    }
-    
-    .logo {
-      font-size: 28px;
+    /* Código de convite/destaque */
+    .invite-code {
+      font-size: 20px;
       font-weight: bold;
-      color: #ffffff !important;
-      margin-bottom: 10px;
-      text-decoration: none;
-    }
-    
-    .title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #ffffff !important;
+      letter-spacing: 2px;
       margin: 10px 0;
-      line-height: 1.3;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      color: #ffffff !important;
+      font-family: 'Courier New', monospace;
     }
     
-    .subtitle {
-      color: #e2e8f0 !important;
-      font-size: 16px;
-      margin: 0;
-    }
-    
-    /* Content */
-    .content p {
-      margin: 16px 0;
-      color: #374151 !important;
-    }
-    
-    .welcome-box {
-      background: linear-gradient(135deg, #e8f5e8 0%, #f0f9ff 100%) !important;
-      border: 1px solid #d1fae5;
-      color: #065f46 !important;
-      padding: 25px 20px;
-      border-radius: 12px;
-      text-align: center;
-      margin: 30px 0;
-    }
-    
-    .welcome-box p {
-      margin: 0 0 15px 0;
-      color: #065f46 !important;
-      font-size: 16px;
-    }
-    
-    .welcome-box p:last-child {
-      margin-bottom: 0;
-    }
-    
-    /* Steps */
-    .steps {
-      margin: 30px 0;
-    }
-    
-    .steps-title {
-      font-size: 22px;
-      font-weight: 600;
-      color: #1f2937 !important;
-      margin: 30px 0 20px 0;
-      text-align: center;
-    }
-    
-    .step {
-      display: flex;
-      align-items: flex-start;
-      margin: 20px 0;
-      padding: 20px;
-      background: #f8fafc !important;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      border-left: 4px solid #f97316;
-    }
-    
-    .step-number {
-      background: #f97316 !important;
-      color: white !important;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 14px;
-      margin-right: 15px;
-      flex-shrink: 0;
-    }
-    
-    .step h4 {
-      margin: 0 0 8px 0;
-      color: #1f2937 !important;
-      font-size: 18px;
-      font-weight: 600;
-    }
-    
-    .step p {
-      margin: 0;
-      color: #6b7280 !important;
-      font-size: 15px;
-      line-height: 1.5;
-    }
-    
-    /* CTA Button */
+    /* Botões CTA */
     .cta-container {
       text-align: center;
-      margin: 35px 0;
+      margin: 30px 0;
     }
     
     .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
       color: #ffffff !important;
       padding: 16px 32px;
       text-decoration: none;
@@ -993,14 +745,30 @@ Equipe StorySpark
       transition: all 0.3s ease;
     }
     
-    .cta-button:hover {
-      background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%) !important;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+    /* Seções de features/benefícios */
+    .features-section {
+      margin: 30px 0;
     }
     
-    /* Footer */
-    .footer {
+    .feature {
+      display: flex;
+      align-items: center;
+      margin: 15px 0;
+      padding: 10px;
+      background: #f8fafc !important;
+      border-radius: 6px;
+    }
+    
+    .feature-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      color: #f97316 !important;
+      font-size: 16px;
+    }
+    
+    /* Rodapé padrão da marca */
+    .brand-footer {
       margin-top: 40px;
       padding: 30px;
       background-color: #f7fafc !important;
@@ -1010,39 +778,48 @@ Equipe StorySpark
       font-size: 14px;
     }
     
-    .footer p {
+    .brand-footer p {
       margin: 8px 0;
       color: #6b7280 !important;
     }
     
-    .footer a {
+    .brand-footer a {
       color: #f97316 !important;
       text-decoration: none;
     }
     
-    .footer a:hover {
-      text-decoration: underline;
+    .social-links {
+      margin: 20px 0;
+    }
+    
+    .social-links a {
+      color: #f97316 !important;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    
+    .unsubscribe-text {
+      font-size: 12px;
+      margin-top: 10px;
+      color: #9ca3af !important;
     }
     
     /* Responsive */
     @media only screen and (max-width: 600px) {
       .email-container {
         width: 100% !important;
+        margin: 10px !important;
       }
       
       .content-wrapper {
         padding: 20px 15px !important;
       }
       
-      .header {
-        padding: 30px 20px !important;
+      .brand-title {
+        font-size: 20px !important;
       }
       
-      .title {
-        font-size: 24px !important;
-      }
-      
-      .logo {
+      .brand-logo {
         font-size: 24px !important;
       }
       
@@ -1051,75 +828,12 @@ Equipe StorySpark
         font-size: 14px !important;
       }
       
-      .welcome-box {
+      .highlight-box {
         padding: 20px 15px !important;
       }
       
-      .step {
-        padding: 15px !important;
-        margin: 12px 0 !important;
-      }
-      
-      .step h4 {
-        font-size: 16px !important;
-      }
-      
-      .step p {
-        font-size: 14px !important;
-      }
-      
-      .footer {
+      .brand-footer {
         padding: 25px 20px !important;
-      }
-    }
-    
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-      .email-container {
-        background-color: #1f2937 !important;
-      }
-      
-      .content-wrapper {
-        background-color: #1f2937 !important;
-      }
-      
-      .content p {
-        color: #e5e7eb !important;
-      }
-      
-      .welcome-box {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-        border-color: #4a5568 !important;
-      }
-      
-      .welcome-box p {
-        color: #e2e8f0 !important;
-      }
-      
-      .steps-title {
-        color: #e5e7eb !important;
-      }
-      
-      .step {
-        background-color: #2d3748 !important;
-        border-color: #4a5568 !important;
-      }
-      
-      .step h4 {
-        color: #e5e7eb !important;
-      }
-      
-      .step p {
-        color: #cbd5e0 !important;
-      }
-      
-      .footer {
-        background-color: #2d3748 !important;
-        border-top-color: #374151 !important;
-      }
-      
-      .footer p {
-        color: #9ca3af !important;
       }
     }
   </style>
@@ -1130,66 +844,73 @@ Equipe StorySpark
       <td style="padding: 20px 0;">
         <table class="email-container" role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
           <tr>
-            <td>
-              <!-- Header -->
-              <div class="header">
-                <div class="logo">{{companyName}}</div>
-                <h1 class="title">Bem-vindo(a), {{userName}}! 🎉</h1>
-                <p class="subtitle">{{welcomeMessage}}</p>
+            <td class="content-wrapper">
+              <div class="brand-header">
+                <div class="brand-logo">StorySpark</div>
+                <h1 class="brand-title">Bem-vindo ao futuro do marketing!</h1>
+                <p class="brand-subtitle">Sua conta está pronta para criar copies incríveis com IA</p>
               </div>
               
-              <!-- Content -->
-              <div class="content-wrapper">
-                <div class="content">
-                  <div class="welcome-box">
-                    <p><strong>{{introMessage}}</strong></p>
-                  </div>
-                  
-                  <div class="cta-container">
-                    <a href="{{dashboardUrl}}" class="cta-button">{{ctaText}}</a>
-                  </div>
-                  
-                  <div class="steps">
-                    <h3 class="steps-title">Primeiros passos:</h3>
-                    
-                    <div class="step">
-                      <div class="step-number">1</div>
-                      <div>
-                        <h4>{{step1Title}}</h4>
-                        <p>{{step1Description}}</p>
-                      </div>
-                    </div>
-                    
-                    <div class="step">
-                      <div class="step-number">2</div>
-                      <div>
-                        <h4>{{step2Title}}</h4>
-                        <p>{{step2Description}}</p>
-                      </div>
-                    </div>
-                    
-                    <div class="step">
-                      <div class="step-number">3</div>
-                      <div>
-                        <h4>{{step3Title}}</h4>
-                        <p>{{step3Description}}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <p style="text-align: center;">{{supportMessage}} <a href="mailto:{{supportEmail}}" style="color: #f97316;">{{supportEmail}}</a>.</p>
-                  
-                  <p style="margin-top: 30px; text-align: center;">
-                    {{closingMessage}}<br>
-                    <strong>{{senderName}}</strong>
-                  </p>
+              <div class="content">
+                <p>Olá <strong>{{userName}}</strong>,</p>
+                
+                <p>Estamos muito animados em tê-lo conosco! Você saiu da waitlist e sua conta no StorySpark está oficialmente ativa.</p>
+                
+                <div class="highlight-box">
+                  <p style="margin: 0; font-size: 16px;">Seu código de convite:</p>
+                  <div class="invite-code">{{inviteCode}}</div>
+                  <p style="margin: 0; font-size: 14px; opacity: 0.9;">Use este código para ativar recursos premium</p>
                 </div>
+                
+                <div class="cta-container">
+                  <a href="{{loginUrl}}" class="cta-button">Acessar Minha Conta</a>
+                </div>
+                
+                <div class="features-section">
+                  <h3 style="color: #1f2937; margin-bottom: 20px; text-align: center;">O que você pode fazer agora:</h3>
+                  
+                  <div class="feature">
+                    <span class="feature-icon">✨</span>
+                    <span>Criar copies persuasivos com IA avançada</span>
+                  </div>
+                  
+                  <div class="feature">
+                    <span class="feature-icon">🎯</span>
+                    <span>Gerenciar campanhas de marketing digital</span>
+                  </div>
+                  
+                  <div class="feature">
+                    <span class="feature-icon">📊</span>
+                    <span>Analisar performance e otimizar resultados</span>
+                  </div>
+                  
+                  <div class="feature">
+                    <span class="feature-icon">🚀</span>
+                    <span>Acessar templates profissionais prontos</span>
+                  </div>
+                </div>
+                
+                <p>Se você tiver alguma dúvida ou precisar de ajuda, nossa equipe está sempre disponível em <a href="mailto:{{supportEmail}}" style="color: #f97316;">{{supportEmail}}</a>.</p>
+                
+                <p>Vamos criar algo incrível juntos!</p>
+                
+                <p style="margin-top: 30px; text-align: center;">
+                  Atenciosamente,<br>
+                  <strong>Equipe StorySpark</strong>
+                </p>
               </div>
               
-              <!-- Footer -->
-              <div class="footer">
-                <p>© 2024 {{companyName}}. Todos os direitos reservados.</p>
-                <p><a href="{{unsubscribeUrl}}">Cancelar inscrição</a> | <a href="{{preferencesUrl}}">Preferências</a></p>
+              <div class="brand-footer">
+                <div class="social-links">
+                  <a href="https://storyspark.com">Website</a> |
+                  <a href="https://storyspark.com/blog">Blog</a> |
+                  <a href="mailto:suporte@storyspark.com">Suporte</a>
+                </div>
+                <p>© 2024 StorySpark. Todos os direitos reservados.</p>
+                <p class="unsubscribe-text">
+                  Você está recebendo este e-mail porque se inscreveu em nossa waitlist.
+                  <a href="#unsubscribe">Cancelar inscrição</a>
+                </p>
               </div>
             </td>
           </tr>
@@ -1199,151 +920,561 @@ Equipe StorySpark
   </table>
 </body>
 </html>`,
-      text_content: `Bem-vindo(a) ao {{companyName}}!\n\nOlá {{userName}},\n\n{{introMessage}}\n\n{{ctaText}}: {{dashboardUrl}}\n\nPrimeiros passos:\n1. {{step1Title}} - {{step1Description}}\n2. {{step2Title}} - {{step2Description}}\n3. {{step3Title}} - {{step3Description}}\n\n{{supportMessage}} {{supportEmail}}\n\n{{closingMessage}}\n{{senderName}}\n\n© 2024 {{companyName}}. Todos os direitos reservados.`
+      text_content: `Bem-vindo ao StorySpark!\n\nOlá {{userName}},\n\nEstamos muito animados em tê-lo conosco! Você saiu da waitlist e sua conta no StorySpark está oficialmente ativa.\n\nSeu código de convite: {{inviteCode}}\n\nAcesse sua conta em: {{loginUrl}}\n\nO que você pode fazer agora:\n✨ Criar copies persuasivos com IA avançada\n🎯 Gerenciar campanhas de marketing digital\n📊 Analisar performance e otimizar resultados\n🚀 Acessar templates profissionais prontos\n\nSe você tiver alguma dúvida ou precisar de ajuda, nossa equipe está sempre disponível em {{supportEmail}}.\n\nVamos criar algo incrível juntos!\n\nAtenciosamente,\nEquipe StorySpark\n\n© 2024 StorySpark. Todos os direitos reservados.`
     },
     {
-      name: 'Confirmação de Pedido',
-      category: 'transactional',
-      description: 'Template para confirmação de pedidos e compras',
-      subject: 'Pedido confirmado #{{orderNumber}} - {{companyName}}',
+      name: 'Newsletter Promocional',
+      category: 'Marketing',
+      description: 'Template responsivo para newsletters promocionais com design StorySpark',
+      subject: 'Oferta especial só para você! 🎉',
       html_content: `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmação de Pedido</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f8fafc;
-    }
-    .container {
-      background: white;
-      border-radius: 12px;
-      padding: 40px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .logo {
-      font-size: 28px;
-      font-weight: bold;
-      color: #f97316;
-      margin-bottom: 10px;
-    }
-    .title {
-      font-size: 24px;
-      font-weight: 600;
-      color: #1f2937;
-      margin-bottom: 10px;
-    }
-    .status-box {
-      background: #dcfce7;
-      border: 1px solid #16a34a;
-      color: #15803d;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      margin: 25px 0;
-    }
-    .order-details {
-      background: #f8fafc;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 25px 0;
-      border-left: 4px solid #f97316;
-    }
-    .order-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .order-item:last-child {
-      border-bottom: none;
-      font-weight: bold;
-      margin-top: 10px;
-      padding-top: 15px;
-      border-top: 2px solid #f97316;
-    }
-    .cta-button {
-      display: inline-block;
-      background: #f97316;
-      color: white;
-      padding: 14px 28px;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 600;
-      margin: 20px 0;
-      transition: background-color 0.3s;
-    }
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      text-align: center;
-      color: #6b7280;
-      font-size: 14px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter Promocional - StorySpark</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">{{companyName}}</div>
-      <h1 class="title">Pedido Confirmado! ✅</h1>
-      <p>Obrigado pela sua compra, {{customerName}}</p>
-    </div>
-    
-    <div class="content">
-      <div class="status-box">
-        <h3 style="margin: 0 0 10px 0;">Pedido #{{orderNumber}}</h3>
-        <p style="margin: 0;">Status: {{orderStatus}}</p>
-      </div>
-      
-      <div class="order-details">
-        <h3 style="color: #1f2937; margin-bottom: 15px;">Detalhes do Pedido:</h3>
-        {{orderItems}}
-        <div class="order-item">
-          <span>Total:</span>
-          <span>{{totalAmount}}</span>
+    <div class="container">
+        <div class="header">
+            <div class="logo">StorySpark</div>
+            <h1>Newsletter Promocional</h1>
+            <p style="color: #6b7280;">Aproveite nossa promoção exclusiva</p>
         </div>
-      </div>
-      
-      <p><strong>Informações de Entrega:</strong></p>
-      <p style="color: #6b7280; margin-left: 20px;">
-        {{deliveryAddress}}<br>
-        Previsão de entrega: {{deliveryDate}}
-      </p>
-      
-      <div style="text-align: center;">
-        <a href="{{trackingUrl}}" class="cta-button">Acompanhar Pedido</a>
-      </div>
-      
-      <p>{{supportMessage}} <a href="mailto:{{supportEmail}}" style="color: #f97316;">{{supportEmail}}</a>.</p>
-      
-      <p style="margin-top: 30px;">
-        Obrigado pela preferência!<br>
-        <strong>Equipe {{companyName}}</strong>
-      </p>
+        
+        <p>Olá <strong>{{userName}}</strong>,</p>
+        
+        <p>{{mainMessage}}</p>
+        
+        <div class="highlight-box">
+            <h3>{{offerTitle}}</h3>
+            <p>{{offerDescription}}</p>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="{{ctaUrl}}" class="cta-button">{{ctaText}}</a>
+        </div>
+        
+        <p>{{closingMessage}}</p>
+        
+        <p style="text-align: center; margin-top: 30px;">
+            Atenciosamente,<br>
+            <strong>Equipe StorySpark</strong>
+        </p>
+        
+        <div class="footer">
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="margin: 20px 0;">
+                <a href="https://storyspark.com">Website</a> |
+                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="mailto:suporte@storyspark.com">Suporte</a>
+            </div>
+            <p>© 2024 StorySpark. Todos os direitos reservados.</p>
+            <div style="margin-top: 20px; font-size: 12px;">
+                <a href="{{unsubscribe_url}}">Cancelar inscrição</a>
+            </div>
+        </div>
     </div>
-    
-    <div class="footer">
-      <p>© 2024 {{companyName}}. Todos os direitos reservados.</p>
-    </div>
-  </div>
 </body>
 </html>`,
-      text_content: `Pedido Confirmado - {{companyName}}\n\nOlá {{customerName}},\n\nSeu pedido #{{orderNumber}} foi confirmado!\nStatus: {{orderStatus}}\n\nDetalhes do Pedido:\n{{orderItems}}\nTotal: {{totalAmount}}\n\nInformações de Entrega:\n{{deliveryAddress}}\nPrevisão: {{deliveryDate}}\n\nAcompanhar pedido: {{trackingUrl}}\n\n{{supportMessage}} {{supportEmail}}\n\nObrigado pela preferência!\nEquipe {{companyName}}\n\n© 2024 {{companyName}}. Todos os direitos reservados.`
+      text_content: `{{title}}
+
+Olá {{userName}},
+
+{{mainMessage}}
+
+{{offerTitle}}
+{{offerDescription}}
+
+{{ctaText}}: {{ctaUrl}}
+
+{{closingMessage}}
+
+Atenciosamente,
+{{senderName}}
+
+© 2024 StorySpark. Todos os direitos reservados.
+
+Cancelar inscrição: {{unsubscribeUrl}}
+Preferências: {{preferencesUrl}}`
+    },
+    {
+      name: 'E-mail de Boas-vindas',
+      category: 'Transacional',
+      description: 'Template de boas-vindas para novos usuários com design StorySpark',
+      subject: 'Bem-vindo(a) ao StorySpark! 🎉',
+      html_content: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bem-vindo ao StorySpark</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .welcome-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .steps {
+            margin: 30px 0;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">StorySpark</div>
+            <h1>Bem-vindo(a), {{userName}}! 🎉</h1>
+            <p style="color: #6b7280;">{{welcomeMessage}}</p>
+        </div>
+        
+        <div class="welcome-box">
+            <h3>🎉 Sua conta está ativa!</h3>
+            <p>{{introMessage}}</p>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="{{dashboardUrl}}" class="cta-button">{{ctaText}}</a>
+        </div>
+        
+        <div class="steps">
+            <h3 style="color: #1f2937; margin-bottom: 20px; text-align: center;">Primeiros passos:</h3>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>
+                    <h4>{{step1Title}}</h4>
+                    <p>{{step1Description}}</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>
+                    <h4>{{step2Title}}</h4>
+                    <p>{{step2Description}}</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>
+                    <h4>{{step3Title}}</h4>
+                    <p>{{step3Description}}</p>
+                </div>
+            </div>
+        </div>
+        
+        <p>Se você tiver alguma dúvida, nossa equipe está sempre disponível em <a href="mailto:{{supportEmail}}" style="color: #667eea;">{{supportEmail}}</a>.</p>
+        
+        <p>Vamos criar algo incrível juntos!</p>
+        
+        <p style="text-align: center; margin-top: 30px;">
+            Atenciosamente,<br>
+            <strong>Equipe StorySpark</strong>
+        </p>
+        
+        <div class="footer">
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="margin: 20px 0;">
+                <a href="https://storyspark.com">Website</a> |
+                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="mailto:suporte@storyspark.com">Suporte</a>
+            </div>
+            <p>© 2024 StorySpark. Todos os direitos reservados.</p>
+            <div style="margin-top: 20px; font-size: 12px;">
+                <a href="{{unsubscribe_url}}">Cancelar inscrição</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`,
+      text_content: `Bem-vindo(a) ao StorySpark!
+
+Olá {{userName}},
+
+{{introMessage}}
+
+{{ctaText}}: {{dashboardUrl}}
+
+Primeiros passos:
+1. {{step1Title}} - {{step1Description}}
+2. {{step2Title}} - {{step2Description}}
+3. {{step3Title}} - {{step3Description}}
+
+{{supportMessage}} {{supportEmail}}
+
+{{closingMessage}}
+{{senderName}}
+
+© 2024 StorySpark. Todos os direitos reservados.`
+    },
+    {
+      name: 'Confirmação de Pedido',
+      category: 'Transacional',
+      description: 'Template para confirmação de pedidos e compras',
+      subject: 'Pedido confirmado #{{orderNumber}} - StorySpark',
+      html_content: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido Confirmado - StorySpark</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .status-box {
+            background: #dcfce7;
+            border: 1px solid #16a34a;
+            color: #15803d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 25px 0;
+        }
+        .order-details {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            border-left: 4px solid #667eea;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">StorySpark</div>
+            <h1>Pedido Confirmado! ✅</h1>
+            <p style="color: #6b7280;">Obrigado pela sua compra</p>
+        </div>
+        
+        <div class="status-box">
+            <h3>✅ Pedido Confirmado</h3>
+            <p>Pedido #{{orderNumber}} confirmado com sucesso!</p>
+        </div>
+        
+        <div class="order-details">
+            <h3>Detalhes do Pedido</h3>
+            <div class="order-item">
+                <span>Número do Pedido:</span>
+                <span><strong>{{orderNumber}}</strong></span>
+            </div>
+            <div class="order-item">
+                <span>Data do Pedido:</span>
+                <span>{{orderDate}}</span>
+            </div>
+            <div class="order-item">
+                <span>Total:</span>
+                <span><strong>{{orderTotal}}</strong></span>
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="{{orderUrl}}" class="cta-button">Ver Detalhes do Pedido</a>
+        </div>
+        
+        <p>Seu pedido está sendo processado e você receberá uma confirmação em breve.</p>
+        
+        <p>Se você tiver alguma dúvida sobre seu pedido, entre em contato conosco em <a href="mailto:{{supportEmail}}" style="color: #667eea;">{{supportEmail}}</a>.</p>
+        
+        <p style="text-align: center; margin-top: 30px;">
+            Atenciosamente,<br>
+            <strong>Equipe StorySpark</strong>
+        </p>
+        
+        <div class="footer">
+            <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
+            <div style="margin: 20px 0;">
+                <a href="https://storyspark.com">Website</a> |
+                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="mailto:suporte@storyspark.com">Suporte</a>
+            </div>
+            <p>© 2024 StorySpark. Todos os direitos reservados.</p>
+            <div style="margin-top: 20px; font-size: 12px;">
+                <a href="{{unsubscribe_url}}">Cancelar inscrição</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`,
+      text_content: `Pedido Confirmado #{{orderNumber}}
+
+Olá,
+
+Seu pedido foi confirmado com sucesso!
+
+Detalhes do Pedido:
+- Número: {{orderNumber}}
+- Data: {{orderDate}}  
+- Total: {{orderTotal}}
+
+Ver detalhes: {{orderUrl}}
+
+Seu pedido está sendo processado e você receberá uma confirmação em breve.
+
+Se você tiver alguma dúvida sobre seu pedido, entre em contato conosco em {{supportEmail}}.
+
+Atenciosamente,
+Equipe StorySpark
+
+© 2024 StorySpark. Todos os direitos reservados.`
     }
   ];
+
+  // Função simples para detectar variáveis em templates
+  const detectTemplateVariables = (content: string): string[] => {
+    const regex = /{{([^}]+)}}/g;
+    const variables: string[] = [];
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      const variable = match[1].trim();
+      if (!variables.includes(variable)) {
+        variables.push(variable);
+      }
+    }
+
+    return variables;
+  };
+
+  // Função para obter valores padrão de teste para variáveis
+  const getDefaultTestValues = (variableName: string): string => {
+    const defaultValues: Record<string, string> = {
+      // Usuário
+      userName: 'João Silva',
+      userEmail: 'joao.silva@email.com',
+      name: 'João Silva',
+      firstName: 'João',
+      lastName: 'Silva',
+
+      // Empresa
+      companyName: 'StorySpark',
+      supportEmail: 'suporte@storyspark.com',
+      senderName: 'Equipe StorySpark',
+
+      // Waitlist
+      waitlistPosition: '42',
+      selectedIdeas: 'IA para Copywriting, Analytics Avançados, Integração com CRM',
+      inviteCode: 'INV-1756616099-c110b08c',
+
+      // Newsletter  
+      productName: 'StorySpark Premium',
+      discountCode: 'SAVE20',
+      discountPercentage: '20%',
+      productDescription: 'Plataforma completa de marketing de conteúdo com IA',
+      promotionUrl: 'https://storyspark.com/promo',
+
+      // Boas-vindas
+      accountUrl: 'https://app.storyspark.com/dashboard',
+      gettingStartedUrl: 'https://storyspark.com/guia-inicio',
+      featuresUrl: 'https://storyspark.com/recursos',
+
+      // Pedidos
+      orderNumber: 'SS-2024-001234',
+      orderDate: '15 de Janeiro de 2024',
+      orderTotal: 'R$ 297,00',
+      orderUrl: 'https://app.storyspark.com/pedidos/SS-2024-001234',
+      orderStatus: 'Confirmado',
+      customerName: 'João Silva',
+      orderItems: 'StorySpark Premium - Plano Anual',
+      totalAmount: 'R$ 297,00',
+      deliveryAddress: 'Rua das Flores, 123, São Paulo - SP',
+      deliveryDate: '22 de Janeiro de 2024',
+      trackingUrl: 'https://app.storyspark.com/tracking/SS-2024-001234',
+      supportMessage: 'Se você tiver alguma dúvida, entre em contato conosco em'
+    };
+
+    return defaultValues[variableName] || `{{${variableName}}}`;
+  };
 
   // Aplicar template padrão
   const applyDefaultTemplate = (template: typeof defaultTemplates[0]) => {
@@ -1357,9 +1488,11 @@ Equipe StorySpark
       tags: ['email'],
       category: template.category
     });
-    // Inicializa variáveis para preview
+    // Inicializa variáveis para preview com valores padrão de teste
     const initialVars: Record<string, string> = {};
-    detectTemplateVariables(template.html_content).forEach(v => { initialVars[v] = ''; });
+    detectTemplateVariables(template.html_content).forEach(v => {
+      initialVars[v] = getDefaultTestValues(v);
+    });
     setNewTemplateVars(initialVars);
   };
 
@@ -1370,12 +1503,12 @@ Equipe StorySpark
       toast.error('Nome do template é obrigatório');
       return;
     }
-    
+
     if (!newTemplate.subject.trim()) {
       toast.error('Assunto do email é obrigatório');
       return;
     }
-    
+
     if (!newTemplate.html_content.trim()) {
       toast.error('Conteúdo HTML é obrigatório');
       return;
@@ -1383,7 +1516,7 @@ Equipe StorySpark
 
     setIsCreating(true);
     try {
-      const templateInput: CreateEmailTemplateInput = {
+      const templateInput: Partial<EmailTemplate> = {
         name: newTemplate.name.trim(),
         description: newTemplate.description.trim(),
         subject: newTemplate.subject.trim(),
@@ -1425,12 +1558,12 @@ Equipe StorySpark
       toast.error('Nome do template é obrigatório');
       return;
     }
-    
+
     if (!selectedTemplate.metadata?.subject?.trim()) {
       toast.error('Assunto do email é obrigatório');
       return;
     }
-    
+
     if (!selectedTemplate.metadata?.html_content?.trim()) {
       toast.error('Conteúdo HTML é obrigatório');
       return;
@@ -1438,8 +1571,7 @@ Equipe StorySpark
 
     setIsUpdating(true);
     try {
-      const success = await updateTemplate({
-        id: selectedTemplate.id,
+      const success = await updateTemplate(selectedTemplate.id, {
         name: selectedTemplate.name.trim(),
         description: selectedTemplate.description?.trim(),
         subject: selectedTemplate.metadata?.subject?.trim(),
@@ -1466,25 +1598,36 @@ Equipe StorySpark
   const handleDeleteTemplate = async (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
     if (!template) return;
-    
+
     if (confirm(`Tem certeza que deseja excluir o template "${template.name}"? Esta ação não pode ser desfeita.`)) {
       await deleteTemplate(templateId);
     }
   };
 
-  // Duplicar template
+  // Duplicar template (simplificado)
   const handleDuplicateTemplate = async (template: EmailTemplate) => {
-    await duplicateTemplate(template.id);
+    const duplicatedTemplate = {
+      name: `${template.name} (Cópia)`,
+      description: template.description,
+      subject: template.subject || '',
+      html_content: template.html_content || '',
+      text_content: template.text_content || '',
+      category: template.category,
+      is_active: true,
+      variables: template.variables || []
+    };
+
+    await createTemplate(duplicatedTemplate);
+    toast.success('Template duplicado com sucesso!');
   };
 
   // Ativar/Desativar template
   const handleToggleActive = async (template: EmailTemplate) => {
     try {
-      const success = await updateTemplate({
-        id: template.id,
+      const success = await updateTemplate(template.id, {
         is_active: !template.is_active
       });
-      
+
       if (success) {
         toast.success(`Template ${template.is_active ? 'desativado' : 'ativado'} com sucesso!`);
       }
@@ -1552,7 +1695,7 @@ Equipe StorySpark
     const hasCategoryFilter = selectedCategory && selectedCategory !== 'all';
     const matchesCategory = !hasCategoryFilter || norm(template.category) === norm(selectedCategory);
     const hasStatusFilter = selectedStatus && selectedStatus !== 'all';
-    const matchesStatus = !hasStatusFilter || 
+    const matchesStatus = !hasStatusFilter ||
       (selectedStatus === 'active' && template.is_active) ||
       (selectedStatus === 'inactive' && !template.is_active);
     return matchesSearch && matchesCategory && matchesStatus;
@@ -1561,7 +1704,7 @@ Equipe StorySpark
   // Atualizar variáveis automaticamente quando o conteúdo HTML muda
   const handleHtmlContentChange = (content: string) => {
     const variables = detectTemplateVariables(content);
-    
+
     if (selectedTemplate) {
       setSelectedTemplate({
         ...selectedTemplate,
@@ -1613,7 +1756,7 @@ Equipe StorySpark
       toast.error('Informe um e-mail para envio de teste');
       return;
     }
-    
+
     setIsSendingTest(true);
     try {
       if (mode === 'new') {
@@ -1632,8 +1775,8 @@ Equipe StorySpark
         }
       } else if (selectedTemplate) {
         const { subject, html } = applyVars(
-          selectedTemplate.metadata?.subject || selectedTemplate.subject, 
-          selectedTemplate.metadata?.html_content || selectedTemplate.html_content, 
+          selectedTemplate.metadata?.subject || selectedTemplate.subject,
+          selectedTemplate.metadata?.html_content || selectedTemplate.html_content,
           editTemplateVars
         );
         const res = await emailService.sendEmail({
@@ -1706,6 +1849,19 @@ Equipe StorySpark
           >
             <Send className="h-4 w-4 mr-2" />
             Nova Campanha
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleUpdateTemplates}
+            disabled={isUpdatingTemplates}
+          >
+            {isUpdatingTemplates ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Settings className="h-4 w-4 mr-2" />
+            )}
+            {isUpdatingTemplates ? 'Atualizando...' : 'Atualizar Design'}
           </Button>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -2349,33 +2505,33 @@ Equipe StorySpark
                 <div className="flex items-center gap-2 mb-2">
                   <Label className="text-xs">Visualizar como:</Label>
                   <div className="flex gap-1">
-                    <Button size="sm" variant={newPreviewWidth===360? 'default':'outline'} onClick={() => setNewPreviewWidth(360)}>Mobile</Button>
-                    <Button size="sm" variant={newPreviewWidth===600? 'default':'outline'} onClick={() => setNewPreviewWidth(600)}>Tablet</Button>
-                    <Button size="sm" variant={newPreviewWidth===800? 'default':'outline'} onClick={() => setNewPreviewWidth(800)}>Desktop</Button>
+                    <Button size="sm" variant={newPreviewWidth === 360 ? 'default' : 'outline'} onClick={() => setNewPreviewWidth(360)}>Mobile</Button>
+                    <Button size="sm" variant={newPreviewWidth === 600 ? 'default' : 'outline'} onClick={() => setNewPreviewWidth(600)}>Tablet</Button>
+                    <Button size="sm" variant={newPreviewWidth === 800 ? 'default' : 'outline'} onClick={() => setNewPreviewWidth(800)}>Desktop</Button>
                   </div>
                 </div>
-                <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-[200px]">
+                <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800 min-h-[200px]">
                   {newTemplate.subject && (
                     <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-                      <strong>Assunto:</strong> {(() => { 
-                        let s = newTemplate.subject; 
-                        Object.entries(newTemplateVars).forEach(([k,v])=>{ 
-                          s = s.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
-                        }); 
-                        return s; 
+                      <strong>Assunto:</strong> {(() => {
+                        let s = newTemplate.subject;
+                        Object.entries(newTemplateVars).forEach(([k, v]) => {
+                          s = s.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
+                        });
+                        return s;
                       })()}
                     </div>
                   )}
                   {newTemplate.html_content ? (
-                    <EmailPreview 
+                    <EmailPreview
                       html={(() => {
                         let html = newTemplate.html_content;
-                        Object.entries(newTemplateVars).forEach(([k,v])=>{
-                          html = html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                        Object.entries(newTemplateVars).forEach(([k, v]) => {
+                          html = html.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
                         });
                         return html;
-                      })()} 
-                      width={newPreviewWidth} 
+                      })()}
+                      width={newPreviewWidth}
                     />
                   ) : (
                     <div className="text-muted-foreground text-center py-8">
@@ -2412,21 +2568,21 @@ Equipe StorySpark
                       const vars = newTemplateVars;
                       let subject = newTemplate.subject;
                       let html = newTemplate.html_content;
-                      Object.entries(vars).forEach(([k,v])=>{ 
-                        subject=subject.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
-                        html=html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                      Object.entries(vars).forEach(([k, v]) => {
+                        subject = subject.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
+                        html = html.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
                       });
-                      const res = await emailService.sendEmail({ 
-                        to:[{email:testRecipient}], 
-                        subject: subject||'(sem assunto)', 
-                        html, 
-                        text:newTemplate.text_content, 
-                        category:'template_test' 
+                      const res = await emailService.sendEmail({
+                        to: [{ email: testRecipient }],
+                        subject: subject || '(sem assunto)',
+                        html,
+                        text: newTemplate.text_content,
+                        category: 'template_test'
                       });
-                      if(res.success) toast.success('Teste enviado'); 
-                      else toast.error(res.error||'Falha ao enviar teste');
-                    } catch(e:any){ 
-                      toast.error(e?.message||'Erro ao enviar teste'); 
+                      if (res.success) toast.success('Teste enviado');
+                      else toast.error(res.error || 'Falha ao enviar teste');
+                    } catch (e: any) {
+                      toast.error(e?.message || 'Erro ao enviar teste');
                     }
                   }}>
                     Enviar teste
@@ -2445,14 +2601,14 @@ Equipe StorySpark
                     </Badge>
                   ))}
                 </div>
-                
+
                 {/* Seção de teste de email */}
                 <div className="mt-4 p-4 border rounded-lg bg-muted/50">
                   <Label className="text-sm font-medium">Testar Template</Label>
                   <p className="text-xs text-muted-foreground mb-3">
                     Envie um e-mail de teste para verificar como o template ficará
                   </p>
-                  
+
                   <div className="flex gap-2">
                     <Input
                       placeholder="E-mail para teste"
@@ -2480,8 +2636,8 @@ Equipe StorySpark
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setNewTemplate({
                   name: '',
@@ -2533,7 +2689,7 @@ Equipe StorySpark
               </TabsList>
 
               <TabsContent value="preview" className="space-y-4">
-                <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
                   <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
                     <strong>Assunto:</strong> {selectedTemplate.metadata?.subject}
                   </div>
@@ -2661,33 +2817,33 @@ Equipe StorySpark
                   <div className="flex items-center gap-2 mb-2">
                     <Label className="text-xs">Visualizar como:</Label>
                     <div className="flex gap-1">
-                      <Button size="sm" variant={editPreviewWidth===360? 'default':'outline'} onClick={() => setEditPreviewWidth(360)}>Mobile</Button>
-                      <Button size="sm" variant={editPreviewWidth===600? 'default':'outline'} onClick={() => setEditPreviewWidth(600)}>Tablet</Button>
-                      <Button size="sm" variant={editPreviewWidth===800? 'default':'outline'} onClick={() => setEditPreviewWidth(800)}>Desktop</Button>
+                      <Button size="sm" variant={editPreviewWidth === 360 ? 'default' : 'outline'} onClick={() => setEditPreviewWidth(360)}>Mobile</Button>
+                      <Button size="sm" variant={editPreviewWidth === 600 ? 'default' : 'outline'} onClick={() => setEditPreviewWidth(600)}>Tablet</Button>
+                      <Button size="sm" variant={editPreviewWidth === 800 ? 'default' : 'outline'} onClick={() => setEditPreviewWidth(800)}>Desktop</Button>
                     </div>
                   </div>
-                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-[200px]">
+                  <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800 min-h-[200px]">
                     {selectedTemplate.metadata?.subject && (
                       <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-                        <strong>Assunto:</strong> {(() => { 
-                          let s = selectedTemplate.metadata!.subject as string; 
-                          Object.entries(editTemplateVars).forEach(([k,v])=>{ 
-                            s = s.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
-                          }); 
-                          return s; 
+                        <strong>Assunto:</strong> {(() => {
+                          let s = selectedTemplate.metadata!.subject as string;
+                          Object.entries(editTemplateVars).forEach(([k, v]) => {
+                            s = s.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
+                          });
+                          return s;
                         })()}
                       </div>
                     )}
                     {selectedTemplate.metadata?.html_content ? (
-                      <EmailPreview 
+                      <EmailPreview
                         html={(() => {
                           let html = selectedTemplate.metadata?.html_content as string;
-                          Object.entries(editTemplateVars).forEach(([k,v])=>{
-                            html = html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                          Object.entries(editTemplateVars).forEach(([k, v]) => {
+                            html = html.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
                           });
                           return html;
-                        })()} 
-                        width={editPreviewWidth} 
+                        })()}
+                        width={editPreviewWidth}
                       />
                     ) : (
                       <div className="text-muted-foreground text-center py-8">
@@ -2724,21 +2880,21 @@ Equipe StorySpark
                         const vars = editTemplateVars;
                         let subject = selectedTemplate.metadata!.subject as string;
                         let html = selectedTemplate.metadata!.html_content as string;
-                        Object.entries(vars).forEach(([k,v])=>{ 
-                          subject=subject.replace(new RegExp(`{{${k}}}`,'g'), String(v??'')); 
-                          html=html.replace(new RegExp(`{{${k}}}`,'g'), String(v??''));
+                        Object.entries(vars).forEach(([k, v]) => {
+                          subject = subject.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
+                          html = html.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
                         });
-                        const res = await emailService.sendEmail({ 
-                          to:[{email:testRecipient}], 
-                          subject: subject||'(sem assunto)', 
-                          html, 
-                          text:selectedTemplate.metadata!.text_content as string, 
-                          category:`${selectedTemplate.id}_test` 
+                        const res = await emailService.sendEmail({
+                          to: [{ email: testRecipient }],
+                          subject: subject || '(sem assunto)',
+                          html,
+                          text: selectedTemplate.metadata!.text_content as string,
+                          category: `${selectedTemplate.id}_test`
                         });
-                        if(res.success) toast.success('Teste enviado'); 
-                        else toast.error(res.error||'Falha ao enviar teste');
-                      } catch(e:any){ 
-                        toast.error(e?.message||'Erro ao enviar teste'); 
+                        if (res.success) toast.success('Teste enviado');
+                        else toast.error(res.error || 'Falha ao enviar teste');
+                      } catch (e: any) {
+                        toast.error(e?.message || 'Erro ao enviar teste');
                       }
                     }}>
                       Enviar teste
@@ -2757,14 +2913,14 @@ Equipe StorySpark
                       </Badge>
                     ))}
                   </div>
-                  
+
                   {/* Seção de teste de email */}
                   <div className="mt-4 p-4 border rounded-lg bg-muted/50">
                     <Label className="text-sm font-medium">Testar Template</Label>
                     <p className="text-xs text-muted-foreground mb-3">
                       Envie um e-mail de teste para verificar como o template ficará
                     </p>
-                    
+
                     <div className="flex gap-2">
                       <Input
                         placeholder="E-mail para teste"
@@ -2793,8 +2949,8 @@ Equipe StorySpark
           )}
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 if (selectedTemplate) {
                   setSelectedTemplate({
