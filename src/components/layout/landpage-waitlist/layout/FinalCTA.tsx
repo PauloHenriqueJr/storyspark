@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import SignupCounter from '@/components/layout/landpage-waitlist/SignupCounter';
+// Counter removed for waitlist
 import { useUTM } from "@/hooks/useUTM";
 import { analytics } from "@/services/analytics";
 import { addToWaitlist } from "@/services/waitlistService";
@@ -77,9 +77,7 @@ const FinalCTA = () => {
                     </>
                   )}
                 </div>
-                <div className="flex justify-center sm:justify-end">
-                  <SignupCounter />
-                </div>
+                {/* Counter removed */}
               </div>
             </div>
           </div>

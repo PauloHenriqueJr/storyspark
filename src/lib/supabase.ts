@@ -1,12 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Usar variáveis de ambiente
+// Usar variáveis de ambiente (com fallback entre ANON e PUBLISHABLE)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  ''
 
 // Validar se as variáveis estão definidas
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Variáveis de ambiente do Supabase não configuradas corretamente')
+  throw new Error('Variáveis de ambiente do Supabase ausentes: defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (ou VITE_SUPABASE_PUBLISHABLE_KEY)')
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

@@ -2,11 +2,12 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-// Load Supabase config from environment variables. For Vite, set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL || "";
+// Load Supabase config from environment variables. Prefer PUBLISHABLE, fallback to ANON for compatibility with different env setups.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  "";
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   // Warn in development — the build should inject these via Vite.
@@ -14,7 +15,7 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   // If keys were previously committed, rotate them in your Supabase project immediately.
   // eslint-disable-next-line no-console
   console.warn(
-    "Supabase config missing: set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in your environment."
+    "Supabase config missing: set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (or VITE_SUPABASE_ANON_KEY) in your environment."
   );
 }
 

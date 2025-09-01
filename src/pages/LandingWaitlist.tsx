@@ -22,13 +22,10 @@ const LandingWaitlist = () => {
       <Problems />
       <HowItWorks />
       <TechSection />
-      <Stats />
       <Features />
-      <SocialProof />
       <AdvancedFeatures />
       <PricingAndFeedback />
       <EmailCapture />
-      <InteractiveStats />
       <WordCloudSuggestions />
       <FinalCTA />
       <NewFooter />
