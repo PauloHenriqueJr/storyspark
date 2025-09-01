@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Wand2, 
-  Calendar, 
-  FileText, 
-  Instagram, 
-  Facebook, 
-  Linkedin, 
-  Mail, 
-  MessageSquare, 
+import {
+  Wand2,
+  Calendar,
+  FileText,
+  Instagram,
+  Facebook,
+  Linkedin,
+  Mail,
+  MessageSquare,
   Globe,
   X,
   Plus,
@@ -153,12 +153,12 @@ interface Campaign {
   template_id?: string;
 }
 
-const ModalContainer: React.FC<ModalContainerProps> = ({ 
-  isOpen, 
-  onClose, 
-  toastNotifications, 
+const ModalContainer: React.FC<ModalContainerProps> = ({
+  isOpen,
+  onClose,
+  toastNotifications,
   systemToastNotifications,
-  onOpenScheduleModal 
+  onOpenScheduleModal
 }) => {
   const [currentContext, setCurrentContext] = useState<ContextConfig>({
     title: 'Criar Copy com IA',
@@ -172,7 +172,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
     ],
     targetPage: '/composer'
   });
-  
+
   const [briefing, setBriefing] = useState('');
   const [platform, setPlatform] = useState('');
   const [copyType, setCopyType] = useState('');
@@ -190,11 +190,11 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
 
   // Auto-configurar baseado no contexto com memoização
   const hasEvents = useMemo(() => false, []);
-  
+
   useEffect(() => {
     if (currentContext.defaultPlatform) setPlatform(currentContext.defaultPlatform);
     if (currentContext.defaultType) setCopyType(currentContext.defaultType);
-    
+
     // Se estiver na página de calendário, mostrar seletor de eventos
     if (hasEvents) {
       setShowEventSelector(true);
@@ -232,7 +232,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         "Erro ao copiar",
         `Não foi possível copiar o conteúdo. ${errorMessage}`
       );
-      
+
       // Log para debugging
       console.error("Erro ao copiar para clipboard:", error);
     } finally {
@@ -250,7 +250,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
           `A copy foi aplicada ao evento "${selectedEvent.title}"`
         );
       }
-      
+
       if (selectedItem && generatedCopy) {
         // Aqui você pode implementar a lógica para aplicar a copy ao item selecionado
         toastNotifications.showSuccess(
@@ -264,7 +264,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         "Erro ao aplicar copy",
         `Não foi possível aplicar a copy. ${errorMessage}`
       );
-      
+
       // Log para debugging
       console.error("Erro ao aplicar copy:", error);
     } finally {
@@ -298,9 +298,9 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         <div className="space-y-6">
           {/* Context Detector */}
           <ContextDetector onContextChange={handleContextChange} />
-          
+
           {/* Event Selector */}
-          <EventSelector 
+          <EventSelector
             showEventSelector={showEventSelector}
             setShowEventSelector={setShowEventSelector}
             selectedEvent={selectedEvent}
@@ -311,29 +311,29 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
               setShowEventSelector(false);
             }}
           />
-          
+
           {/* Item Selector */}
-          <ItemSelector 
+          <ItemSelector
             showItemSelector={showItemSelector}
             setShowItemSelector={setShowItemSelector}
             selectedItem={selectedItem}
             onItemSelect={(item) => {
               setSelectedItem(item);
-              
+
               // Obter contexto diretamente do item selecionado
               const context = `Gerar copy para: ${item.name || (item as any).title}`;
-              
+
               // Atualizar briefing com contexto
               setBriefing(context);
               setShowItemSelector(false);
-              
+
               // Mostrar editor de briefing para personalização
               // setShowBriefingEditor(true); // Implementação futura
             }}
           />
-          
+
           {/* Document Upload Section */}
-          <DocumentUploadSection 
+          <DocumentUploadSection
             showUploadModal={showUploadModal}
             setShowUploadModal={setShowUploadModal}
             onDataExtracted={(data) => {
@@ -345,9 +345,9 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
               );
             }}
           />
-          
+
           {/* Briefing Editor */}
-          <BriefingEditor 
+          <BriefingEditor
             customizationMode={customizationMode}
             selectedItem={selectedItem}
             briefing={briefing}
@@ -357,15 +357,15 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
             setCustomizationMode={setCustomizationMode}
             currentContext={currentContext}
           />
-          
+
           {/* Platform Selector */}
-          <PlatformSelector 
+          <PlatformSelector
             platform={platform}
             setPlatform={setPlatform}
             copyType={copyType}
             setCopyType={setCopyType}
           />
-          
+
           {/* Generate Button */}
           <div className="space-y-3">
             <Button
@@ -406,7 +406,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
 
                   if (response.success && response.content) {
                     setGeneratedCopy(response.content);
-                    
+
                     toastNotifications.showSuccess(
                       "🎉 Copy gerada!",
                       "Copy contextual criada com sucesso."
@@ -417,12 +417,12 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
                 } catch (error) {
                   const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
                   const errorDetails = error instanceof Error && error.cause ? error.cause.toString() : "";
-                  
+
                   toastNotifications.showError(
                     "Erro na geração",
                     `Não foi possível gerar a copy. ${errorMessage}${errorDetails ? ` Detalhes: ${errorDetails}` : ""}`
                   );
-                  
+
                   // Log para debugging
                   console.error("Erro na geração de copy:", {
                     error,
@@ -450,7 +450,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
                 </>
               )}
             </Button>
-            
+
             {!briefing.trim() && (
               <div className="text-center">
                 <p className="text-xs text-gray-500">
@@ -459,9 +459,9 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
               </div>
             )}
           </div>
-          
+
           {/* Generated Copy Preview */}
-          <GeneratedCopyPreview 
+          <GeneratedCopyPreview
             generatedCopy={generatedCopy}
             platform={platform}
             copyType={copyType}

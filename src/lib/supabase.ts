@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Usar variáveis de ambiente
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 // Validar se as variáveis estão definidas
 if (!supabaseUrl || !supabaseAnonKey) {

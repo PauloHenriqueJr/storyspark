@@ -79,8 +79,8 @@ export default function Blog() {
   // Filter posts based on search and category
   const filteredPosts = blogPosts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === "Todos" || post.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -105,12 +105,12 @@ export default function Blog() {
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
                 Insights, estratégias e tendências para maximizar o impacto do seu conteúdo
               </p>
-              
+
               {/* Newsletter Signup */}
               <div className="max-w-md mx-auto">
                 <div className="flex gap-2">
-                  <Input 
-                    placeholder="Seu email para novidades" 
+                  <Input
+                    placeholder="Seu email para novidades"
                     className="flex-1"
                   />
                   <Button>Assinar</Button>
@@ -135,8 +135,8 @@ export default function Blog() {
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="md:flex">
                     <div className="md:w-1/2">
-                      <img 
-                        src={featuredPost.image} 
+                      <img
+                        src={featuredPost.image}
                         alt={featuredPost.title}
                         className="w-full h-64 md:h-full object-cover"
                       />
@@ -184,8 +184,8 @@ export default function Blog() {
               {/* Search */}
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  placeholder="Buscar posts..." 
+                <Input
+                  placeholder="Buscar posts..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -225,8 +225,8 @@ export default function Blog() {
                   {currentPosts.map((post) => (
                     <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                       <div className="aspect-video overflow-hidden">
-                        <img 
-                          src={post.image} 
+                        <img
+                          src={post.image}
                           alt={post.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -277,7 +277,7 @@ export default function Blog() {
                     >
                       Anterior
                     </Button>
-                    
+
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <Button
                         key={page}
@@ -287,7 +287,7 @@ export default function Blog() {
                         {page}
                       </Button>
                     ))}
-                    
+
                     <Button
                       variant="outline"
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

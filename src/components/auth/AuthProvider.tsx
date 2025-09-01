@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { supabase, authHelpers, SignInData, SignUpData } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { authHelpers, SignInData, SignUpData } from '@/lib/supabase';
 import { useSystemToastNotifications } from '@/hooks/useSystemToastNotifications';
 
 interface User {

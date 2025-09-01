@@ -10,10 +10,10 @@ import { LazyLoadWrapper } from "@/components/performance/LazyLoadWrapper";
 
 // Landing and Public Pages
 import Index from "./pages/Index";
-import Modern from "./pages/Modern";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
+import LandingWaitlist from "./pages/LandingWaitlist";
 
 // Blog Pages
 import Blog from "./pages/Blog";
@@ -64,8 +64,12 @@ const AdminLogs = React.lazy(() => import('./pages/admin/AdminLogs'));
 const AdminIntegrations = React.lazy(() => import('./pages/admin/AdminIntegrations'));
 const AdminBillingGlobal = React.lazy(() => import('./pages/admin/AdminBillingGlobal'));
 const AdminSecurity = React.lazy(() => import('./pages/admin/AdminSecurity'));
-const AdminPermissions = React.lazy(() => import('./pages/admin/AdminPermissions'));
+const AdminPermissions = React.lazy(() => import('@/pages/admin/AdminPermissions'));
+const AdminTest = React.lazy(() => import('@/pages/admin/AdminTest'));
 const AdminBackup = React.lazy(() => import('./pages/admin/AdminBackup'));
+const AdminWaitlist = React.lazy(() => import('./pages/admin/AdminWaitlist'));
+const AdminJobs = React.lazy(() => import('./pages/admin/AdminJobs'));
+const AdminEmailTemplates = React.lazy(() => import('./pages/admin/AdminEmailTemplates'));
 
 // Calendar Wrapper Component
 const CalendarWrapper = () => {
@@ -93,7 +97,7 @@ const App = () => (
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Index />} />
-      <Route path="/modern" element={<Modern />} />
+      <Route path="/waitlist" element={<LandingWaitlist />} />
       
       {/* Blog Routes */}
       <Route path="/blog" element={<Blog />} />
@@ -342,7 +346,7 @@ const App = () => (
 
       {/* Admin Routes */}
       <Route path="/admin" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminDashboard />
@@ -351,7 +355,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/users" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminUsers />
@@ -360,7 +364,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/managers" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminManagers />
@@ -369,7 +373,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/settings" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminSettings />
@@ -414,7 +418,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/logs" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminLogs />
@@ -441,7 +445,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/security" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminSecurity />
@@ -450,7 +454,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/permissions" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminPermissions />
@@ -463,6 +467,33 @@ const App = () => (
           <AppLayout>
             <LazyLoadWrapper>
               <AdminBackup />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/waitlist" element={
+                <ProtectedRoute adminOnly={true}>
+                  <AppLayout>
+                    <LazyLoadWrapper>
+                      <AdminWaitlist />
+                    </LazyLoadWrapper>
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/jobs" element={
+        <ProtectedRoute adminOnly={true}>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminJobs />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/email-templates" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminEmailTemplates />
             </LazyLoadWrapper>
           </AppLayout>
         </ProtectedRoute>

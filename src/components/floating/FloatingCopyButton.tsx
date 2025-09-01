@@ -83,7 +83,6 @@ interface CalendarEvent {
   platform: string;
   time: string;
   date: Date;
-  event_date: string;
   status: 'Agendado' | 'Publicado' | 'Rascunho';
   color: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -138,7 +137,7 @@ interface Template {
   category: string;
   type: string;
   content: string;
-  blocks: any[];
+  blocks: any[]; // Você pode tipar isso melhor se souber a estrutura
   usage_count: number;
   is_public: boolean;
   created_at: string;
@@ -224,6 +223,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultPlatform: 'E-mail',
     targetPage: '/email-marketing'
   },
+
   '/social-media': {
     title: 'Copy para Mídias Sociais',
     icon: TrendingUp,
@@ -237,32 +237,45 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultPlatform: 'Instagram',
     targetPage: '/social-media'
   },
-  '/brand-voices': {
-    title: 'Copy com Brand Voice',
-    icon: Mic,
-    color: 'bg-teal-600',
-    description: 'Copy alinhada com sua marca',
+  '/ads': {
+    title: 'Copy para Anúncios',
+    icon: Zap,
+    color: 'bg-orange-600',
+    description: 'Anúncios que destacam os melhores do seu negócio',
     suggestions: [
-      'Copy com tom profissional',
-      'Copy com tom casual',
-      'Copy com tom inspirador'
+      'Anúncio Google',
+      'Anúncio Facebook',
+      'Anúncio Instagram'
     ],
-    defaultPlatform: 'Facebook',
-    targetPage: '/brand-voices'
+    defaultPlatform: 'Google Ads',
+    defaultType: 'Anúncio',
+    targetPage: '/ads'
   },
-  '/personas': {
-    title: 'Copy para Personas',
-    icon: Users,
-    color: 'bg-purple-600',
-    description: 'Copy direcionada para personas específicas',
+  '/webpages': {
+    title: 'Copy para Páginas Web',
+    icon: Globe,
+    color: 'bg-sky-600',
+    description: 'Páginas que levam conversas em sua plataforma',
     suggestions: [
-      'Copy para persona empreendedor',
-      'Copy para persona profissional',
-      'Copy para persona estudante'
+      'Landing page de lead generation',
+      'Página de contato',
+      'Página de produto ou serviço'
     ],
-    defaultPlatform: 'Instagram',
-    defaultType: 'Post Orgânico',
-    targetPage: '/personas'
+    targetPage: '/webpages'
+  },
+
+  '/people': {
+    title: 'Pessoas e Contatos',
+    icon: Users,
+    color: 'bg-slate-600',
+    description: 'Gerenciamento e categorização de contatos e segmentação de clientes',
+    suggestions: [
+      'Gerencie e classifique clientes',
+      'Segmente leads potenciais',
+      'Aproveite oportunidades',
+      'Identifique melhores segmentações de marketing'
+    ],
+    targetPage: '/people'
   },
   '/social-scheduler': {
     title: 'Copy para Social Scheduler',
@@ -306,6 +319,8 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/calendar'
   },
+  
+  // Páginas de Landing Pages e Funnels
   '/landing-pages': {
     title: 'Copy para Landing Pages',
     icon: Globe,
@@ -334,6 +349,8 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Funnel',
     targetPage: '/funnels'
   },
+  
+  // Páginas de Comunicação
   '/push-whatsapp': {
     title: 'Copy para Push/WhatsApp',
     icon: MessageSquare,
@@ -362,6 +379,36 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Script',
     targetPage: '/call-scripts'
   },
+  
+  // Páginas de Personas e Brand Voices
+  '/personas': {
+    title: 'Copy para Personas',
+    icon: Users,
+    color: 'bg-gradient-to-r from-purple-600 to-pink-600',
+    description: 'Copy direcionada para personas específicas',
+    suggestions: [
+      'Copy para persona empreendedor',
+      'Copy para persona profissional',
+      'Copy para persona estudante'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/personas'
+  },
+  '/brand-voices': {
+    title: 'Copy com Brand Voice',
+    icon: Mic,
+    color: 'bg-gradient-to-r from-teal-600 to-cyan-600',
+    description: 'Copy alinhada com sua marca',
+    suggestions: [
+      'Copy com tom profissional',
+      'Copy com tom casual',
+      'Copy com tom inspirador'
+    ],
+    defaultPlatform: 'Instagram',
+    defaultType: 'Post Orgânico',
+    targetPage: '/brand-voices'
+  },
   '/voices': {
     title: 'Copy com Voice Personalizada',
     icon: Mic,
@@ -376,6 +423,8 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/voices'
   },
+  
+  // Páginas de Analytics e CRM
   '/analytics': {
     title: 'Copy para Analytics',
     icon: BarChart3,
@@ -404,6 +453,8 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Follow-up',
     targetPage: '/crm'
   },
+  
+  // Páginas de Conteúdo e Templates
   '/content-library': {
     title: 'Copy para Content Library',
     icon: FileText,
@@ -446,6 +497,8 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/trending-hooks'
   },
+  
+  // Páginas de Testes e Otimização
   '/ab-tests': {
     title: 'Copy para A/B Tests',
     icon: TestTube,
@@ -474,6 +527,8 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Feedback',
     targetPage: '/feedback'
   },
+  
+  // Páginas de Configuração (redirecionam para composer)
   '/settings': {
     title: 'Copy Personalizada',
     icon: Settings,
@@ -530,6 +585,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Billing',
     targetPage: '/composer'
   },
+  
   // Página padrão
   'default': {
     title: 'Criar Copy com IA',
@@ -814,7 +870,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   };
 
   // Função para detectar dados disponíveis e funcionalidades específicas
-  const getPageSpecificData = (): PageData | null => {
+  const getPageSpecificData = () => {
     switch (location.pathname) {
       case '/brand-voices':
         return {
@@ -850,7 +906,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             'Persona estudante universitário',
             'Persona dona de casa'
           ],
-          getContext: (item: Persona) => `Direcionado para a persona "${item.name}" - ${item.occupation || 'Sem descrição'}`
+          getContext: (item: Persona) => `Direcionado para a persona "${item.name}" - ${item.description || 'Sem descrição'}`
         };
       case '/templates':
         return {
@@ -1349,21 +1405,10 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                       </Badge>
                     </div>
                     <div className="max-h-48 overflow-y-auto space-y-3 border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-white dark:bg-gray-800">
-                      {pageData.data.slice(0, 5).map((item: BrandVoice | Persona | Template | Campaign | { name: string; value: unknown }, index: number) => (
+                      {pageData.data.slice(0, 5).map((item: BrandVoice | Persona | Template | Campaign) => (
                         <div
-                          key={index}
-                          onClick={() => {
-                            if ('name' in item && 'value' in item) {
-                              // Tratar item de analytics
-                              toastNotifications.showInfo(
-                                "Item selecionado",
-                                `Item: ${item.name}`
-                              );
-                            } else {
-                              // Tratar outros tipos de itens
-                              handleItemSelect(item as BrandVoice | Persona | Template | Campaign);
-                            }
-                          }}
+                          key={(item as any).id}
+                          onClick={() => handleItemSelect(item)}
                           className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 hover:border-blue-200 dark:hover:border-blue-600 cursor-pointer transition-all duration-200 group"
                         >
                           <div className={`w-10 h-10 rounded-full ${pageData.color} flex items-center justify-center shadow-sm`}>
@@ -1371,10 +1416,10 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
-                              {'name' in item ? item.name : ('title' in item ? (item as any).title : 'Item')}
+                              {(item as any).name || (item as any).title}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {'description' in item ? (item as any).description : ('tone' in item ? (item as any).tone : ('value' in item ? item.value : 'Sem descrição'))}
+                              {(item as any).description || (item as any).tone || 'Sem descrição'}
                             </p>
                           </div>
                           <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1529,12 +1574,12 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-600 rounded-xl p-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-full ${pageData?.color || currentContext.color} flex items-center justify-center`}>
-                        {React.createElement(pageData?.icon || IconComponent, { className: "w-4 h-4 text-white" })}
-                      </div>
+                                              <div className={`w-8 h-8 rounded-full ${pageData?.color || currentContext.color} flex items-center justify-center`}>
+                          {React.createElement(pageData?.icon || IconComponent, { className: "w-4 h-4 text-white" })}
+                        </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {selectedItem.name || (selectedItem as { title?: string }).title || 'Item sem nome'}
+                          {selectedItem.name || selectedItem.title}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Base selecionada para personalização

@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  TrendingUp, 
-  Users, 
-  Target, 
+import {
+  TrendingUp,
+  Users,
+  Target,
   Zap,
   ArrowUpRight,
   Calendar,
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateCampaignModal from '@/components/modals/CreateCampaignModal';
+import SimpleTest from '@/components/upload/SimpleTest';
 
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -92,7 +93,7 @@ const Dashboard = () => {
 
   const handleCreateCampaign = async (campaign: unknown) => {
     console.log('Nova campanha criada:', campaign);
-    
+
     // Exemplo de notificação de sucesso
     addNotification({
       title: 'Campanha criada com sucesso!',
@@ -103,7 +104,7 @@ const Dashboard = () => {
         onClick: () => navigate('/campaigns')
       }
     });
-    
+
     navigate('/campaigns');
   };
 
@@ -189,7 +190,7 @@ const Dashboard = () => {
             <Calendar className="w-4 h-4 mr-2" />
             Últimos 7 dias
           </Button>
-          <Button 
+          <Button
             className="bg-gradient-primary"
             onClick={() => navigate('/composer')}
           >
@@ -363,7 +364,7 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Create Campaign Modal */}
-      <CreateCampaignModal 
+      <CreateCampaignModal
         open={showCreateCampaign}
         onOpenChange={setShowCreateCampaign}
         onCreateCampaign={handleCreateCampaign}

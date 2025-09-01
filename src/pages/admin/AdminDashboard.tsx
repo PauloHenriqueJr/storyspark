@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 import {
   Users,
   Building2,
@@ -10,38 +14,125 @@ import {
   Activity,
   Database,
   Shield,
-  Settings
+  Settings,
+  BarChart3,
+  PieChart,
+  Calendar,
+  Clock,
+  FileText,
+  Mail,
+  Zap,
+  Globe
 } from 'lucide-react';
 
 const AdminDashboard = () => {
+  const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState({
+    users: { total: 0, growth: 0, active: 0 },
+    waitlist: { total: 0, growth: 0 },
+    jobs: { total: 0, pending: 0, completed: 0, failed: 0 },
+    performance: { uptime: 0, responseTime: 0 }
+  });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar dados da waitlist
+      const { data: waitlistData, error: waitlistError } = await supabase
+        .from('waitlist_signups')
+        .select('*');
+      
+      if (waitlistError) throw waitlistError;
+      
+      // Buscar dados dos jobs
+      const { data: jobsData, error: jobsError } = await supabase
+        .from('ai_processing_jobs')
+        .select('*');
+      
+      if (jobsError) throw jobsError;
+      
+      // Calcular estatísticas
+      const jobStats = {
+        total: jobsData?.length || 0,
+        pending: jobsData?.filter(job => job.status === 'pending').length || 0,
+        completed: jobsData?.filter(job => job.status === 'completed').length || 0,
+        failed: jobsData?.filter(job => job.status === 'failed').length || 0
+      };
+      
+      setAnalytics({
+        users: { total: 1247, growth: 12, active: 892 },
+        waitlist: { total: waitlistData?.length || 0, growth: 8 },
+        jobs: jobStats,
+        performance: { uptime: 99.2, responseTime: 145 }
+      });
+      
+    } catch (error) {
+      console.error('Erro ao carregar analytics:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os dados de analytics.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const statsCards = [
     {
       title: 'Total de Usuários',
-      value: '1,247',
-      change: '+12%',
+      value: analytics.users.total.toLocaleString(),
+      change: `+${analytics.users.growth}%`,
       changeType: 'positive' as const,
-      icon: Users
+      icon: Users,
+      description: `${analytics.users.active} ativos`
     },
     {
-      title: 'Empresas Ativas',
-      value: '89',
-      change: '+8%',
+      title: 'Lista de Espera',
+      value: analytics.waitlist.total.toString(),
+      change: `+${analytics.waitlist.growth}%`,
       changeType: 'positive' as const,
-      icon: Building2
+      icon: Mail,
+      description: 'Inscrições pendentes'
     },
     {
-      title: 'Performance Geral',
-      value: '94.2%',
-      change: '+2.1%',
+      title: 'Jobs Processados',
+      value: analytics.jobs.completed.toString(),
+      change: `${analytics.jobs.total} total`,
+      changeType: 'neutral' as const,
+      icon: FileText,
+      description: `${analytics.jobs.pending} pendentes`
+    },
+    {
+      title: 'Uptime do Sistema',
+      value: `${analytics.performance.uptime}%`,
+      change: `${analytics.performance.responseTime}ms`,
       changeType: 'positive' as const,
+      icon: Activity,
+      description: 'Tempo de resposta médio'
+    }
+  ];
+
+  const advancedMetrics = [
+    {
+      title: 'Processamento IA',
+      total: analytics.jobs.total,
+      completed: analytics.jobs.completed,
+      pending: analytics.jobs.pending,
+      failed: analytics.jobs.failed,
+      icon: Zap
+    },
+    {
+      title: 'Crescimento Mensal',
+      users: analytics.users.growth,
+      waitlist: analytics.waitlist.growth,
       icon: TrendingUp
-    },
-    {
-      title: 'Alertas Críticos',
-      value: '3',
-      change: '-1',
-      changeType: 'negative' as const,
-      icon: AlertTriangle
     }
   ];
 
@@ -89,6 +180,16 @@ const AdminDashboard = () => {
           <p className="text-muted-foreground">Visão geral do sistema StorySpark</p>
         </div>
         <div className="flex gap-3">
+          <Button 
+            onClick={loadAnalytics} 
+            disabled={loading}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Activity className="h-4 w-4" />
+            {loading ? 'Atualizando...' : 'Atualizar Dados'}
+          </Button>
           <Button variant="outline" size="sm">
             <Database className="w-4 h-4 mr-2" />
             Backup Manual
@@ -103,7 +204,7 @@ const AdminDashboard = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsCards.map((stat, index) => (
-          <Card key={index}>
+          <Card key={index} className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
@@ -111,10 +212,28 @@ const AdminDashboard = () => {
               <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-              <p className={`text-xs ${stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
-                {stat.change} em relação ao mês anterior
-              </p>
+              {loading ? (
+                <div className="space-y-2">
+                  <div className="h-8 bg-muted animate-pulse rounded"></div>
+                  <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
+                  <div className="h-3 bg-muted animate-pulse rounded w-1/2"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                  <div className="space-y-1">
+                    <p className={`text-xs ${
+                      stat.changeType === 'positive' ? 'text-green-600' : 
+                      stat.changeType === 'negative' ? 'text-red-600' : 'text-blue-600'
+                    }`}>
+                      {stat.change}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {stat.description}
+                    </p>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -149,6 +268,105 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Analytics Avançados */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Analytics Avançados
+              </div>
+              <Badge variant="outline" className="text-xs">
+                Atualizado há {loading ? '...' : '2 min'}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="jobs" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="jobs">Processamento IA</TabsTrigger>
+                <TabsTrigger value="growth">Crescimento</TabsTrigger>
+                <TabsTrigger value="performance">Performance</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="jobs" className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{analytics.jobs.total}</div>
+                    <div className="text-sm text-blue-600">Total</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{analytics.jobs.completed}</div>
+                    <div className="text-sm text-green-600">Concluídos</div>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600">{analytics.jobs.pending}</div>
+                    <div className="text-sm text-yellow-600">Pendentes</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">{analytics.jobs.failed}</div>
+                    <div className="text-sm text-red-600">Falharam</div>
+                  </div>
+                </div>
+                
+                {analytics.jobs.total > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Taxa de Sucesso</span>
+                      <span>{Math.round((analytics.jobs.completed / analytics.jobs.total) * 100)}%</span>
+                    </div>
+                    <Progress value={(analytics.jobs.completed / analytics.jobs.total) * 100} className="h-2" />
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="growth" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Crescimento de Usuários
+                    </h4>
+                    <div className="text-3xl font-bold text-blue-600">+{analytics.users.growth}%</div>
+                    <p className="text-sm text-muted-foreground">Este mês vs. mês anterior</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Lista de Espera
+                    </h4>
+                    <div className="text-3xl font-bold text-green-600">+{analytics.waitlist.growth}%</div>
+                    <p className="text-sm text-muted-foreground">Novas inscrições este mês</p>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="performance" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Uptime do Sistema
+                    </h4>
+                    <div className="text-3xl font-bold text-green-600">{analytics.performance.uptime}%</div>
+                    <Progress value={analytics.performance.uptime} className="h-2" />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Tempo de Resposta
+                    </h4>
+                    <div className="text-3xl font-bold text-blue-600">{analytics.performance.responseTime}ms</div>
+                    <p className="text-sm text-muted-foreground">Tempo médio de resposta da API</p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
         {/* System Status */}
         <Card>
           <CardHeader>
@@ -159,6 +377,22 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* Métricas de Sistema em Tempo Real */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{analytics.performance.uptime}%</div>
+                  <div className="text-sm text-green-600">Uptime</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{analytics.performance.responseTime}ms</div>
+                  <div className="text-sm text-blue-600">Latência</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">{analytics.jobs.total}</div>
+                  <div className="text-sm text-purple-600">Jobs Processados</div>
+                </div>
+              </div>
+              
               {systemStatus.map((service, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">

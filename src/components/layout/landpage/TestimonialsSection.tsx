@@ -8,7 +8,7 @@ const testimonials = [
     name: 'Ana Silva',
     role: 'Marketing Manager',
     company: 'TechStart',
-    content: 'O Dialeto revolucionou nossa criação de conteúdo. Conseguimos produzir 10x mais posts mantendo a qualidade e consistência da nossa marca.',
+    content: 'O StorySpark revolucionou nossa criação de conteúdo. Conseguimos produzir 10x mais posts mantendo a qualidade e consistência da nossa marca.',
     rating: 5,
     avatar: '/placeholder.svg'
   },
@@ -16,7 +16,7 @@ const testimonials = [
     name: 'Carlos Mendes',
     role: 'CEO',
     company: 'Agência Digital+',
-    content: 'Com o Dialeto, nossa agência conseguiu atender mais clientes sem perder a qualidade. A IA entende perfeitamente o tom de cada marca.',
+    content: 'Com o StorySpark, nossa agência conseguiu atender mais clientes sem perder a qualidade. A IA entende perfeitamente o tom de cada marca.',
     rating: 5,
     avatar: '/placeholder.svg'
   },
@@ -24,7 +24,7 @@ const testimonials = [
     name: 'Mariana Costa',
     role: 'Social Media',
     company: 'E-commerce Pro',
-    content: 'Antes levava horas para criar uma campanha completa. Agora, com o Dialeto, faço isso em minutos. Incrível como a IA captura nossa voz!',
+    content: 'Antes levava horas para criar uma campanha completa. Agora, com o StorySpark, faço isso em minutos. Incrível como a IA captura nossa voz!',
     rating: 5,
     avatar: '/placeholder.svg'
   }
@@ -43,7 +43,7 @@ export const TestimonialsSection = () => {
             <span className="bg-gradient-primary bg-clip-text text-transparent"> estão dizendo</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Mais de 1.000 empresas já transformaram sua criação de conteúdo com o Dialeto.
+            Mais de 1.000 empresas já transformaram sua criação de conteúdo com o StorySpark.
           </p>
         </div>
 

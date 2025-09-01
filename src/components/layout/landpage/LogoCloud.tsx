@@ -37,7 +37,7 @@ export const LogoCloud = () => {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            Mais de 10.000 empresas confiam no Dialeto
+            Mais de 10.000 empresas confiam no StorySpark
           </motion.p>
           
           <div className="relative">

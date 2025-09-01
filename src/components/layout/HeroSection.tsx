@@ -29,7 +29,7 @@ const staggerContainer = {
 
 export const HeroSection = () => {
   const { theme } = useTheme();
-  
+
   // Determina qual imagem usar baseada no tema
   // Modo escuro = imagem clara, modo claro = imagem escura
   const getCurrentImage = () => {
@@ -45,15 +45,15 @@ export const HeroSection = () => {
   };
 
   return (
-    <main className="relative overflow-hidden bg-gradient-hero">
+    <main id="hero" className="relative overflow-hidden bg-gradient-hero">
       {/* Background decorations */}
       <div className="absolute inset-0 bg-gradient-radial opacity-30" />
       <div className="absolute top-0 right-0 h-96 w-96 bg-muted/20 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-0 left-0 h-64 w-64 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-      
+
       <section className="relative z-10">
         <div className="mx-auto max-w-6xl px-6 pb-20 pt-32 lg:pt-48">
-          <motion.div 
+          <motion.div
             className="mx-auto max-w-4xl text-center"
             variants={staggerContainer}
             initial="initial"
@@ -67,7 +67,7 @@ export const HeroSection = () => {
               </div>
             </motion.div>
 
-            <motion.h1 
+            <motion.h1
               className="text-balance text-5xl font-bold md:text-6xl lg:text-7xl"
               variants={fadeInUp}
             >
@@ -78,11 +78,11 @@ export const HeroSection = () => {
               em minutos
             </motion.h1>
 
-            <motion.p 
+            <motion.p
               className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
               variants={fadeInUp}
             >
-              Dialeto usa IA para criar posts, e-mails, anúncios e landing pages 
+              StorySpark usa IA para criar posts, e-mails, anúncios e landing pages
               com o seu tom de voz, integrado às suas ferramentas favoritas.
             </motion.p>
 
@@ -91,14 +91,14 @@ export const HeroSection = () => {
               <form className="mx-auto max-w-md">
                 <div className="relative grid grid-cols-[1fr_auto] items-center rounded-2xl border border-border bg-card pr-2 shadow-elegant">
                   <Mail className="pointer-events-none absolute inset-y-0 left-4 my-auto h-5 w-5 text-muted-foreground" />
-                  
+
                   <input
                     placeholder="Seu melhor email"
                     className="h-14 w-full bg-transparent pl-12 pr-4 text-base focus:outline-none"
                     type="email"
                   />
 
-                <Button
+                  <Button
                     type="submit"
                     size="lg"
                     className="bg-gradient-primary hover:shadow-glow h-10 px-6"
@@ -124,7 +124,7 @@ export const HeroSection = () => {
             </motion.div>
 
             {/* Demo Actions */}
-            <motion.div 
+            <motion.div
               className="mt-16 flex flex-col sm:flex-row gap-4 justify-center"
               variants={fadeInUp}
             >
@@ -137,7 +137,7 @@ export const HeroSection = () => {
             </motion.div>
 
             {/* Stats */}
-            <motion.div 
+            <motion.div
               className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3"
               variants={fadeInUp}
             >
@@ -153,27 +153,27 @@ export const HeroSection = () => {
             </motion.div>
 
             {/* Dashboard Preview */}
-            <motion.div 
+            <motion.div
               className="relative mt-24"
               variants={fadeInUp}
             >
               <div className="relative mx-auto max-w-4xl">
                 {/* Background decoration */}
                 <div className="absolute inset-0 bg-gradient-radial opacity-20" />
-                
+
                 {/* Main mockup */}
                 <div className="relative rounded-2xl border border-border bg-card p-2 shadow-elegant">
                   <div className="overflow-hidden rounded-xl">
                     <img
                       src={getCurrentImage()}
-                      alt="Dashboard do Dialeto"
+                      alt="Dashboard do StorySpark"
                       className="w-full h-auto object-cover"
                     />
                   </div>
                 </div>
 
                 {/* Floating elements */}
-                <motion.div 
+                <motion.div
                   className="absolute -top-4 -left-4 rounded-xl border border-border bg-card p-4 shadow-elegant"
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -184,7 +184,7 @@ export const HeroSection = () => {
                   </div>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   className="absolute -bottom-4 -right-4 rounded-xl border border-border bg-card p-4 shadow-elegant"
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}

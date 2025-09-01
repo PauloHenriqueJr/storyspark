@@ -7,12 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  CalendarDays, 
-  Clock, 
-  User, 
-  ArrowLeft, 
-  Share2, 
+import {
+  CalendarDays,
+  Clock,
+  User,
+  ArrowLeft,
+  Share2,
   BookmarkPlus,
   ThumbsUp,
   MessageCircle,
@@ -88,7 +88,7 @@ const relatedPosts = [
   {
     id: 3,
     title: "Brand Voice: Como Desenvolver a Voz da Sua Marca",
-    slug: "brand-voice-voz-marca", 
+    slug: "brand-voice-voz-marca",
     image: "/placeholder.svg",
     readTime: "6 min"
   }
@@ -227,8 +227,8 @@ export default function BlogPost() {
 
               {/* Featured Image */}
               <div className="aspect-video overflow-hidden rounded-lg">
-                <img 
-                  src={blogPost.image} 
+                <img
+                  src={blogPost.image}
                   alt={blogPost.title}
                   className="w-full h-full object-cover"
                 />
@@ -274,12 +274,12 @@ export default function BlogPost() {
                   <CardTitle className="text-lg">Deixe seu comentário</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Input 
+                  <Input
                     placeholder="Seu nome"
                     value={newCommentAuthor}
                     onChange={(e) => setNewCommentAuthor(e.target.value)}
                   />
-                  <Textarea 
+                  <Textarea
                     placeholder="Escreva seu comentário..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
@@ -309,7 +309,7 @@ export default function BlogPost() {
                           </div>
                         </div>
                         <p>{comment.content}</p>
-                        
+
                         {/* Replies */}
                         {comment.replies.length > 0 && (
                           <div className="ml-8 space-y-4 pt-4 border-t">
@@ -350,8 +350,8 @@ export default function BlogPost() {
               {relatedPosts.map((post) => (
                 <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="aspect-video overflow-hidden">
-                    <img 
-                      src={post.image} 
+                    <img
+                      src={post.image}
                       alt={post.title}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />

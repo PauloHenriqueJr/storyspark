@@ -13,9 +13,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configurações do Supabase
-const supabaseUrl = "https://qgtgvqfikqfjbeixzbyb.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFndGd2cWZpa3FmamJlaXh6YnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzE2MTcsImV4cCI6MjA3MDI0NzYxN30.iNAOOITHhXMfAY2kJnQ_Dtrd44UZ7bhlufekerTdtw4";
+// Configurações do Supabase: usar variáveis de ambiente em vez de chaves hard-coded.
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Erro: defina SUPABASE_URL e SUPABASE_KEY no ambiente antes de executar este script.');
+    process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

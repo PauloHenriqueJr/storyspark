@@ -34,7 +34,9 @@ import {
   Crown,
   ChevronDown,
   ChevronRight,
-  Key
+  Key,
+  Mail,
+  Activity
 } from 'lucide-react';
 import {
   Sidebar,
@@ -155,6 +157,10 @@ const adminSection: NavSection = {
     { title: 'Admin Dashboard', url: '/admin', icon: Shield },
     { title: 'Clientes', url: '/admin/users', icon: UserCog },
     { title: 'Gerentes', url: '/admin/managers', icon: Crown },
+    { title: 'Email Marketing', url: '/admin/email-templates', icon: Mail },
+    { title: 'Waitlist', url: '/admin/waitlist', icon: Mail },
+    { title: 'Jobs', url: '/admin/jobs', icon: FileText },
+    { title: 'Logs', url: '/admin/logs', icon: Activity },
     { title: 'Sistema', url: '/admin/settings', icon: Database },
     { title: 'Segurança', url: '/admin/security', icon: Shield },
     { title: 'Permissões', url: '/admin/permissions', icon: Key },

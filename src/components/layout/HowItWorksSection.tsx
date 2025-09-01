@@ -55,16 +55,16 @@ const staggerContainer = {
 
 export const HowItWorksSection = () => {
   return (
-    <section className="py-24 bg-background">
+    <section id="how-it-works" className="py-24 bg-background">
       <div className="mx-auto max-w-6xl px-6">
-        <motion.div 
+        <motion.div
           className="text-center mb-16"
           variants={staggerContainer}
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
         >
-          <motion.h2 
+          <motion.h2
             className="text-4xl font-bold mb-6"
             variants={fadeInUp}
           >
@@ -73,7 +73,7 @@ export const HowItWorksSection = () => {
               3 passos simples
             </span>
           </motion.h2>
-          <motion.p 
+          <motion.p
             className="text-xl text-muted-foreground max-w-3xl mx-auto"
             variants={fadeInUp}
           >
@@ -81,7 +81,7 @@ export const HowItWorksSection = () => {
           </motion.p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16"
           variants={staggerContainer}
           initial="initial"
@@ -89,7 +89,7 @@ export const HowItWorksSection = () => {
           viewport={{ once: true }}
         >
           {steps.map((step, index) => (
-            <motion.div 
+            <motion.div
               key={index}
               className="bg-card rounded-2xl p-8 border border-border shadow-elegant relative"
               variants={fadeInUp}
@@ -100,10 +100,10 @@ export const HowItWorksSection = () => {
                 </div>
                 <div className="text-3xl font-bold text-primary">{step.number}</div>
               </div>
-              
+
               <h3 className="text-xl font-bold mb-3">{step.title}</h3>
               <p className="text-muted-foreground mb-6">{step.description}</p>
-              
+
               <ul className="space-y-2">
                 {step.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-center gap-2 text-sm">
@@ -121,7 +121,7 @@ export const HowItWorksSection = () => {
           ))}
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="text-center"
           variants={fadeInUp}
           initial="initial"
