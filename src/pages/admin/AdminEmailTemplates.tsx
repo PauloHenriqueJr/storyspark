@@ -63,6 +63,7 @@ import {
 import { toast } from 'sonner';
 import { useEmailTemplates, EmailTemplate, CreateEmailTemplateInput } from '@/hooks/useEmailTemplates';
 import CreateEmailCampaignModal from '@/components/modals/CreateEmailCampaignModal';
+import { emailService } from '@/services/emailService';
 
 interface NewEmailTemplate {
   name: string;
@@ -101,6 +102,11 @@ const AdminEmailTemplates = () => {
   // Estados para campanhas
   const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
   const [mainActiveTab, setMainActiveTab] = useState('templates');
+
+  // Variáveis para preview e envio de teste
+  const [newTemplateVars, setNewTemplateVars] = useState<Record<string, string>>({});
+  const [editTemplateVars, setEditTemplateVars] = useState<Record<string, string>>({});
+  const [testRecipient, setTestRecipient] = useState('');
 
   // Dados mockados para campanhas
   const [campaigns] = useState([
@@ -1291,6 +1297,10 @@ Equipe StorySpark
       tags: ['email'],
       category: template.category
     });
+    // Inicializa variáveis para preview
+    const initialVars: Record<string, string> = {};
+    detectTemplateVariables(template.html_content).forEach(v => { initialVars[v] = ''; });
+    setNewTemplateVars(initialVars);
   };
 
   // Criar novo template
@@ -1424,7 +1434,7 @@ Equipe StorySpark
   // Atualizar variáveis automaticamente quando o conteúdo HTML muda
   const handleHtmlContentChange = (content: string) => {
     const variables = detectTemplateVariables(content);
-
+    
     if (selectedTemplate) {
       setSelectedTemplate({
         ...selectedTemplate,
@@ -1434,12 +1444,71 @@ Equipe StorySpark
           html_content: content
         }
       });
+      // Sincroniza variáveis do editor
+      setEditTemplateVars(prev => {
+        const next = { ...prev } as Record<string, string>;
+        variables.forEach(v => { if (!(v in next)) next[v] = ''; });
+        Object.keys(next).forEach(k => { if (!variables.includes(k)) delete next[k]; });
+        return next;
+      });
     } else {
       setNewTemplate({
         ...newTemplate,
         html_content: content,
         variables
       });
+      setNewTemplateVars(prev => {
+        const next = { ...prev } as Record<string, string>;
+        variables.forEach(v => { if (!(v in next)) next[v] = ''; });
+        Object.keys(next).forEach(k => { if (!variables.includes(k)) delete next[k]; });
+        return next;
+      });
+    }
+  };
+
+  // Util: aplica variáveis no HTML/subject para preview/teste
+  const applyVars = (subject: string, html: string, vars: Record<string, string>) => {
+    let s = subject || '';
+    let h = html || '';
+    Object.entries(vars).forEach(([k, v]) => {
+      const re = new RegExp(`\\{\\{${k}\\}\\}`, 'g');
+      const val = String(v ?? '');
+      s = s.replace(re, val);
+      h = h.replace(re, val);
+    });
+    return { subject: s, html: h };
+  };
+
+  // Enviar e-mail de teste com base no conteúdo atual (sem exigir salvar)
+  const handleSendTest = async (mode: 'new' | 'edit') => {
+    if (!testRecipient) {
+      toast.error('Informe um e-mail para envio de teste');
+      return;
+    }
+    try {
+      if (mode === 'new') {
+        const { subject, html } = applyVars(newTemplate.subject, newTemplate.html_content, newTemplateVars);
+        const res = await emailService.sendEmail({
+          to: [{ email: testRecipient }],
+          subject: subject || '(sem assunto)',
+          html,
+          text: newTemplate.text_content,
+          category: 'template_test'
+        });
+        if (res.success) toast.success('Teste enviado'); else toast.error(res.error || 'Falha ao enviar teste');
+      } else if (selectedTemplate) {
+        const { subject, html } = applyVars(selectedTemplate.metadata.subject || selectedTemplate.subject, selectedTemplate.metadata.html_content || selectedTemplate.html_content, editTemplateVars);
+        const res = await emailService.sendEmail({
+          to: [{ email: testRecipient }],
+          subject: subject || '(sem assunto)',
+          html,
+          text: selectedTemplate.metadata.text_content || selectedTemplate.text_content,
+          category: `${selectedTemplate.id}_test`
+        });
+        if (res.success) toast.success('Teste enviado'); else toast.error(res.error || 'Falha ao enviar teste');
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Erro ao enviar teste');
     }
   };
 
