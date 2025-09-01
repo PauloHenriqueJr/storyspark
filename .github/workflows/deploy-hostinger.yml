@@ -1,0 +1,47 @@
+name: Build and Deploy Vite to Hostinger (FTP)
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install & Build (Vite)
+        run: |
+          npm ci
+          npm run build
+          echo "Conteúdo da dist/"
+          ls -la dist
+
+      # Envia SÓ o conteúdo de dist/ para public_html/
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          password: ${{ secrets.HOSTINGER_PASS }}
+          protocol: ftp            # use ftps se seu plano suportar
+          port: ${{ secrets.HOSTINGER_PORT || 21 }}
+          server-dir: public_html/
+          local-dir: dist/
+          # Opcional: limpa arquivos antigos do lado do servidor (cuidado!)
+          # dangerous-clean-slate: true
+          # Exclua arquivos que não quer enviar
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
