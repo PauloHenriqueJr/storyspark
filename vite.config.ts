@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
@@ -12,7 +11,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
@@ -20,7 +18,7 @@ export default defineConfig(({ mode }) => ({
         name: "StorySpark - IA Copy Creator",
         short_name: "StorySpark",
         description: "Crie copies que vendem com IA avançada",
-        theme_color: "#9333ea",
+        theme_color: "#f97316",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
