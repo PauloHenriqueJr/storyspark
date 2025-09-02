@@ -271,9 +271,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 - **Offline**: Suporte básico offline
 
 ### Ícones e Assets
-- **Favicon**: `/favicon.ico`
+- **Favicon**: `/favicon2.ico`
 - **PWA Icons**: 192x192 e 512x512 pixels
-- **Theme Color**: `#9333ea` (roxo)
+- **Theme Color**: `#f97316` (laranja)
 
 ---
 

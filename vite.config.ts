@@ -13,7 +13,11 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
+      includeAssets: [
+        "favicon2.ico",
+        "apple-touch-icon.png",
+        "masked-icon.svg",
+      ],
       manifest: {
         name: "StorySpark - IA Copy Creator",
         short_name: "StorySpark",
