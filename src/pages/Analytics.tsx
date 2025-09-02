@@ -15,7 +15,8 @@ import {
   RefreshCw,
   GitCompare,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Wand2
 } from 'lucide-react';
 import ExportReportModal from '@/components/modals/ExportReportModal';
 import ComparePeriodModal from '@/components/modals/ComparePeriodModal';
@@ -27,11 +28,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useFloatingButton } from '@/contexts/FloatingButtonContext';
 
 const Analytics = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [showDrillDown, setShowDrillDown] = useState(false);
+  const { openModal } = useFloatingButton();
   
   const {
     workspaceStats,
@@ -52,6 +55,18 @@ const Analytics = () => {
     engagements: item.copies,
     reach: item.users * 50 // Mock conversion
   }));
+
+  const handleAnalyzeEngagement = () => {
+    const prompt = `
+      Baseado nos seguintes dados de "Evolução do Engajamento" para o período de ${timeRange},
+      gere um resumo com insights e sugestões de melhoria.
+      Analise as tendências de impressões e engajamentos e forneça recomendações práticas.
+
+      Dados:
+      ${JSON.stringify(engagementData, null, 2)}
+    `;
+    openModal(prompt);
+  };
 
   const metrics = [
     {
@@ -217,13 +232,23 @@ const Analytics = () => {
                       Impressões vs Engajamentos nos últimos 6 meses
                     </CardDescription>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowDrillDown(true)}
-                  >
-                    Ver Detalhes
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAnalyzeEngagement}
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Analisar com IA
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDrillDown(true)}
+                    >
+                      Ver Detalhes
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
