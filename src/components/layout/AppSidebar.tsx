@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
@@ -6,12 +6,12 @@ import {
   Calendar,
   FileText,
   Home,
-  Palette,
   Puzzle,
   Settings,
   Sparkles,
   Users,
   Zap,
+  Flame,
   CreditCard,
   Target,
   Send,
@@ -20,16 +20,12 @@ import {
   MessageSquare,
   TrendingUp,
   Lightbulb,
-  BookOpen,
   TestTube,
   Library,
   Shield,
   UserCog,
   Database,
-  Megaphone,
   Phone,
-  Brain,
-  Cpu,
   Mic,
   Crown,
   ChevronDown,
@@ -41,12 +37,6 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -174,43 +164,80 @@ export const AppSidebar = () => {
   const { hasAdminAccess } = useRole();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
-  
+
   // State for collapsible sections - keeps Principal open by default
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     principal: true, // Keep main section open by default
   });
 
   const isActive = (path: string) => currentPath === path;
-  
+
   // Check if any item in a section is active to keep section open
   const isSectionActive = (items: NavItem[]) => {
     return items.some(item => isActive(item.url));
   };
-  
+
   const getNavClass = (path: string) => {
-    return isActive(path) 
-      ? "bg-sidebar-accent text-sidebar-primary font-medium border-r-2 border-primary" 
+    return isActive(path)
+      ? "bg-sidebar-accent text-sidebar-primary font-medium border-r-2 border-primary"
       : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground";
   };
 
   const toggleSection = (sectionId: string) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }));
+    setOpenSections(prev => {
+      const isCurrentlyOpen = prev[sectionId];
+
+      // Se a seção está sendo fechada, apenas fecha ela
+      if (isCurrentlyOpen) {
+        return {
+          ...prev,
+          [sectionId]: false
+        };
+      }
+
+      // Se a seção está sendo aberta, fecha todas as outras e abre apenas esta
+      const newState: Record<string, boolean> = {};
+      Object.keys(prev).forEach(key => {
+        newState[key] = false;
+      });
+      newState[sectionId] = true;
+
+      return newState;
+    });
   };
 
+  // Função para garantir que seção ativa esteja aberta (executada quando a rota muda)
+  useEffect(() => {
+    const activeSection = [...navSections, adminSection].find(section =>
+      isSectionActive(section.items)
+    );
+
+    if (activeSection && !openSections[activeSection.id]) {
+      setOpenSections(prev => {
+        // Verifica se realmente precisa atualizar para evitar loops
+        if (prev[activeSection.id]) return prev;
+
+        // Fecha todas as outras seções
+        const newState: Record<string, boolean> = {};
+        Object.keys(prev).forEach(key => {
+          newState[key] = false;
+        });
+        // Abre apenas a seção ativa
+        newState[activeSection.id] = true;
+        return newState;
+      });
+    }
+  }, [currentPath]); // Apenas currentPath como dependência
+
   // Collapsible Navigation Section Component
-  const CollapsibleNavSection = ({ 
-    section, 
-    isAdmin = false 
-  }: { 
+  const CollapsibleNavSection = ({
+    section
+  }: {
     section: typeof navSections[0];
-    isAdmin?: boolean;
   }) => {
-    const isOpen = openSections[section.id] || isSectionActive(section.items);
+    const isOpen = openSections[section.id] || false;
     const hasActiveItem = isSectionActive(section.items);
-    
+
     return (
       <Collapsible
         open={isOpen}
@@ -235,7 +262,7 @@ export const AppSidebar = () => {
             </>
           )}
         </CollapsibleTrigger>
-        
+
         {!collapsed && (
           <CollapsibleContent className="space-y-1 pl-3">
             <div className="space-y-1">
@@ -269,21 +296,33 @@ export const AppSidebar = () => {
     <Sidebar className="border-r border-sidebar-border/60" collapsible="icon">
       <SidebarContent className="bg-sidebar">
         {/* Logo Section */}
-        <div className="p-4 border-b border-sidebar-border/60">
+        <div className={`border-b border-sidebar-border/60 ${collapsed ? 'p-2' : 'p-4'}`}>
           {!collapsed ? (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow">
-                <Zap className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow flex-shrink-0">
+                {hasAdminAccess() ? (
+                  <Flame className="w-5 h-5 text-white" />
+                ) : (
+                  <Zap className="w-5 h-5 text-white" />
+                )}
               </div>
-              <div>
-                <h2 className="font-bold text-sidebar-foreground text-lg">StorySpark</h2>
-                <p className="text-xs text-sidebar-foreground/60">IA Copy Creator</p>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-bold text-sidebar-foreground text-lg truncate">
+                  {hasAdminAccess() ? 'StorySpark Admin' : 'StorySpark'}
+                </h2>
+                <p className="text-xs text-sidebar-foreground/60 truncate">
+                  {hasAdminAccess() ? 'Admin Panel' : 'IA Copy Creator'}
+                </p>
               </div>
             </div>
           ) : (
-            <div className="flex justify-center">
-              <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow">
-                <Zap className="w-5 h-5 text-white" />
+            <div className="flex justify-center items-center">
+              <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow flex-shrink-0">
+                {hasAdminAccess() ? (
+                  <Flame className="w-5 h-5 text-white" />
+                ) : (
+                  <Zap className="w-5 h-5 text-white" />
+                )}
               </div>
             </div>
           )}
@@ -294,12 +333,12 @@ export const AppSidebar = () => {
           {navSections.map((section) => (
             <CollapsibleNavSection key={section.id} section={section} />
           ))}
-          
+
           {/* Admin Section - Separated for security */}
           {hasAdminAccess() && (
             <>
               <div className="my-4 border-t border-sidebar-border/40" />
-              <CollapsibleNavSection section={adminSection} isAdmin />
+              <CollapsibleNavSection section={adminSection} />
             </>
           )}
         </div>
