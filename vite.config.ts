@@ -13,11 +13,18 @@ export default defineConfig(({ mode }) => ({
     // Optimize for production and HTTPS
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        // Keep manual chunks for better caching
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
       },
     },
     // Enable source maps for debugging in production
-    sourcemap: mode === 'development',
+    sourcemap: mode === "development",
+    // Ensure proper asset handling for SPA
+    assetsDir: 'assets',
   },
   plugins: [
     react(),

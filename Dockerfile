@@ -36,6 +36,7 @@ RUN adduser -S nextjs -u 1001
 # Copiar build da aplicação e configurações
 COPY --from=builder --chown=nextjs:nodejs /app/dist /app
 COPY --from=builder --chown=nextjs:nodejs /app/.env.production /app/.env.production
+COPY --from=builder --chown=nextjs:nodejs /app/serve.json /app/serve.json
 
 # Mudar para usuário não-root
 USER nextjs
@@ -50,5 +51,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/ || exit 1
 
-# Comando para iniciar o servidor com headers de segurança
-CMD ["serve", "-s", ".", "-l", "3000", "--no-clipboard", "--cors"]
+# Comando para iniciar o servidor com SPA routing configurado
+CMD ["serve", "-c", "serve.json", "-l", "3000", "--no-clipboard"]
