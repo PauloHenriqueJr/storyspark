@@ -74,7 +74,7 @@ class AIContingencyService {
           fallbackPriority: {},
           autoRetryEnabled: true,
           maxRetryAttempts: 3,
-          retryDelaySeconds: 5
+          retryDelaySeconds: 5,
         };
         return;
       }

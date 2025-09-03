@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
 
 const ReferralWidget: React.FC<{ initialCode?: string }> = ({ initialCode }) => {
   const [code, setCode] = useState<string | null>(initialCode || null);
@@ -20,8 +21,7 @@ const ReferralWidget: React.FC<{ initialCode?: string }> = ({ initialCode }) => 
   const createCode = async () => {
     // call create_referral RPC via supabase client in lib if available
     try {
-      // ... try to run RPC client-side if SUPABASE key available
-      const { supabase } = await import('@/lib/supabase');
+      // Use static import instead of dynamic import to avoid multiple GoTrueClient instances
       const resp: any = await supabase.rpc('create_referral', { p_referrer_email: localStorage.getItem('storyspark-waitlist-last-email') || null });
       const newCode = Array.isArray(resp.data) ? resp.data[0] : resp.data;
       setCode(newCode);
