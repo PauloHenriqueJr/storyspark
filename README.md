@@ -31,11 +31,11 @@ Ser a principal plataforma de IA para criação de conteúdo no mercado brasilei
 
 ### 📊 Planos de Assinatura
 
-| Plano | Preço | Copies/Mês | Usuários | Integrações |
-|-------|-------|-------------|----------|-------------|
-| **Starter** | R$ 97/mês | 10.000 | 1 | 3 |
-| **Pro** | R$ 297/mês | 50.000 | 5 | 10 |
-| **Enterprise** | R$ 697/mês | Ilimitado | Ilimitado | Ilimitado |
+| Plano          | Preço      | Copies/Mês | Usuários  | Integrações |
+| -------------- | ---------- | ---------- | --------- | ----------- |
+| **Starter**    | R$ 97/mês  | 10.000     | 1         | 3           |
+| **Pro**        | R$ 297/mês | 50.000     | 5         | 10          |
+| **Enterprise** | R$ 697/mês | Ilimitado  | Ilimitado | Ilimitado   |
 
 ### 🎯 Público-Alvo
 - **Agências de Marketing Digital**
@@ -169,6 +169,18 @@ src/
 ├── assets/             # Imagens e recursos estáticos
 └── types/              # Definições TypeScript
 ```
+
+### 🌐 Domínios e Infraestrutura
+
+A aplicação StorySpark é estruturada em múltiplos domínios para otimizar performance, segurança e experiência do usuário:
+
+| Domínio                     | Função        | Descrição                        |
+| --------------------------- | ------------- | -------------------------------- |
+| **www.storyspark.com.br**   | Landing page  | Site principal e institucional   |
+| **app.storyspark.com.br**   | Frontend SaaS | Interface do usuário (dashboard) |
+| **api.storyspark.com.br**   | Backend API   | Endpoints das APIs REST          |
+| **admin.storyspark.com.br** | Painel Admin  | Interface administrativa         |
+| **docs.storyspark.com.br**  | Documentação  | Documentação pública da API      |
 
 ### 🔐 Sistema de Rotas
 
