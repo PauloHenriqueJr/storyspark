@@ -104,12 +104,19 @@ jobs:
         script: |
           echo "🚀 Starting StorySpark deployment..."
           
+          # Definir variáveis
+          REGISTRY="ghcr.io"
+          IMAGE_NAME="${{ github.repository }}"
+          FULL_IMAGE="$REGISTRY/$IMAGE_NAME:latest"
+          
+          echo "📦 Using image: $FULL_IMAGE"
+          
           # Login no GitHub Container Registry
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
           # Baixar nova imagem
           echo "📥 Pulling latest image..."
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker pull $FULL_IMAGE
           
           # Parar e remover containers antigos (se existirem)
           echo "� Stopping old containers..."
@@ -130,7 +137,7 @@ jobs:
             --label "traefik.http.routers.storyspark-app.tls=true" \
             --label "traefik.http.routers.storyspark-app.tls.certresolver=letsencrypt" \
             --label "traefik.http.services.storyspark-app.loadbalancer.server.port=3000" \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            $FULL_IMAGE
           
           # Deploy da Landing Page (www.storyspark.com.br)
           echo "🏠 Deploying landing page..."
@@ -143,7 +150,7 @@ jobs:
             --label "traefik.http.routers.storyspark-www.tls=true" \
             --label "traefik.http.routers.storyspark-www.tls.certresolver=letsencrypt" \
             --label "traefik.http.services.storyspark-www.loadbalancer.server.port=3000" \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            $FULL_IMAGE
           
           # Deploy do Admin (admin.storyspark.com.br)
           echo "⚙️ Deploying admin panel..."
@@ -156,7 +163,7 @@ jobs:
             --label "traefik.http.routers.storyspark-admin.tls=true" \
             --label "traefik.http.routers.storyspark-admin.tls.certresolver=letsencrypt" \
             --label "traefik.http.services.storyspark-admin.loadbalancer.server.port=3000" \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            $FULL_IMAGE
           
           # Aguardar containers iniciarem
           echo "⏳ Waiting for containers to start..."
