@@ -17,11 +17,7 @@ RUN npm ci --frozen-lockfile
 # Copiar código fonte
 COPY . .
 
-# Copy production environment configuration if exists
-COPY .env.production ./ 2>/dev/null || true
-
-# Build da aplicação com configurações de produção
-ENV NODE_ENV=production
+# Build da aplicação
 RUN npm run build
 
 # Estágio de produção - Servir arquivos estáticos diretamente
@@ -40,26 +36,6 @@ RUN adduser -S nextjs -u 1001
 # Copiar build da aplicação
 COPY --from=builder --chown=nextjs:nodejs /app/dist /app
 
-# Create serve configuration with HTTPS-friendly security headers
-RUN echo '{ \
-  "public": "/app", \
-  "rewrites": [ \
-    { "source": "**", "destination": "/index.html" } \
-  ], \
-  "headers": [ \
-    { \
-      "source": "**", \
-      "headers": [ \
-        { "key": "X-Content-Type-Options", "value": "nosniff" }, \
-        { "key": "X-Frame-Options", "value": "DENY" }, \
-        { "key": "X-XSS-Protection", "value": "1; mode=block" }, \
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }, \
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" } \
-      ] \
-    } \
-  ] \
-}' > /serve.json
-
 # Mudar para usuário não-root
 USER nextjs
 
@@ -72,9 +48,6 @@ EXPOSE 3000
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/ || exit 1
-
-# Comando para servir a aplicação com configuração de segurança
-CMD ["serve", "-c", "/serve.json", "-l", "3000", "/app"]
 
 # Comando para iniciar o servidor de arquivos estáticos
 CMD ["serve", "-s", ".", "-l", "3000", "--no-clipboard"]
