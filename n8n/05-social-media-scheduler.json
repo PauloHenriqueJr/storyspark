@@ -1,10 +1,10 @@
 {
-  "name": "05 - Social Media Scheduler",
+  "name": "05 - Agendador de Redes Sociais",
   "nodes": [
     {
       "parameters": {"triggerTimes": {"item": [{"mode": "everyMinute"}]}},
       "id": "Cron",
-      "name": "Every Minute",
+      "name": "A Cada Minuto",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 2,
       "position": [200, 240]
@@ -22,7 +22,7 @@
         }
       },
       "id": "FetchDuePosts",
-      "name": "Fetch Due Posts",
+      "name": "Buscar Posts Vencidos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [420, 240]
@@ -32,7 +32,7 @@
         "functionCode": "// Route to different APIs based on platform\nreturn items.map(i => ({ json: { id: i.json.id, platform: i.json.platform, content: i.json.content } }));"
       },
       "id": "Route",
-      "name": "Route by Platform",
+      "name": "Roteador por Plataforma",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [660, 240]
@@ -48,7 +48,7 @@
         "bodyParametersJson": "={ message: $json.content, access_token: $env.META_ACCESS_TOKEN }"
       },
       "id": "PostMeta",
-      "name": "Post to Meta",
+      "name": "Publicar no Meta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [900, 160]
@@ -67,7 +67,7 @@
         "bodyParametersJson": "={ author: 'urn:li:person:YOUR_ID', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: $json.content }, shareMediaCategory: 'NONE' } }, visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' } }"
       },
       "id": "PostLinkedIn",
-      "name": "Post to LinkedIn",
+      "name": "Publicar no LinkedIn",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [900, 240]
@@ -90,21 +90,20 @@
         "bodyParametersJson": "={ status: 'published', published_at: {{$now.toISO()}} }"
       },
       "id": "MarkPublished",
-      "name": "Mark Published",
+      "name": "Marcar como Publicado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [1140, 240]
     }
   ],
   "connections": {
-    "Every Minute": {"main": [[{"node": "Fetch Due Posts", "type": "main", "index": 0}]]},
-    "Fetch Due Posts": {"main": [[{"node": "Route by Platform", "type": "main", "index": 0}]]},
-    "Route by Platform": {"main": [[{"node": "Post to Meta", "type": "main", "index": 0}, {"node": "Post to LinkedIn", "type": "main", "index": 0}, {"node": "Mark Published", "type": "main", "index": 0}]]},
-    "Post to Meta": {"main": [[{"node": "Mark Published", "type": "main", "index": 0}]]},
-    "Post to LinkedIn": {"main": [[{"node": "Mark Published", "type": "main", "index": 0}]]}
+    "A Cada Minuto": {"main": [[{"node": "Buscar Posts Vencidos", "type": "main", "index": 0}]]},
+    "Buscar Posts Vencidos": {"main": [[{"node": "Roteador por Plataforma", "type": "main", "index": 0}]]},
+    "Roteador por Plataforma": {"main": [[{"node": "Publicar no Meta", "type": "main", "index": 0}, {"node": "Publicar no LinkedIn", "type": "main", "index": 0}, {"node": "Marcar como Publicado", "type": "main", "index": 0}]]},
+    "Publicar no Meta": {"main": [[{"node": "Marcar como Publicado", "type": "main", "index": 0}]]},
+    "Publicar no LinkedIn": {"main": [[{"node": "Marcar como Publicado", "type": "main", "index": 0}]]}
   },
   "active": false,
   "settings": {},
   "staticData": null
 }
-

@@ -120,7 +120,14 @@ const EmailPreview = ({ html, width }: { html: string; width?: number }) => {
 
   return (
     <div className="border rounded-lg overflow-hidden" style={{ width: width ? width : '100%', backgroundColor: 'transparent' }}>
-      <iframe ref={iframeRef} title="Email Preview" className="w-full" style={{ height: 300, border: 'none', backgroundColor: 'white' }} />
+      <iframe 
+        ref={iframeRef} 
+        title="Email Preview" 
+        className="w-full" 
+        style={{ height: 300, border: 'none', backgroundColor: 'white' }}
+        sandbox="allow-same-origin"
+        loading="lazy"
+      />
     </div>
   );
 };

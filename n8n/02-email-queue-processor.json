@@ -1,12 +1,12 @@
 {
-  "name": "02 - Email Queue Processor",
+  "name": "02 - Processador da Fila de E-mails",
   "nodes": [
     {
       "parameters": {
         "triggerTimes": {"item": [{"mode": "everyMinute"}]}
       },
       "id": "Cron",
-      "name": "Every Minute",
+      "name": "A Cada Minuto",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 2,
       "position": [200, 220]
@@ -24,7 +24,7 @@
         }
       },
       "id": "FetchPending",
-      "name": "Fetch Pending",
+      "name": "Buscar Pendentes",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [420, 220]
@@ -34,7 +34,7 @@
         "functionCode": "// Iterate items\nreturn items.map(i => ({ json: {\n  id: i.json.id,\n  email: i.json.email,\n  email_type: i.json.email_type,\n  template_data: i.json.template_data,\n  attempts: i.json.attempts,\n  max_attempts: i.json.max_attempts\n}}));"
       },
       "id": "PrepareLoop",
-      "name": "Prepare Loop",
+      "name": "Preparar Loop",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [660, 220]
@@ -50,14 +50,14 @@
         "bodyParametersJson": "={ $json.email_type === 'waitlist_confirmation' ? { to: $json.email, subject: 'Bem-vindo(a)!', html: '<p>Você está na fila! 🎉</p>' } : { to: $json.email, subject: 'Email', html: '<p>Template genérico</p>' } }"
       },
       "id": "SendEmail",
-      "name": "Edge Function: send-email",
+      "name": "Função Edge: send-email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [900, 220],
       "credentials": {
         "httpHeaderAuth": {
           "id": "resend-edge-function-placeholder",
-          "name": "Resend Edge Function"
+          "name": "Função Edge Resend"
         }
       }
     },
@@ -79,20 +79,19 @@
         "bodyParametersJson": "={ status: 'sent', attempts: {{$json.attempts + 1}}, processed_at: {{$now.toISO()}} }"
       },
       "id": "MarkSent",
-      "name": "Mark Sent",
+      "name": "Marcar como Enviado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [1140, 220]
     }
   ],
   "connections": {
-    "Every Minute": {"main": [[{"node": "Fetch Pending", "type": "main", "index": 0}]]},
-    "Fetch Pending": {"main": [[{"node": "Prepare Loop", "type": "main", "index": 0}]]},
-    "Prepare Loop": {"main": [[{"node": "Edge Function: send-email", "type": "main", "index": 0}]]},
-    "Edge Function: send-email": {"main": [[{"node": "Mark Sent", "type": "main", "index": 0}]]}
+    "A Cada Minuto": {"main": [[{"node": "Buscar Pendentes", "type": "main", "index": 0}]]},
+    "Buscar Pendentes": {"main": [[{"node": "Preparar Loop", "type": "main", "index": 0}]]},
+    "Preparar Loop": {"main": [[{"node": "Função Edge: send-email", "type": "main", "index": 0}]]},
+    "Função Edge: send-email": {"main": [[{"node": "Marcar como Enviado", "type": "main", "index": 0}]]}
   },
   "active": false,
   "settings": {},
   "staticData": null
 }
-

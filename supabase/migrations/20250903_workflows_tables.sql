@@ -1,6 +1,6 @@
--- Workflows support tables (idempotent)
+-- Tabelas de suporte para workflows (idempotente)
 
--- Email queue
+-- Fila de e-mails
 CREATE TABLE IF NOT EXISTS public.email_queue (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL,
@@ -27,7 +27,7 @@ END$$;
 
 CREATE INDEX IF NOT EXISTS idx_email_queue_status ON public.email_queue(status, scheduled_at);
 
--- Document processing jobs
+-- Jobs de processamento de documentos
 CREATE TABLE IF NOT EXISTS public.document_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID,
@@ -50,7 +50,7 @@ END$$;
 
 CREATE INDEX IF NOT EXISTS idx_document_jobs_status ON public.document_jobs(status, created_at);
 
--- Social posts scheduling
+-- Agendamento de posts em redes sociais
 CREATE TABLE IF NOT EXISTS public.scheduled_posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID,
@@ -76,4 +76,3 @@ DO $$BEGIN
 END$$;
 
 CREATE INDEX IF NOT EXISTS idx_scheduled_posts_due ON public.scheduled_posts(status, scheduled_for);
-
