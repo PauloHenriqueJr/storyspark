@@ -1,0 +1,229 @@
+name: Investigate and Fix Traefik Network
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-traefik-network:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Investigate Traefik Network and Fix Containers
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          echo "🔍 Investigating Traefik Network Configuration"
+          echo "=============================================="
+          echo "📅 Timestamp: $(date)"
+          echo ""
+          
+          # Step 1: Identify Traefik container and its network
+          echo "1️⃣ IDENTIFYING TRAEFIK NETWORK:"
+          traefik_container=$(docker ps | grep traefik | awk '{print $NF}')
+          
+          if [ -n "$traefik_container" ]; then
+            echo "✅ Traefik container found: $traefik_container"
+            
+            # Get Traefik networks
+            echo "Networks that Traefik is connected to:"
+            docker inspect $traefik_container | jq -r '.[0].NetworkSettings.Networks | keys[]' 2>/dev/null || {
+              echo "Inspecting without jq:"
+              docker inspect $traefik_container | grep -A 20 '"Networks"' | grep -E '"[a-zA-Z0-9_-]+"' | sed 's/.*"\([^"]*\)".*/  • \1/'
+            }
+            
+            # Get the primary network (usually the first one)
+            traefik_network=$(docker inspect $traefik_container | jq -r '.[0].NetworkSettings.Networks | keys[0]' 2>/dev/null || docker inspect $traefik_container | grep -A 5 '"Networks"' | grep -E '"[a-zA-Z0-9_-]+"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+            
+            echo "Primary Traefik network: $traefik_network"
+          else
+            echo "❌ Traefik container not found"
+            exit 1
+          fi
+          echo ""
+          
+          # Step 2: Check available networks
+          echo "2️⃣ AVAILABLE DOCKER NETWORKS:"
+          docker network ls
+          echo ""
+          
+          # Step 3: Check current StorySpark containers
+          echo "3️⃣ CURRENT STORYSPARK CONTAINERS:"
+          for container in storyspark-app storyspark-www storyspark-admin; do
+            if docker ps | grep -q $container; then
+              echo "--- $container ---"
+              echo "  Status: Running"
+              echo "  Networks:"
+              docker inspect $container | jq -r '.[0].NetworkSettings.Networks | keys[]' 2>/dev/null | sed 's/^/    • /' || {
+                docker inspect $container | grep -A 10 '"Networks"' | grep -E '"[a-zA-Z0-9_-]+"' | sed 's/.*"\([^"]*\)".*/    • \1/'
+              }
+            else
+              echo "--- $container ---"
+              echo "  Status: Not running"
+            fi
+            echo ""
+          done
+          
+          # Step 4: Test network connectivity
+          echo "4️⃣ TESTING CURRENT NETWORK CONNECTIVITY:"
+          if [ -n "$traefik_network" ]; then
+            echo "Containers in Traefik network ($traefik_network):"
+            docker network inspect $traefik_network | jq -r '.[0].Containers | to_entries[] | "  • \(.value.Name) (\(.value.IPv4Address))"' 2>/dev/null || {
+              docker network inspect $traefik_network | grep -A 20 '"Containers"' | grep -E '"Name"|"IPv4Address"' | sed 's/^/  /'
+            }
+          fi
+          echo ""
+          
+          # Step 5: Fix containers by moving to correct network
+          echo "5️⃣ FIXING CONTAINER NETWORKS:"
+          echo "Stopping and recreating containers in correct network: $traefik_network"
+          
+          # Stop existing containers
+          echo "Stopping existing containers..."
+          for container in storyspark-app storyspark-www storyspark-admin; do
+            if docker ps | grep -q $container; then
+              echo "  Stopping $container..."
+              docker stop $container 2>/dev/null || true
+              docker rm $container 2>/dev/null || true
+            fi
+          done
+          
+          # Recreate containers in correct network
+          REGISTRY="ghcr.io"
+          IMAGE_NAME="paulohenriquejr/storyspark"
+          FULL_IMAGE="$REGISTRY/$IMAGE_NAME:latest"
+          
+          echo ""
+          echo "Recreating containers in network: $traefik_network"
+          
+          # Deploy App Principal (app.storyspark.com.br)
+          echo "🌐 Deploying storyspark-app..."
+          docker run -d \
+            --name storyspark-app \
+            --network $traefik_network \
+            --restart unless-stopped \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.storyspark-app.rule=Host(\`app.storyspark.com.br\`)" \
+            --label "traefik.http.routers.storyspark-app.tls=true" \
+            --label "traefik.http.routers.storyspark-app.tls.certresolver=letsencrypt" \
+            --label "traefik.http.services.storyspark-app.loadbalancer.server.port=3000" \
+            $FULL_IMAGE
+          
+          # Deploy Landing Page (www.storyspark.com.br)
+          echo "🏠 Deploying storyspark-www..."
+          docker run -d \
+            --name storyspark-www \
+            --network $traefik_network \
+            --restart unless-stopped \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.storyspark-www.rule=Host(\`www.storyspark.com.br\`) || Host(\`storyspark.com.br\`)" \
+            --label "traefik.http.routers.storyspark-www.tls=true" \
+            --label "traefik.http.routers.storyspark-www.tls.certresolver=letsencrypt" \
+            --label "traefik.http.services.storyspark-www.loadbalancer.server.port=3000" \
+            $FULL_IMAGE
+          
+          # Deploy Admin (admin.storyspark.com.br)
+          echo "⚙️ Deploying storyspark-admin..."
+          docker run -d \
+            --name storyspark-admin \
+            --network $traefik_network \
+            --restart unless-stopped \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.storyspark-admin.rule=Host(\`admin.storyspark.com.br\`)" \
+            --label "traefik.http.routers.storyspark-admin.tls=true" \
+            --label "traefik.http.routers.storyspark-admin.tls.certresolver=letsencrypt" \
+            --label "traefik.http.services.storyspark-admin.loadbalancer.server.port=3000" \
+            $FULL_IMAGE
+          
+          # Wait for containers to start
+          echo ""
+          echo "⏳ Waiting for containers to start..."
+          sleep 15
+          
+          # Step 6: Verify fix
+          echo "6️⃣ VERIFYING FIX:"
+          echo "StorySpark containers status:"
+          docker ps | grep storyspark
+          echo ""
+          
+          echo "Containers now in Traefik network ($traefik_network):"
+          docker network inspect $traefik_network | jq -r '.[0].Containers | to_entries[] | select(.value.Name | contains("storyspark")) | "  ✅ \(.value.Name) (\(.value.IPv4Address))"' 2>/dev/null || {
+            docker network inspect $traefik_network | grep -A 20 '"Containers"' | grep -A 2 storyspark | sed 's/^/  /'
+          }
+          echo ""
+          
+          # Step 7: Test connectivity
+          echo "7️⃣ TESTING CONNECTIVITY:"
+          echo "Testing HTTP connectivity between Traefik and StorySpark containers..."
+          
+          for container in storyspark-app storyspark-www storyspark-admin; do
+            if docker ps | grep -q $container; then
+              container_ip=$(docker inspect $container | jq -r --arg net "$traefik_network" '.[0].NetworkSettings.Networks[$net].IPAddress' 2>/dev/null)
+              
+              if [ -n "$container_ip" ] && [ "$container_ip" != "null" ]; then
+                echo "Testing $container at $container_ip:3000..."
+                
+                # Test from Traefik container
+                http_test=$(docker exec $traefik_container wget -qO- --timeout=5 http://$container_ip:3000 2>/dev/null | head -c 100 || echo "failed")
+                
+                if [ "$http_test" != "failed" ]; then
+                  echo "  ✅ HTTP connectivity successful"
+                else
+                  echo "  ❌ HTTP connectivity failed"
+                fi
+              else
+                echo "  ❌ $container: No IP in network $traefik_network"
+              fi
+            fi
+          done
+          echo ""
+          
+          # Step 8: DNS Test
+          echo "8️⃣ DOMAIN TEST:"
+          echo "Testing domain resolution..."
+          
+          for domain in app.storyspark.com.br www.storyspark.com.br admin.storyspark.com.br; do
+            ip=$(nslookup $domain 2>/dev/null | grep "Address:" | tail -1 | awk '{print $2}')
+            vps_ip=$(curl -s ifconfig.me || echo "unknown")
+            
+            echo "$domain → $ip (VPS: $vps_ip)"
+            
+            if [ "$ip" = "$vps_ip" ]; then
+              echo "  ✅ DNS points to this VPS"
+            else
+              echo "  ⚠️ DNS may not point to this VPS"
+            fi
+          done
+          echo ""
+          
+          # Step 9: Final summary
+          echo "📊 FINAL STATUS:"
+          echo "==============="
+          
+          storyspark_count=$(docker ps | grep storyspark | wc -l)
+          network_count=$(docker network inspect $traefik_network | jq -r '.[0].Containers | to_entries[] | select(.value.Name | contains("storyspark")) | .value.Name' 2>/dev/null | wc -l)
+          
+          echo "• Traefik network: $traefik_network"
+          echo "• StorySpark containers running: $storyspark_count/3"
+          echo "• StorySpark containers in Traefik network: $network_count/3"
+          
+          if [ $storyspark_count -eq 3 ] && [ $network_count -eq 3 ]; then
+            echo ""
+            echo "🎉 SUCCESS! All containers are now in the correct network!"
+            echo ""
+            echo "🌐 Test your domains now:"
+            echo "  • https://app.storyspark.com.br"
+            echo "  • https://www.storyspark.com.br"
+            echo "  • https://admin.storyspark.com.br"
+            echo ""
+            echo "💡 SSL certificates should now work properly!"
+          else
+            echo ""
+            echo "⚠️ Some issues remain - check container logs or network configuration"
+          fi
+          
+          echo ""
+          echo "✅ Network investigation and fix complete!"
