@@ -102,8 +102,15 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         port: ${{ secrets.VPS_PORT }}
         script: |
-          # Navegar para o diretório do projeto
+          # Criar diretório do projeto se não existir
+          mkdir -p /root/projetos/storyspark
           cd /root/projetos/storyspark
+          
+          # Baixar docker-compose.yml se não existir
+          if [ ! -f docker-compose.yml ]; then
+            echo "📥 Downloading docker-compose.yml..."
+            curl -o docker-compose.yml https://raw.githubusercontent.com/PauloHenriqueJr/storyspark/main/docker-compose.yml
+          fi
           
           # Fazer backup do docker-compose atual (se existir)
           cp docker-compose.yml docker-compose.yml.bak 2>/dev/null || true
