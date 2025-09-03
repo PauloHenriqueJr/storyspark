@@ -10,7 +10,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Usar nome lowercase diretamente para evitar inconsistências
+  IMAGE_NAME: paulohenriquejr/storyspark
 
 jobs:
   test-manual-deploy:
@@ -41,7 +42,7 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ env.REGISTRY }}/${{ steps.repo.outputs.lowercase }}:latest
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -133,9 +134,10 @@ jobs:
           
           # Step 6: Test single container deploy (only if image pull was successful)
           if [ $pull_status -eq 0 ]; then
-            echo "6️⃣ TESTING SINGLE CONTAINER DEPLOYMENT:"
-            echo "Deploying test container..."
+            echo "6️⃣ TESTING CONTAINER DEPLOYMENT:"
+            echo "Deploying test container first..."
             
+            # Test with single container first
             docker run -d \
               --name storyspark-test \
               --network traefik \
@@ -147,16 +149,101 @@ jobs:
               --label "traefik.http.services.storyspark-test.loadbalancer.server.port=3000" \
               $FULL_IMAGE
             
-            deploy_status=$?
+            test_deploy_status=$?
             sleep 10
             
-            if [ $deploy_status -eq 0 ] && docker ps | grep -q storyspark-test; then
+            if [ $test_deploy_status -eq 0 ] && docker ps | grep -q storyspark-test; then
               echo "✅ Test container deployed successfully"
               echo "Container info:"
               docker ps | grep storyspark-test
               echo ""
               echo "Container logs (last 10 lines):"
               docker logs storyspark-test --tail=10
+              
+              # If test container works, deploy production containers
+              echo ""
+              echo "🚀 DEPLOYING PRODUCTION CONTAINERS:"
+              
+              # Stop existing production containers
+              for container in storyspark-app storyspark-www storyspark-admin; do
+                if docker ps | grep -q $container; then
+                  echo "Stopping existing $container..."
+                  docker stop $container 2>/dev/null || true
+                  docker rm $container 2>/dev/null || true
+                fi
+              done
+              
+              # Deploy App Principal (app.storyspark.com.br)
+              echo "Deploying storyspark-app..."
+              docker run -d \
+                --name storyspark-app \
+                --network traefik \
+                --restart unless-stopped \
+                --label "traefik.enable=true" \
+                --label "traefik.http.routers.storyspark-app.rule=Host(\`app.storyspark.com.br\`)" \
+                --label "traefik.http.routers.storyspark-app.tls=true" \
+                --label "traefik.http.routers.storyspark-app.tls.certresolver=letsencrypt" \
+                --label "traefik.http.services.storyspark-app.loadbalancer.server.port=3000" \
+                $FULL_IMAGE
+              
+              # Deploy Landing Page (www.storyspark.com.br)
+              echo "Deploying storyspark-www..."
+              docker run -d \
+                --name storyspark-www \
+                --network traefik \
+                --restart unless-stopped \
+                --label "traefik.enable=true" \
+                --label "traefik.http.routers.storyspark-www.rule=Host(\`www.storyspark.com.br\`) || Host(\`storyspark.com.br\`)" \
+                --label "traefik.http.routers.storyspark-www.tls=true" \
+                --label "traefik.http.routers.storyspark-www.tls.certresolver=letsencrypt" \
+                --label "traefik.http.services.storyspark-www.loadbalancer.server.port=3000" \
+                $FULL_IMAGE
+              
+              # Deploy Admin (admin.storyspark.com.br)
+              echo "Deploying storyspark-admin..."
+              docker run -d \
+                --name storyspark-admin \
+                --network traefik \
+                --restart unless-stopped \
+                --label "traefik.enable=true" \
+                --label "traefik.http.routers.storyspark-admin.rule=Host(\`admin.storyspark.com.br\`)" \
+                --label "traefik.http.routers.storyspark-admin.tls=true" \
+                --label "traefik.http.routers.storyspark-admin.tls.certresolver=letsencrypt" \
+                --label "traefik.http.services.storyspark-admin.loadbalancer.server.port=3000" \
+                $FULL_IMAGE
+              
+              # Wait for containers to start
+              echo "Waiting for containers to initialize..."
+              sleep 15
+              
+              # Check final status
+              echo ""
+              echo "📊 FINAL DEPLOYMENT STATUS:"
+              production_containers=$(docker ps | grep "storyspark-" | wc -l)
+              echo "Production containers running: $production_containers/3"
+              
+              if [ $production_containers -eq 3 ]; then
+                echo "✅ ALL CONTAINERS DEPLOYED SUCCESSFULLY!"
+                echo ""
+                echo "🌐 Your application should be available at:"
+                echo "  • https://app.storyspark.com.br"
+                echo "  • https://www.storyspark.com.br"
+                echo "  • https://admin.storyspark.com.br"
+                echo ""
+                echo "🔍 Container details:"
+                docker ps | grep storyspark
+              else
+                echo "⚠️ Some containers failed to start:"
+                docker ps | grep storyspark || echo "No StorySpark containers running"
+                echo ""
+                echo "Checking logs for failed containers:"
+                for container in storyspark-app storyspark-www storyspark-admin; do
+                  if ! docker ps | grep -q $container; then
+                    echo "--- $container logs ---"
+                    docker logs $container 2>/dev/null || echo "Container not found or no logs"
+                  fi
+                done
+              fi
             else
               echo "❌ Test container deployment failed"
               if docker ps -a | grep -q storyspark-test; then
@@ -166,6 +253,7 @@ jobs:
             fi
             
             # Cleanup test container
+            echo ""
             echo "Cleaning up test container..."
             docker stop storyspark-test 2>/dev/null || true
             docker rm storyspark-test 2>/dev/null || true

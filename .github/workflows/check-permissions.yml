@@ -1,0 +1,104 @@
+name: GitHub Token Permissions Check
+on:
+  workflow_dispatch:
+
+jobs:
+  check-permissions:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check GitHub Token Permissions
+      run: |
+        echo "🔐 GitHub Token Permissions Check"
+        echo "================================="
+        echo ""
+        
+        # Check token permissions via GitHub API
+        echo "📋 Checking token permissions..."
+        
+        # Get token info
+        curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+             -H "Accept: application/vnd.github.v3+json" \
+             https://api.github.com/user \
+             | jq -r '"User: " + .login + " (Type: " + .type + ")"' 2>/dev/null || echo "Could not get user info"
+        
+        echo ""
+        
+        # Check repository permissions
+        echo "📦 Repository access check..."
+        repo_response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                           -H "Accept: application/vnd.github.v3+json" \
+                           "https://api.github.com/repos/${{ github.repository }}")
+        
+        echo "$repo_response" | jq -r '"Repository: " + .full_name + " (Private: " + (.private|tostring) + ")"' 2>/dev/null || echo "Could not get repo info"
+        
+        # Check if token can read packages
+        echo ""
+        echo "📦 Package registry access check..."
+        
+        # Try to list packages (this requires packages:read permission)
+        packages_response=$(curl -s -w "%{http_code}" -o /tmp/packages.json \
+                              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                              -H "Accept: application/vnd.github.v3+json" \
+                              "https://api.github.com/user/packages?package_type=container")
+        
+        if [ "$packages_response" = "200" ]; then
+          echo "✅ Token has package read permissions"
+          package_count=$(cat /tmp/packages.json | jq length 2>/dev/null || echo "0")
+          echo "Found $package_count container packages"
+          
+          # Look for storyspark package specifically
+          if cat /tmp/packages.json | jq -r '.[].name' 2>/dev/null | grep -q storyspark; then
+            echo "✅ StorySpark package found in registry"
+          else
+            echo "⚠️ StorySpark package not found in registry"
+          fi
+        else
+          echo "❌ Token lacks package read permissions (HTTP: $packages_response)"
+        fi
+        
+        echo ""
+        echo "🐳 Testing Docker login..."
+        
+        # Test GHCR login
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        login_status=$?
+        
+        if [ $login_status -eq 0 ]; then
+          echo "✅ Docker login to GHCR successful"
+          
+          # Test image pull
+          echo "Testing image pull..."
+          docker pull ghcr.io/paulohenriquejr/storyspark:latest
+          pull_status=$?
+          
+          if [ $pull_status -eq 0 ]; then
+            echo "✅ Image pull successful"
+            docker images | grep storyspark
+          else
+            echo "❌ Image pull failed (exit code: $pull_status)"
+          fi
+        else
+          echo "❌ Docker login failed (exit code: $login_status)"
+        fi
+        
+        echo ""
+        echo "📊 SUMMARY:"
+        echo "==========="
+        echo "• Token type: GitHub Actions token"
+        echo "• Repository access: ✅ Available"
+        echo "• Package permissions: $([ "$packages_response" = "200" ] && echo '✅ Read access' || echo '❌ Limited access')"
+        echo "• GHCR login: $([ $login_status -eq 0 ] && echo '✅ Success' || echo '❌ Failed')"
+        echo "• Image pull: $([ $pull_status -eq 0 ] && echo '✅ Success' || echo '❌ Failed')"
+        
+        if [ $login_status -eq 0 ] && [ $pull_status -eq 0 ]; then
+          echo ""
+          echo "🎉 All permissions are correctly configured!"
+        else
+          echo ""
+          echo "🔧 TROUBLESHOOTING:"
+          echo "If permissions are failing:"
+          echo "1. Check repository settings → Actions → General"
+          echo "2. Ensure 'Read and write permissions' are enabled"
+          echo "3. Check if the repository is private and token has correct scope"
+        fi

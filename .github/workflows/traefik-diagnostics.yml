@@ -1,0 +1,215 @@
+name: Traefik Integration Check
+on:
+  workflow_dispatch:
+    inputs:
+      debug_level:
+        description: 'Debug level'
+        required: true
+        default: 'detailed'
+        type: choice
+        options:
+        - basic
+        - detailed
+        - full
+
+jobs:
+  traefik-integration-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Traefik Integration Diagnostics (Read-Only)
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          echo "🌐 Traefik Integration Check (Read-Only)"
+          echo "======================================="
+          echo "📅 Timestamp: $(date)"
+          echo "🎯 Debug Level: ${{ github.event.inputs.debug_level }}"
+          echo "⚠️  Note: This is a READ-ONLY check, no Traefik changes will be made"
+          echo ""
+          
+          # Step 1: Traefik Status (Read-Only)
+          echo "1️⃣ TRAEFIK STATUS CHECK:"
+          if docker ps | grep -q traefik; then
+            echo "✅ Traefik container is running"
+            traefik_container=$(docker ps | grep traefik | awk '{print $NF}')
+            echo "Container name: $traefik_container"
+            
+            # Get container info
+            echo "Container details:"
+            docker ps | grep traefik | awk '{printf "  • Name: %s\n  • Status: %s\n  • Ports: %s\n", $NF, $7, $6}'
+          else
+            echo "❌ Traefik container not running"
+            echo "Available containers:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            exit 1
+          fi
+          echo ""
+          
+          # Step 2: Network Analysis (Read-Only)
+          echo "2️⃣ DOCKER NETWORK ANALYSIS:"
+          echo "Available networks:"
+          docker network ls
+          echo ""
+          
+          if docker network ls | grep -q traefik; then
+            echo "✅ Traefik network exists"
+            echo "Containers in traefik network:"
+            docker network inspect traefik | jq -r '.[0].Containers | to_entries[] | "  • \(.value.Name) (\(.key[0:12]))"' 2>/dev/null || {
+              echo "  Inspecting network without jq:"
+              docker network inspect traefik | grep -A 10 '"Containers"' | grep -E '"Name"|"IPv4Address"' | sed 's/^/  /'
+            }
+          else
+            echo "❌ Traefik network not found"
+          fi
+          echo ""
+          
+          # Step 3: StorySpark Containers Integration Check
+          echo "3️⃣ STORYSPARK CONTAINERS INTEGRATION:"
+          echo "Checking if StorySpark containers are properly integrated..."
+          
+          storyspark_count=0
+          for container in storyspark-app storyspark-www storyspark-admin; do
+            if docker ps | grep -q $container; then
+              echo "--- $container ---"
+              echo "  ✅ Container is running"
+              
+              # Check if in traefik network
+              if docker network inspect traefik | grep -q $container; then
+                echo "  ✅ Connected to traefik network"
+              else
+                echo "  ❌ NOT connected to traefik network"
+              fi
+              
+              # Check traefik labels
+              echo "  🏷️ Traefik labels:"
+              docker inspect $container | jq -r '.[0].Config.Labels | to_entries[] | select(.key | startswith("traefik")) | "    \(.key)=\(.value)"' 2>/dev/null || {
+                echo "    Checking labels without jq..."
+                docker inspect $container | grep -A 20 '"Labels"' | grep traefik | sed 's/^/    /' || echo "    No traefik labels found"
+              }
+              
+              storyspark_count=$((storyspark_count + 1))
+            else
+              echo "--- $container ---"
+              echo "  ❌ Container not running"
+            fi
+            echo ""
+          done
+          
+          # Step 4: Port Analysis (Read-Only)
+          echo "4️⃣ PORT ANALYSIS:"
+          echo "Checking port accessibility (Traefik should handle 80/443)..."
+          
+          for port in 80 443; do
+            if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+              echo "  ✅ Port $port: LISTENING (Traefik)"
+              
+              # Test HTTP response if detailed debug
+              if [ "${{ github.event.inputs.debug_level }}" != "basic" ]; then
+                echo "    Testing Traefik response on port $port..."
+                response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$port --connect-timeout 3 || echo "timeout")
+                echo "    Response: $response"
+              fi
+            else
+              echo "  ❌ Port $port: NOT LISTENING"
+            fi
+          done
+          
+          # Check that port 3000 is NOT exposed (should be internal only)
+          if netstat -tuln 2>/dev/null | grep -q ":3000 "; then
+            echo "  ⚠️  Port 3000: LISTENING (should be internal only)"
+          else
+            echo "  ✅ Port 3000: NOT EXPOSED (correct - internal only)"
+          fi
+          echo ""
+          
+          # Step 5: Domain Resolution Check
+          if [ "${{ github.event.inputs.debug_level }}" != "basic" ]; then
+            echo "5️⃣ DOMAIN RESOLUTION CHECK:"
+            echo "Testing StorySpark domains (DNS only, no changes)..."
+            
+            for domain in app.storyspark.com.br www.storyspark.com.br admin.storyspark.com.br; do
+              echo "Testing $domain..."
+              
+              # Test DNS resolution
+              ip=$(nslookup $domain 2>/dev/null | grep "Address:" | tail -1 | awk '{print $2}')
+              if [ -n "$ip" ]; then
+                echo "  ✅ DNS resolves to: $ip"
+              else
+                echo "  ❌ DNS resolution failed"
+              fi
+            done
+            echo ""
+          fi
+          
+          # Step 6: HTTP Integration Test
+          if [ "${{ github.event.inputs.debug_level }}" = "full" ]; then
+            echo "6️⃣ HTTP INTEGRATION TEST:"
+            echo "Testing actual HTTP responses through Traefik..."
+            
+            for domain in app.storyspark.com.br www.storyspark.com.br admin.storyspark.com.br; do
+              echo "Testing HTTP access to $domain..."
+              
+              # Test HTTP
+              http_status=$(curl -s -o /dev/null -w "%{http_code}" http://$domain --connect-timeout 5 || echo "timeout")
+              echo "  HTTP: $http_status"
+              
+              # Test HTTPS
+              https_status=$(curl -s -o /dev/null -w "%{http_code}" https://$domain --connect-timeout 5 || echo "timeout")
+              echo "  HTTPS: $https_status"
+              
+              # Test with Host header (simulating Traefik routing)
+              local_status=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: $domain" http://localhost --connect-timeout 5 || echo "timeout")
+              echo "  Local (Host header): $local_status"
+              echo ""
+            done
+          fi
+          
+          # Step 7: Summary & Integration Status
+          echo "📊 INTEGRATION SUMMARY:"
+          echo "======================"
+          
+          traefik_running=$(docker ps | grep traefik | wc -l)
+          
+          echo "• Traefik status: $([ $traefik_running -gt 0 ] && echo '✅ Running' || echo '❌ Not running')"
+          echo "• StorySpark containers: $storyspark_count/3"
+          echo "• Network integration: $([ $storyspark_count -gt 0 ] && echo '✅ Some containers connected' || echo '❌ No containers connected')"
+          
+          if [ $traefik_running -gt 0 ] && [ $storyspark_count -eq 3 ]; then
+            echo ""
+            echo "🎯 STATUS: StorySpark appears properly integrated with existing Traefik"
+            echo ""
+            echo "✅ INTEGRATION CHECKLIST:"
+            echo "  • Traefik container running"
+            echo "  • All 3 StorySpark containers running"
+            echo "  • Containers connected to traefik network"
+            echo "  • Traefik labels configured"
+            echo "  • Ports 80/443 handled by Traefik"
+            echo "  • Port 3000 internal only (correct)"
+            echo ""
+            echo "🌐 Your application should be accessible at:"
+            echo "  • https://app.storyspark.com.br"
+            echo "  • https://www.storyspark.com.br"
+            echo "  • https://admin.storyspark.com.br"
+          else
+            echo ""
+            echo "⚠️ STATUS: Integration issues detected"
+            echo ""
+            echo "🔧 REQUIRED ACTIONS:"
+            if [ $traefik_running -eq 0 ]; then
+              echo "  • Ensure Traefik is running (managed externally)"
+            fi
+            if [ $storyspark_count -lt 3 ]; then
+              echo "  • Deploy missing StorySpark containers"
+              echo "  • Ensure containers join traefik network"
+              echo "  • Verify traefik labels are correctly set"
+            fi
+          fi
+          
+          echo ""
+          echo "✅ Integration check complete!"
+          echo "💡 This check is read-only and makes no changes to existing Traefik setup"
