@@ -33,8 +33,9 @@ RUN apk --no-cache add curl
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-# Copiar build da aplicação
+# Copiar build da aplicação e configurações
 COPY --from=builder --chown=nextjs:nodejs /app/dist /app
+COPY --from=builder --chown=nextjs:nodejs /app/.env.production /app/.env.production
 
 # Mudar para usuário não-root
 USER nextjs
@@ -49,5 +50,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/ || exit 1
 
-# Comando para iniciar o servidor de arquivos estáticos
-CMD ["serve", "-s", ".", "-l", "3000", "--no-clipboard"]
+# Comando para iniciar o servidor com headers de segurança
+CMD ["serve", "-s", ".", "-l", "3000", "--no-clipboard", "--cors"]

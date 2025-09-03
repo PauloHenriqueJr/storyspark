@@ -18,8 +18,8 @@ export const defaultBrandConfig: BrandConfig = {
   primaryColor: "#f97316", // Orange-500
   secondaryColor: "#fb923c", // Orange-400
   logoText: "StorySpark",
-  website: "https://storyspark.com",
-  supportEmail: "suporte@storyspark.com",
+  website: "https://www.storyspark.com.br",
+  supportEmail: "suporte@storyspark.com.br",
   unsubscribeUrl: "#unsubscribe",
   preferencesUrl: "#preferences",
 };

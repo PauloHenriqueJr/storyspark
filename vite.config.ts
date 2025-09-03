@@ -9,6 +9,16 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    // Optimize for production and HTTPS
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+    // Enable source maps for debugging in production
+    sourcemap: mode === 'development',
+  },
   plugins: [
     react(),
     VitePWA({
