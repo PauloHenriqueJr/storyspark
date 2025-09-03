@@ -1,0 +1,155 @@
+name: Deploy StorySpark to VPS
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job para build e testes
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run type check
+      run: npm run type-check
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run tests (quando implementados)
+      run: echo "Tests will be implemented here"
+      # run: npm test
+
+  # Job para build e push da imagem Docker
+  docker-build-push:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Job para deploy na VPS
+  deploy-to-vps:
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          # Navegar para o diretório do projeto
+          cd /root/projetos/storyspark
+          
+          # Fazer backup do docker-compose atual (se existir)
+          cp docker-compose.yml docker-compose.yml.bak 2>/dev/null || true
+          
+          # Login no registry do GitHub
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Parar serviços atuais do StorySpark (se existirem)
+          docker-compose down 2>/dev/null || true
+          
+          # Remover imagens antigas do StorySpark
+          docker images | grep storyspark | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
+          
+          # Baixar nova imagem
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Subir serviços com nova imagem
+          docker-compose up -d
+          
+          # Verificar status dos serviços
+          docker-compose ps
+          
+          # Aguardar serviços ficarem saudáveis
+          sleep 30
+          
+          # Verificar health checks dos containers StorySpark
+          docker-compose exec -T storyspark-app curl -f http://localhost:3000/health.html || echo "Warning: App health check failed"
+          
+          # Verificar se Traefik está funcionando
+          docker ps | grep traefik || echo "Warning: Traefik not running"
+          
+          # Limpeza de imagens não utilizadas
+          docker system prune -f
+
+  # Job para notificação (opcional)
+  notify:
+    needs: [build-and-test, docker-build-push, deploy-to-vps]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify deployment status
+      run: |
+        if [ "${{ needs.deploy-to-vps.result }}" == "success" ]; then
+          echo "✅ Deploy realizado com sucesso!"
+          echo "🚀 StorySpark está rodando em: https://app.storyspark.com.br"
+        else
+          echo "❌ Deploy falhou. Verifique os logs."
+        fi

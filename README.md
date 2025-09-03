@@ -249,6 +249,36 @@ A aplicação StorySpark é estruturada em múltiplos domínios para otimizar pe
 - npm ou yarn
 - Git
 
+### 🐳 Deploy com Docker
+
+#### Desenvolvimento Local
+```bash
+# Clone o repositório
+git clone https://github.com/PauloHenriqueJr/storyspark.git
+cd storyspark
+
+# Build e execução com Docker
+make build-docker
+
+# Ou executar diretamente
+docker-compose up --build -d
+```
+
+#### Deploy em Produção
+```bash
+# 1. Configure DNS apontando para sua VPS
+# 2. Execute script de setup na VPS
+wget https://raw.githubusercontent.com/PauloHenriqueJr/storyspark/main/scripts/deploy-vps.sh
+chmod +x deploy-vps.sh && ./deploy-vps.sh
+
+# 3. Configure secrets no GitHub Actions
+# 4. Faça push para main - deploy automático!
+```
+
+**📖 Documentação completa**: [DEPLOY.md](./DEPLOY.md)
+
+### 💻 Desenvolvimento Local
+
 ### ⚡ Instalação Rápida
 ```bash
 # Clone o repositório

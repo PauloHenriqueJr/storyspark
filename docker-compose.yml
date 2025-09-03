@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Aplicação principal (app.storyspark.com.br)
+  storyspark-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: storyspark-app
+    restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.storyspark-app.rule=Host(`app.storyspark.com.br`)"
+      - "traefik.http.routers.storyspark-app.entrypoints=websecure"
+      - "traefik.http.routers.storyspark-app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.storyspark-app.loadbalancer.server.port=3000"
+      - "traefik.http.routers.storyspark-app.middlewares=security-headers"
+
+  # Landing Page (www.storyspark.com.br)
+  storyspark-landing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: storyspark-landing
+    restart: unless-stopped
+    networks:
+      - traefik
+    environment:
+      - REACT_APP_MODE=landing
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.storyspark-landing.rule=Host(`www.storyspark.com.br`) || Host(`storyspark.com.br`)"
+      - "traefik.http.routers.storyspark-landing.entrypoints=websecure"
+      - "traefik.http.routers.storyspark-landing.tls.certresolver=letsencrypt"
+      - "traefik.http.services.storyspark-landing.loadbalancer.server.port=3000"
+      - "traefik.http.routers.storyspark-landing.middlewares=security-headers"
+
+  # Painel Admin (admin.storyspark.com.br)
+  storyspark-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: storyspark-admin
+    restart: unless-stopped
+    networks:
+      - traefik
+    environment:
+      - REACT_APP_MODE=admin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.storyspark-admin.rule=Host(`admin.storyspark.com.br`)"
+      - "traefik.http.routers.storyspark-admin.entrypoints=websecure"
+      - "traefik.http.routers.storyspark-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.storyspark-admin.loadbalancer.server.port=3000"
+      - "traefik.http.routers.storyspark-admin.middlewares=security-headers,admin-auth"
+
+networks:
+  traefik:
+    external: true
+
+# Volumes para persistência de dados (quando necessário)
+volumes:
+  storyspark_data:
+    driver: local
