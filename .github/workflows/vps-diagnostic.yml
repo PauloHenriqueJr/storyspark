@@ -1,0 +1,169 @@
+name: VPS Diagnostic
+
+# Pode ser executado manualmente ou automaticamente após deploys
+on:
+  workflow_dispatch:  # Executar manualmente
+    inputs:
+      debug_level:
+        description: 'Debug Level (basic, detailed, full)'
+        required: false
+        default: 'detailed'
+        type: choice
+        options:
+        - basic
+        - detailed  
+        - full
+  
+  workflow_call:  # Pode ser chamado por outros workflows
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  diagnose-vps:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: VPS Health Check & Diagnosis
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          echo "🔍 StorySpark VPS Diagnostic Report"
+          echo "=================================="
+          echo "📅 Timestamp: $(date)"
+          echo "🖥️  Server: $(hostname)"
+          echo "📍 Debug Level: ${{ github.event.inputs.debug_level || 'detailed' }}"
+          echo ""
+          
+          # Informações básicas do sistema
+          echo "🖥️  SYSTEM INFO:"
+          echo "CPU: $(nproc) cores"
+          echo "Memory: $(free -h | awk 'NR==2{printf "%.1fGB used / %.1fGB total (%.0f%%)", $3/1024/1024, $2/1024/1024, $3*100/$2}')"
+          echo "Disk: $(df -h / | awk 'NR==2{printf "%s used / %s total (%s)", $3, $2, $5}')"
+          echo ""
+          
+          # Status dos containers StorySpark
+          echo "📊 STORYSPARK CONTAINERS:"
+          if docker ps | grep -q storyspark; then
+            docker ps | grep storyspark | while read line; do
+              container_name=$(echo $line | awk '{print $NF}')
+              container_status=$(echo $line | awk '{print $7}')
+              container_ports=$(echo $line | awk '{print $6}')
+              echo "  ✅ $container_name: $container_status ($container_ports)"
+            done
+          else
+            echo "  ❌ No StorySpark containers running"
+          fi
+          echo ""
+          
+          # Status do Traefik
+          echo "🌐 TRAEFIK STATUS:"
+          if docker ps | grep -q traefik; then
+            traefik_status=$(docker ps | grep traefik | awk '{print $7}')
+            traefik_ports=$(docker ps | grep traefik | awk '{print $6}')
+            echo "  ✅ Traefik: $traefik_status ($traefik_ports)"
+          else
+            echo "  ❌ Traefik not running"
+          fi
+          echo ""
+          
+          # Network inspection
+          echo "🔗 NETWORK STATUS:"
+          if docker network ls | grep -q traefik; then
+            echo "  ✅ Traefik network exists"
+            traefik_containers=$(docker network inspect traefik | jq -r '.[0].Containers | keys[]' 2>/dev/null | wc -l)
+            echo "  📊 Containers in traefik network: $traefik_containers"
+          else
+            echo "  ❌ Traefik network not found"
+          fi
+          echo ""
+          
+          # Verificar imagens
+          echo "🐳 DOCKER IMAGES:"
+          if docker images | grep -q storyspark; then
+            echo "  ✅ StorySpark images found:"
+            docker images | grep storyspark | awk '{printf "    📦 %s:%s (%s)\n", $1, $2, $7}'
+          else
+            echo "  ❌ No StorySpark images found"
+          fi
+          echo ""
+          
+          # Logs recentes (se debug_level >= detailed)
+          if [ "${{ github.event.inputs.debug_level || 'detailed' }}" != "basic" ]; then
+            echo "📋 CONTAINER LOGS (last 10 lines):"
+            for container in storyspark-app storyspark-www storyspark-admin; do
+              if docker ps | grep -q $container; then
+                echo "  --- $container ---"
+                docker logs $container --tail=10 2>&1 | sed 's/^/    /'
+              else
+                echo "  ❌ $container: not running"
+              fi
+              echo ""
+            done
+            
+            echo "🔍 TRAEFIK LOGS (last 15 lines):"
+            if docker ps | grep -q traefik; then
+              docker logs traefik --tail=15 2>&1 | sed 's/^/  /'
+            else
+              echo "  ❌ Traefik not running"
+            fi
+            echo ""
+          fi
+          
+          # Diagnóstico completo (se debug_level = full)
+          if [ "${{ github.event.inputs.debug_level || 'detailed' }}" = "full" ]; then
+            echo "🏷️  CONTAINER LABELS (StorySpark-app):"
+            if docker ps | grep -q storyspark-app; then
+              docker inspect storyspark-app | jq '.[0].Config.Labels' 2>/dev/null | sed 's/^/  /' || echo "  ❌ Could not inspect labels"
+            else
+              echo "  ❌ storyspark-app not running"
+            fi
+            echo ""
+            
+            echo "🔧 TRAEFIK CONFIGURATION:"
+            if docker ps | grep -q traefik; then
+              echo "  📊 Traefik dashboard (if enabled): http://$(hostname):8080"
+              docker exec traefik wget -qO- http://localhost:8080/api/rawdata 2>/dev/null | jq '.routers | keys[]' 2>/dev/null | grep storyspark || echo "  ❌ No StorySpark routes found in Traefik"
+            fi
+            echo ""
+            
+            echo "🌐 PORT TESTS:"
+            for port in 80 443 3000; do
+              if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+                echo "  ✅ Port $port: LISTENING"
+              else
+                echo "  ❌ Port $port: NOT LISTENING"
+              fi
+            done
+            echo ""
+          fi
+          
+          # Resumo final
+          echo "📈 SUMMARY:"
+          storyspark_running=$(docker ps | grep storyspark | wc -l)
+          traefik_running=$(docker ps | grep traefik | wc -l)
+          
+          if [ $storyspark_running -gt 0 ] && [ $traefik_running -gt 0 ]; then
+            echo "  ✅ Status: HEALTHY ($storyspark_running StorySpark containers + Traefik)"
+            echo "  🌐 URLs should be accessible:"
+            echo "     • https://app.storyspark.com.br"
+            echo "     • https://www.storyspark.com.br"
+            echo "     • https://admin.storyspark.com.br"
+          elif [ $traefik_running -eq 0 ]; then
+            echo "  ❌ Status: CRITICAL - Traefik not running"
+            echo "  🔧 Action: Start Traefik first"
+          elif [ $storyspark_running -eq 0 ]; then
+            echo "  ⚠️  Status: WARNING - StorySpark containers not running"
+            echo "  🔧 Action: Deploy StorySpark containers"
+          else
+            echo "  ❌ Status: UNKNOWN - Mixed state"
+          fi
+          
+          echo ""
+          echo "✅ Diagnostic Complete!"
+          echo "📊 Run this workflow anytime via: Actions → VPS Diagnostic → Run workflow"

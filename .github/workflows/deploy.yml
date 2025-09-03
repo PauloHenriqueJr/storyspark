@@ -195,3 +195,49 @@ jobs:
         else
           echo "❌ Deploy falhou. Verifique os logs."
         fi
+
+  # Job de diagnóstico automático após deploy
+  post-deploy-diagnostic:
+    needs: deploy-to-vps
+    runs-on: ubuntu-latest
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Post-Deploy VPS Health Check
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          echo "🔍 Post-Deploy Health Check"
+          echo "=========================="
+          
+          # Quick status check
+          echo "📊 Container Status:"
+          docker ps | grep storyspark || echo "❌ No StorySpark containers"
+          
+          echo ""
+          echo "🌐 Traefik Status:"
+          docker ps | grep traefik || echo "❌ Traefik not running"
+          
+          echo ""
+          echo "🔗 Network Check:"
+          docker network inspect traefik | jq '.[0].Containers | keys[]' 2>/dev/null | grep storyspark && echo "✅ StorySpark containers in traefik network" || echo "❌ StorySpark not in traefik network"
+          
+          echo ""
+          echo "📈 Quick Health Summary:"
+          storyspark_count=$(docker ps | grep storyspark | wc -l)
+          traefik_count=$(docker ps | grep traefik | wc -l)
+          
+          if [ $storyspark_count -ge 3 ] && [ $traefik_count -ge 1 ]; then
+            echo "✅ HEALTHY: All services running ($storyspark_count/3 StorySpark + Traefik)"
+          elif [ $traefik_count -eq 0 ]; then
+            echo "❌ CRITICAL: Traefik not running"
+          else
+            echo "⚠️  WARNING: Only $storyspark_count/3 StorySpark containers running"
+          fi
+          
+          echo ""
+          echo "💡 For detailed diagnostics, run: Actions → VPS Diagnostic → Run workflow"
