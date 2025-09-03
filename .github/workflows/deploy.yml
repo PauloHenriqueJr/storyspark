@@ -102,48 +102,83 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         port: ${{ secrets.VPS_PORT }}
         script: |
-          # Criar diretório do projeto se não existir
-          mkdir -p /root/projetos/storyspark
-          cd /root/projetos/storyspark
+          echo "🚀 Starting StorySpark deployment..."
           
-          # Baixar docker-compose.yml se não existir
-          if [ ! -f docker-compose.yml ]; then
-            echo "📥 Downloading docker-compose.yml..."
-            curl -o docker-compose.yml https://raw.githubusercontent.com/PauloHenriqueJr/storyspark/main/docker-compose.yml
-          fi
-          
-          # Fazer backup do docker-compose atual (se existir)
-          cp docker-compose.yml docker-compose.yml.bak 2>/dev/null || true
-          
-          # Login no registry do GitHub
+          # Login no GitHub Container Registry
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Parar serviços atuais do StorySpark (se existirem)
-          docker-compose down 2>/dev/null || true
-          
-          # Remover imagens antigas do StorySpark
-          docker images | grep storyspark | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
-          
           # Baixar nova imagem
+          echo "📥 Pulling latest image..."
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
-          # Subir serviços com nova imagem
-          docker-compose up -d
+          # Parar e remover containers antigos (se existirem)
+          echo "� Stopping old containers..."
+          docker stop storyspark-app storyspark-www storyspark-admin 2>/dev/null || true
+          docker rm storyspark-app storyspark-www storyspark-admin 2>/dev/null || true
           
-          # Verificar status dos serviços
-          docker-compose ps
+          # Verificar se rede Traefik existe
+          docker network ls | grep traefik || docker network create traefik
           
-          # Aguardar serviços ficarem saudáveis
-          sleep 30
+          # Deploy do App Principal (app.storyspark.com.br)
+          echo "🌐 Deploying main app..."
+          docker run -d \
+            --name storyspark-app \
+            --network traefik \
+            --restart unless-stopped \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.storyspark-app.rule=Host(\`app.storyspark.com.br\`)" \
+            --label "traefik.http.routers.storyspark-app.tls=true" \
+            --label "traefik.http.routers.storyspark-app.tls.certresolver=letsencrypt" \
+            --label "traefik.http.services.storyspark-app.loadbalancer.server.port=3000" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
-          # Verificar health checks dos containers StorySpark
-          docker-compose exec -T storyspark-app curl -f http://localhost:3000/health.html || echo "Warning: App health check failed"
+          # Deploy da Landing Page (www.storyspark.com.br)
+          echo "🏠 Deploying landing page..."
+          docker run -d \
+            --name storyspark-www \
+            --network traefik \
+            --restart unless-stopped \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.storyspark-www.rule=Host(\`www.storyspark.com.br\`) || Host(\`storyspark.com.br\`)" \
+            --label "traefik.http.routers.storyspark-www.tls=true" \
+            --label "traefik.http.routers.storyspark-www.tls.certresolver=letsencrypt" \
+            --label "traefik.http.services.storyspark-www.loadbalancer.server.port=3000" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
-          # Verificar se Traefik está funcionando
-          docker ps | grep traefik || echo "Warning: Traefik not running"
+          # Deploy do Admin (admin.storyspark.com.br)
+          echo "⚙️ Deploying admin panel..."
+          docker run -d \
+            --name storyspark-admin \
+            --network traefik \
+            --restart unless-stopped \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.storyspark-admin.rule=Host(\`admin.storyspark.com.br\`)" \
+            --label "traefik.http.routers.storyspark-admin.tls=true" \
+            --label "traefik.http.routers.storyspark-admin.tls.certresolver=letsencrypt" \
+            --label "traefik.http.services.storyspark-admin.loadbalancer.server.port=3000" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
-          # Limpeza de imagens não utilizadas
-          docker system prune -f
+          # Aguardar containers iniciarem
+          echo "⏳ Waiting for containers to start..."
+          sleep 15
+          
+          # Verificar status dos containers
+          echo "📊 Container status:"
+          docker ps | grep storyspark
+          
+          # Verificar se Traefik está rodando
+          echo "🔍 Checking Traefik..."
+          docker ps | grep traefik || echo "⚠️ Warning: Traefik not running"
+          
+          # Limpeza de imagens antigas
+          echo "🧹 Cleaning up old images..."
+          docker image prune -f
+          
+          echo "✅ Deployment complete!"
+          echo "🌐 App should be available at:"
+          echo "   - https://app.storyspark.com.br"
+          echo "   - https://www.storyspark.com.br"
+          echo "   - https://admin.storyspark.com.br"
 
   # Job para notificação (opcional)
   notify:
