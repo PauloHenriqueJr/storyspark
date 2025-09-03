@@ -1,26 +1,10 @@
 import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
 
-// Cliente Supabase com service role para operações de log (apenas se necessário)
-let supabaseServiceRole: any = null;
-
-// Função para criar cliente service role apenas quando necessário
+// Para operações que precisam de service role, use sempre o cliente normal por enquanto
+// Até termos a service role key configurada adequadamente no ambiente
 function getServiceRoleClient() {
-  if (!supabaseServiceRole && import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-    supabaseServiceRole = createClient(
-      import.meta.env.VITE_SUPABASE_URL!,
-      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          storageKey: "storyspark-service-role-token", // Chave diferente
-        },
-      }
-    );
-  }
-  // Fallback para cliente normal se não tiver service role
-  return supabaseServiceRole || supabase;
+  // Sempre retornar o cliente singleton normal para evitar múltiplas instâncias
+  return supabase;
 }
 import {
   EmailTemplate,
