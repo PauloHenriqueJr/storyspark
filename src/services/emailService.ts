@@ -1,30 +1,40 @@
-import { supabase } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 
-// Cliente Supabase com service role para operações de log
-const supabaseServiceRole = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+// Cliente Supabase com service role para operações de log (apenas se necessário)
+let supabaseServiceRole: any = null;
+
+// Função para criar cliente service role apenas quando necessário
+function getServiceRoleClient() {
+  if (!supabaseServiceRole && import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+    supabaseServiceRole = createClient(
+      import.meta.env.VITE_SUPABASE_URL!,
+      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          storageKey: "storyspark-service-role-token", // Chave diferente
+        },
+      }
+    );
   }
-);
-import { 
-  EmailTemplate, 
-  TemplateVariables, 
+  // Fallback para cliente normal se não tiver service role
+  return supabaseServiceRole || supabase;
+}
+import {
+  EmailTemplate,
+  TemplateVariables,
   ProcessedTemplate,
-  emailTemplatesService
-} from './emailTemplatesService';
+  emailTemplatesService,
+} from "./emailTemplatesService";
 
 // Importações de fallback para compatibilidade durante migração
-import { 
-  processTemplate as processHardcodedTemplate, 
-  getTemplate as getHardcodedTemplate, 
-  validateTemplateVariables as validateHardcodedVariables
-} from './emailTemplates';
+import {
+  processTemplate as processHardcodedTemplate,
+  getTemplate as getHardcodedTemplate,
+  validateTemplateVariables as validateHardcodedVariables,
+} from "./emailTemplates";
 
 // Interface para a resposta da API do Mailtrap
 interface MailtrapResponse {
@@ -64,13 +74,13 @@ export interface WaitlistConfirmationData {
 
 class EmailService {
   private isInitialized = false;
-  private readonly baseUrl = 'https://send.api.mailtrap.io/api/send';
+  private readonly baseUrl = "https://send.api.mailtrap.io/api/send";
 
   private config = {
-    token: '',
-    senderEmail: 'onboarding@resend.dev',
-    senderName: 'StorySpark',
-    accountId: '2428199'
+    token: "",
+    senderEmail: "onboarding@resend.dev",
+    senderName: "StorySpark",
+    accountId: "2428199",
   };
 
   constructor() {
@@ -79,9 +89,12 @@ class EmailService {
 
   private initializeFromEnv() {
     // Tentar carregar configurações das variáveis de ambiente
-    const token = import.meta.env.VITE_MAILTRAP_API_TOKEN || '552c751d51d3c55f146fc238df0264c9';
-    const senderEmail = import.meta.env.VITE_DEFAULT_FROM_EMAIL || 'onboarding@resend.dev';
-    const accountId = import.meta.env.VITE_MAILTRAP_ACCOUNT_ID || '2428199';
+    const token =
+      import.meta.env.VITE_MAILTRAP_API_TOKEN ||
+      "552c751d51d3c55f146fc238df0264c9";
+    const senderEmail =
+      import.meta.env.VITE_DEFAULT_FROM_EMAIL || "onboarding@resend.dev";
+    const accountId = import.meta.env.VITE_MAILTRAP_ACCOUNT_ID || "2428199";
 
     if (token) {
       this.config.token = token;
@@ -95,12 +108,12 @@ class EmailService {
     try {
       // Validar se o token está presente
       if (!this.config.token) {
-        throw new Error('Token da API do Mailtrap não configurado');
+        throw new Error("Token da API do Mailtrap não configurado");
       }
       this.isInitialized = true;
-      console.log('✅ EmailService inicializado com sucesso');
+      console.log("✅ EmailService inicializado com sucesso");
     } catch (error) {
-      console.error('❌ Erro ao inicializar EmailService:', error);
+      console.error("❌ Erro ao inicializar EmailService:", error);
       this.isInitialized = false;
     }
   }
@@ -118,27 +131,33 @@ class EmailService {
     // Usar Edge Function como proxy para evitar problemas de CORS
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (!supabaseUrl) {
-      throw new Error('URL do Supabase não configurada');
+      throw new Error("URL do Supabase não configurada");
     }
 
     // Obter token de sessão do usuário autenticado
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      throw new Error('Usuário não autenticado');
+      throw new Error("Usuário não autenticado");
     }
 
     const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Erro no proxy de e-mail: ${response.status} - ${JSON.stringify(errorData)}`);
+      throw new Error(
+        `Erro no proxy de e-mail: ${response.status} - ${JSON.stringify(
+          errorData
+        )}`
+      );
     }
 
     return await response.json();
@@ -150,40 +169,58 @@ class EmailService {
   }
 
   // Enviar e-mail genérico
-  public async sendEmail(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string; warning?: string }> {
+  public async sendEmail(
+    options: SendEmailOptions
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+    warning?: string;
+  }> {
     if (!this.isConfigured()) {
       return {
         success: false,
-        error: 'EmailService não está configurado. Verifique as credenciais do Mailtrap.'
+        error:
+          "EmailService não está configurado. Verifique as credenciais do Mailtrap.",
       };
     }
 
     try {
-      console.log('📧 Enviando e-mail via Edge Function...');
-      
+      console.log("📧 Enviando e-mail via Edge Function...");
+
       let htmlContent = options.html;
       let textContent = options.text;
 
       // Se um template foi especificado, processar o template
       if (options.template && options.variables) {
-        const template = await emailTemplatesService.getTemplateWithFallback(options.template);
+        const template = await emailTemplatesService.getTemplateWithFallback(
+          options.template
+        );
         if (!template) {
           return {
             success: false,
-            error: `Template '${options.template}' não encontrado`
+            error: `Template '${options.template}' não encontrado`,
           };
         }
 
         // Validar variáveis do template
-        const validation = emailTemplatesService.validateTemplateVariables(template, options.variables);
+        const validation = emailTemplatesService.validateTemplateVariables(
+          template,
+          options.variables
+        );
         if (!validation.isValid) {
           return {
             success: false,
-            error: `Variáveis do template inválidas: ${validation.missingVariables?.join(', ')}`
+            error: `Variáveis do template inválidas: ${validation.missingVariables?.join(
+              ", "
+            )}`,
           };
         }
 
-        const processedTemplate = emailTemplatesService.processTemplate(template, options.variables);
+        const processedTemplate = emailTemplatesService.processTemplate(
+          template,
+          options.variables
+        );
         htmlContent = processedTemplate.html;
         textContent = processedTemplate.text;
       }
@@ -191,13 +228,13 @@ class EmailService {
       const payload = {
         from: {
           email: this.config.senderEmail,
-          name: this.config.senderName
+          name: this.config.senderName,
         },
         to: options.to,
         subject: options.subject,
         html: htmlContent,
         text: textContent,
-        category: options.category || 'general'
+        category: options.category || "general",
       };
 
       // Registrar log inicial
@@ -207,16 +244,16 @@ class EmailService {
         sender_email: this.config.senderEmail,
         sender_name: this.config.senderName,
         subject: options.subject,
-        email_type: options.category || 'general',
-        status: 'pending'
+        email_type: options.category || "general",
+        status: "pending",
       });
 
       try {
         const response = await this.makeRequest(payload);
-        
+
         // A resposta do Mailtrap contém message_ids (array) em vez de message_id
-        const messageId = response.message_ids?.[0] || 'unknown';
-        
+        const messageId = response.message_ids?.[0] || "unknown";
+
         // Atualizar log com sucesso
         if (logId) {
           const metadata = { response };
@@ -224,283 +261,363 @@ class EmailService {
           if (response.originalRecipient) {
             metadata.originalRecipient = response.originalRecipient;
           }
-          
+
           await this.updateEmailLog(logId, {
-            status: 'sent',
+            status: "sent",
             provider_message_id: messageId,
             sent_at: new Date().toISOString(),
-            metadata
+            metadata,
           });
         }
 
         // Lógica de modo de teste removida - não mais necessária
-        
-        console.log('✅ E-mail enviado com sucesso:', response);
+
+        console.log("✅ E-mail enviado com sucesso:", response);
         return {
           success: true,
-          messageId: messageId
+          messageId: messageId,
         };
       } catch (sendError: any) {
         // Atualizar log com erro
         if (logId) {
           await this.updateEmailLog(logId, {
-            status: 'failed',
+            status: "failed",
             error_message: sendError.message,
-            metadata: { error: sendError.message }
+            metadata: { error: sendError.message },
           });
         }
         throw sendError;
       }
     } catch (error: any) {
-      console.error('❌ Erro ao enviar e-mail:', error);
+      console.error("❌ Erro ao enviar e-mail:", error);
 
       return {
         success: false,
-        error: error.message || 'Erro desconhecido ao enviar e-mail'
+        error: error.message || "Erro desconhecido ao enviar e-mail",
       };
     }
   }
 
   // Enviar convite da waitlist usando template
-  public async sendWaitlistInvite(data: WaitlistInviteData): Promise<{ success: boolean; messageId?: string; error?: string; warning?: string }> {
+  public async sendWaitlistInvite(
+    data: WaitlistInviteData
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+    warning?: string;
+  }> {
     try {
-      const template = await emailTemplatesService.getTemplateWithFallback('waitlist-invite');
+      const template = await emailTemplatesService.getTemplateWithFallback(
+        "waitlist-invite"
+      );
       if (!template) {
         return {
           success: false,
-          error: 'Template de convite da waitlist não encontrado'
+          error: "Template de convite da waitlist não encontrado",
         };
       }
-      
+
       const loginUrl = `https://storyspark.com/auth?invite=${data.inviteCode}`;
       const variables: TemplateVariables = {
-        userName: data.name || 'Usuário',
+        userName: data.name || "Usuário",
         inviteCode: data.inviteCode,
         loginUrl,
-        supportEmail: 'suporte@storyspark.com',
-        expiresAt: data.expiresAt
+        supportEmail: "suporte@storyspark.com",
+        expiresAt: data.expiresAt,
       };
-      
+
       // Validar variáveis obrigatórias
-      const validation = emailTemplatesService.validateTemplateVariables(template, variables);
+      const validation = emailTemplatesService.validateTemplateVariables(
+        template,
+        variables
+      );
       if (!validation.isValid) {
         return {
           success: false,
-          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(', ')}`
+          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(
+            ", "
+          )}`,
         };
       }
-      
-      const processedTemplate = emailTemplatesService.processTemplate(template, variables);
-      
+
+      const processedTemplate = emailTemplatesService.processTemplate(
+        template,
+        variables
+      );
+
       return this.sendEmail({
         to: [{ email: data.email, name: data.name }],
         subject: processedTemplate.subject,
         html: processedTemplate.html,
         text: processedTemplate.text,
-        category: 'waitlist_invite'
+        category: "waitlist_invite",
       });
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || 'Erro ao processar template de convite'
+        error: error.message || "Erro ao processar template de convite",
       };
     }
   }
 
   // Enviar confirmação da waitlist usando template
-  public async sendWaitlistConfirmation(data: WaitlistConfirmationData): Promise<{ success: boolean; messageId?: string; error?: string; warning?: string }> {
+  public async sendWaitlistConfirmation(
+    data: WaitlistConfirmationData
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+    warning?: string;
+  }> {
     try {
-      const template = await emailTemplatesService.getTemplateWithFallback('waitlist-confirmation');
+      const template = await emailTemplatesService.getTemplateWithFallback(
+        "waitlist-confirmation"
+      );
       if (!template) {
         return {
           success: false,
-          error: 'Template de confirmação da waitlist não encontrado'
+          error: "Template de confirmação da waitlist não encontrado",
         };
       }
-      
+
       // Formatar ideias selecionadas para o template
-      let selectedIdeasHtml = '';
-      let selectedIdeasText = '';
-      
+      let selectedIdeasHtml = "";
+      let selectedIdeasText = "";
+
       if (data.selectedIdeas && data.selectedIdeas.length > 0) {
         selectedIdeasHtml = data.selectedIdeas
-          .map(idea => `<div class="idea-item">${idea}</div>`)
-          .join('');
+          .map((idea) => `<div class="idea-item">${idea}</div>`)
+          .join("");
         selectedIdeasText = data.selectedIdeas
-          .map(idea => `- ${idea}`)
-          .join('\n');
+          .map((idea) => `- ${idea}`)
+          .join("\n");
       }
-      
+
       const variables: TemplateVariables = {
         userEmail: data.email,
         selectedIdeas: selectedIdeasHtml,
         waitlistPosition: data.waitlistPosition.toString(),
-        supportEmail: 'suporte@storyspark.com'
+        supportEmail: "suporte@storyspark.com",
       };
-      
+
       // Validar variáveis obrigatórias
-      const validation = emailTemplatesService.validateTemplateVariables(template, variables);
+      const validation = emailTemplatesService.validateTemplateVariables(
+        template,
+        variables
+      );
       if (!validation.isValid) {
         return {
           success: false,
-          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(', ')}`
+          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(
+            ", "
+          )}`,
         };
       }
-      
-      const processedTemplate = emailTemplatesService.processTemplate(template, variables);
-      
+
+      const processedTemplate = emailTemplatesService.processTemplate(
+        template,
+        variables
+      );
+
       // Substituir as ideias também na versão texto
       let finalText = processedTemplate.text;
       if (selectedIdeasText) {
-        finalText = finalText.replace('{{selectedIdeas}}', selectedIdeasText);
+        finalText = finalText.replace("{{selectedIdeas}}", selectedIdeasText);
       }
-      
+
       return this.sendEmail({
         to: [{ email: data.email }],
         subject: processedTemplate.subject,
         html: processedTemplate.html,
         text: finalText,
-        category: 'waitlist_confirmation'
+        category: "waitlist_confirmation",
       });
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || 'Erro ao processar template de confirmação'
+        error: error.message || "Erro ao processar template de confirmação",
       };
     }
   }
 
   // Enviar e-mail de boas-vindas usando template
-  public async sendWelcomeEmail(email: string, name?: string): Promise<{ success: boolean; messageId?: string; error?: string; warning?: string }> {
+  public async sendWelcomeEmail(
+    email: string,
+    name?: string
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+    warning?: string;
+  }> {
     try {
-      const template = await emailTemplatesService.getTemplateWithFallback('welcome');
+      const template = await emailTemplatesService.getTemplateWithFallback(
+        "welcome"
+      );
       if (!template) {
         return {
           success: false,
-          error: 'Template de boas-vindas não encontrado'
+          error: "Template de boas-vindas não encontrado",
         };
       }
-      
-      const dashboardUrl = 'https://storyspark.com/dashboard';
-      const tutorialUrl = 'https://storyspark.com/tutorial';
+
+      const dashboardUrl = "https://storyspark.com/dashboard";
+      const tutorialUrl = "https://storyspark.com/tutorial";
       const variables: TemplateVariables = {
-        userName: name || 'Usuário',
+        userName: name || "Usuário",
         dashboardUrl,
         tutorialUrl,
-        supportEmail: 'suporte@storyspark.com'
+        supportEmail: "suporte@storyspark.com",
       };
-      
+
       // Validar variáveis obrigatórias
-      const validation = emailTemplatesService.validateTemplateVariables(template, variables);
+      const validation = emailTemplatesService.validateTemplateVariables(
+        template,
+        variables
+      );
       if (!validation.isValid) {
         return {
           success: false,
-          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(', ')}`
+          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(
+            ", "
+          )}`,
         };
       }
-      
-      const processedTemplate = emailTemplatesService.processTemplate(template, variables);
-      
+
+      const processedTemplate = emailTemplatesService.processTemplate(
+        template,
+        variables
+      );
+
       return this.sendEmail({
         to: [{ email, name }],
         subject: processedTemplate.subject,
         html: processedTemplate.html,
         text: processedTemplate.text,
-        category: 'welcome'
+        category: "welcome",
       });
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || 'Erro ao processar template de boas-vindas'
+        error: error.message || "Erro ao processar template de boas-vindas",
       };
     }
   }
 
   // Enviar e-mail de teste para verificar configuração
-  public async sendTestEmail(email: string): Promise<{ success: boolean; messageId?: string; error?: string; warning?: string }> {
+  public async sendTestEmail(
+    email: string
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+    warning?: string;
+  }> {
     try {
-      const template = await emailTemplatesService.getTemplateWithFallback('test');
+      const template = await emailTemplatesService.getTemplateWithFallback(
+        "test"
+      );
       if (!template) {
         return {
           success: false,
-          error: 'Template de teste não encontrado'
+          error: "Template de teste não encontrado",
         };
       }
-      
+
       const variables: TemplateVariables = {
-        testDate: new Date().toLocaleString('pt-BR'),
-        configStatus: 'Funcionando corretamente'
+        testDate: new Date().toLocaleString("pt-BR"),
+        configStatus: "Funcionando corretamente",
       };
-      
-      const processedTemplate = emailTemplatesService.processTemplate(template, variables);
-      
+
+      const processedTemplate = emailTemplatesService.processTemplate(
+        template,
+        variables
+      );
+
       return this.sendEmail({
-        to: [{ email, name: 'Administrador' }],
+        to: [{ email, name: "Administrador" }],
         subject: processedTemplate.subject,
         html: processedTemplate.html,
         text: processedTemplate.text,
-        category: 'test'
+        category: "test",
       });
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || 'Erro ao enviar e-mail de teste'
+        error: error.message || "Erro ao enviar e-mail de teste",
       };
     }
   }
-  
+
   // Enviar e-mail usando template personalizado
   public async sendTemplateEmail(
-    templateId: string, 
-    recipients: EmailRecipient[], 
+    templateId: string,
+    recipients: EmailRecipient[],
     variables: TemplateVariables,
     options?: Partial<SendEmailOptions>
-  ): Promise<{ success: boolean; messageId?: string; error?: string; warning?: string }> {
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+    warning?: string;
+  }> {
     try {
       // Buscar template do banco de dados com fallback
-      const template = await emailTemplatesService.getTemplateWithFallback(templateId);
+      const template = await emailTemplatesService.getTemplateWithFallback(
+        templateId
+      );
       if (!template) {
         return {
           success: false,
-          error: `Template '${templateId}' não encontrado`
+          error: `Template '${templateId}' não encontrado`,
         };
       }
-      
+
       // Validar variáveis obrigatórias
-      const validation = emailTemplatesService.validateTemplateVariables(template, variables);
+      const validation = emailTemplatesService.validateTemplateVariables(
+        template,
+        variables
+      );
       if (!validation.isValid) {
         return {
           success: false,
-          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(', ')}`
+          error: `Variáveis obrigatórias ausentes: ${validation.missingVariables.join(
+            ", "
+          )}`,
         };
       }
-      
-      const processedTemplate = emailTemplatesService.processTemplate(template, variables);
-      
+
+      const processedTemplate = emailTemplatesService.processTemplate(
+        template,
+        variables
+      );
+
       const emailOptions: SendEmailOptions = {
         to: recipients,
         subject: processedTemplate.subject,
         html: processedTemplate.html,
         text: processedTemplate.text,
         category: templateId,
-        ...options
+        ...options,
       };
-      
+
       return await this.sendEmail(emailOptions);
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || `Erro ao enviar e-mail com template '${templateId}'`
+        error:
+          error.message || `Erro ao enviar e-mail com template '${templateId}'`,
       };
     }
   }
-  
+
   // Listar todos os templates disponíveis
   public async getAvailableTemplates(): Promise<EmailTemplate[]> {
     try {
       return await emailTemplatesService.getAllTemplatesWithFallback();
     } catch (error) {
-      console.error('Erro ao buscar templates disponíveis:', error);
+      console.error("Erro ao buscar templates disponíveis:", error);
       return [];
     }
   }
@@ -513,40 +630,44 @@ class EmailService {
     sender_name: string;
     subject: string;
     email_type: string;
-    status: 'pending' | 'sent' | 'failed';
+    status: "pending" | "sent" | "failed";
     workspace_id?: string;
     user_id?: string;
   }): Promise<string | null> {
     try {
       // Obter usuário atual
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       // Se não há usuário autenticado, não criar log (modo desenvolvimento)
       if (!user) {
-        console.warn('Usuário não autenticado - log de e-mail não será criado');
+        console.warn("Usuário não autenticado - log de e-mail não será criado");
         return null;
       }
 
       // Obter workspace_id do usuário se não fornecido
       let workspaceId = data.workspace_id;
       if (!workspaceId) {
-        const { data: memberData } = await supabaseServiceRole
-          .from('workspace_members')
-          .select('workspace_id')
-          .eq('user_id', user.id)
+        const { data: memberData } = await getServiceRoleClient()
+          .from("workspace_members")
+          .select("workspace_id")
+          .eq("user_id", user.id)
           .single();
-        
+
         workspaceId = memberData?.workspace_id;
       }
 
       // Se ainda não há workspace_id, não criar log
       if (!workspaceId) {
-        console.warn('Workspace não encontrado - log de e-mail não será criado');
+        console.warn(
+          "Workspace não encontrado - log de e-mail não será criado"
+        );
         return null;
       }
 
-      const { data: logData, error } = await supabaseServiceRole
-        .from('email_logs')
+      const { data: logData, error } = await getServiceRoleClient()
+        .from("email_logs")
         .insert({
           workspace_id: workspaceId,
           user_id: data.user_id || user.id,
@@ -557,36 +678,39 @@ class EmailService {
           subject: data.subject,
           email_type: data.email_type,
           status: data.status,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         })
-        .select('id')
+        .select("id")
         .single();
-      
+
       if (error) throw error;
       return logData.id;
     } catch (error) {
-      console.error('Erro ao criar log de e-mail:', error);
+      console.error("Erro ao criar log de e-mail:", error);
       return null;
     }
   }
 
   // Atualizar log de e-mail
-  private async updateEmailLog(logId: string, updates: {
-    status?: 'pending' | 'sent' | 'failed';
-    provider_message_id?: string;
-    sent_at?: string;
-    error_message?: string;
-    metadata?: any;
-  }) {
+  private async updateEmailLog(
+    logId: string,
+    updates: {
+      status?: "pending" | "sent" | "failed";
+      provider_message_id?: string;
+      sent_at?: string;
+      error_message?: string;
+      metadata?: any;
+    }
+  ) {
     try {
-      const { error } = await supabaseServiceRole
-        .from('email_logs')
+      const { error } = await getServiceRoleClient()
+        .from("email_logs")
         .update(updates)
-        .eq('id', logId);
-      
+        .eq("id", logId);
+
       if (error) throw error;
     } catch (error) {
-      console.error('Erro ao atualizar log de e-mail:', error);
+      console.error("Erro ao atualizar log de e-mail:", error);
     }
   }
 
@@ -594,39 +718,39 @@ class EmailService {
   public async getEmailStats(emailType?: string) {
     try {
       let query = supabase
-        .from('email_logs')
-        .select('status, email_type, sent_at, created_at');
-      
+        .from("email_logs")
+        .select("status, email_type, sent_at, created_at");
+
       if (emailType) {
-        query = query.eq('email_type', emailType);
+        query = query.eq("email_type", emailType);
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) throw error;
-      
+
       const stats = {
         total: data.length,
-        sent: data.filter(log => log.status === 'sent').length,
-        failed: data.filter(log => log.status === 'failed').length,
-        pending: data.filter(log => log.status === 'pending').length,
-        byType: {} as Record<string, number>
+        sent: data.filter((log) => log.status === "sent").length,
+        failed: data.filter((log) => log.status === "failed").length,
+        pending: data.filter((log) => log.status === "pending").length,
+        byType: {} as Record<string, number>,
       };
-      
-      data.forEach(log => {
+
+      data.forEach((log) => {
         stats.byType[log.email_type] = (stats.byType[log.email_type] || 0) + 1;
       });
-      
+
       return stats;
     } catch (error) {
-      console.error('Erro ao obter estatísticas de e-mail:', error);
+      console.error("Erro ao obter estatísticas de e-mail:", error);
       return null;
     }
   }
 
   // Obter logs de e-mail com filtros
   public async getEmailLogs(filters?: {
-    status?: 'pending' | 'sent' | 'failed';
+    status?: "pending" | "sent" | "failed";
     email_type?: string;
     recipient_email?: string;
     limit?: number;
@@ -634,36 +758,39 @@ class EmailService {
   }) {
     try {
       let query = supabase
-        .from('email_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
+        .from("email_logs")
+        .select("*")
+        .order("created_at", { ascending: false });
+
       if (filters?.status) {
-        query = query.eq('status', filters.status);
+        query = query.eq("status", filters.status);
       }
-      
+
       if (filters?.email_type) {
-        query = query.eq('email_type', filters.email_type);
+        query = query.eq("email_type", filters.email_type);
       }
-      
+
       if (filters?.recipient_email) {
-        query = query.eq('recipient_email', filters.recipient_email);
+        query = query.eq("recipient_email", filters.recipient_email);
       }
-      
+
       if (filters?.limit) {
         query = query.limit(filters.limit);
       }
-      
+
       if (filters?.offset) {
-        query = query.range(filters.offset, (filters.offset + (filters.limit || 50)) - 1);
+        query = query.range(
+          filters.offset,
+          filters.offset + (filters.limit || 50) - 1
+        );
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Erro ao obter logs de e-mail:', error);
+      console.error("Erro ao obter logs de e-mail:", error);
       return null;
     }
   }

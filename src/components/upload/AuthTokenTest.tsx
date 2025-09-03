@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
 import { Key, AlertTriangle } from 'lucide-react';
 
 const AuthTokenTest: React.FC = () => {
@@ -36,19 +35,8 @@ const AuthTokenTest: React.FC = () => {
             testResults.push(`✅ Token presente: ${session.access_token ? 'Sim' : 'Não'}`);
             testResults.push(`✅ Token expira em: ${new Date(session.expires_at! * 1000).toLocaleString()}`);
 
-            // 2. Criar cliente com token explícito
-            const authenticatedClient = createClient(
-                import.meta.env.VITE_SUPABASE_URL,
-                import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                {
-                    global: {
-                        headers: {
-                            'Authorization': `Bearer ${session.access_token}`,
-                            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-                        }
-                    }
-                }
-            );
+            // 2. Usar instância singleton do Supabase (já autenticada automaticamente)
+            const authenticatedClient = supabase;
 
             // 3. Testar INSERT com cliente autenticado explicitamente
             const testData = {

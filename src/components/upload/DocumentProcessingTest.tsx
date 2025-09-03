@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { testDocumentProcessing } from '@/utils/testDocumentProcessing';
 import { supabase } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
 
 const DocumentProcessingTest: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -20,38 +19,27 @@ const DocumentProcessingTest: React.FC = () => {
 
     setLoading(true);
     setResult(null);
-    
+
     try {
       // VERIFICAR SESSÃO ATUAL
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       console.log("Dados da sessão:", sessionData);
       console.log("Erro da sessão:", sessionError);
-      
+
       if (!sessionData.session) {
         throw new Error('Nenhuma sessão ativa encontrada');
       }
-      
+
       console.log("Token JWT:", sessionData.session.access_token ? 'Presente' : 'Ausente');
       console.log("User ID da sessão:", sessionData.session.user?.id);
       console.log("Token completo (primeiros 50 chars):", sessionData.session.access_token?.substring(0, 50));
-      
-      // CRIAR UM NOVO CLIENTE SUPABASE COM O TOKEN EXPLÍCITO
-      const authenticatedSupabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        {
-          global: {
-            headers: {
-              'Authorization': `Bearer ${sessionData.session.access_token}`,
-              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-            }
-          }
-        }
-      );
-      
+
+      // Usar a instância singleton do Supabase (já autenticada automaticamente)
+      const authenticatedSupabase = supabase;
+
       // TESTE DE INSERÇÃO DIRETA COM CLIENTE AUTENTICADO
       console.log("Tentando inserir diretamente na tabela ai_processing_jobs com cliente autenticado...");
-      
+
       const { data, error } = await authenticatedSupabase
         .from('ai_processing_jobs')
         .insert({
@@ -82,21 +70,21 @@ const DocumentProcessingTest: React.FC = () => {
   return (
     <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
       <h3 className="text-lg font-semibold mb-2">Teste de Permissão (INSERT)</h3>
-      <Button 
-        onClick={handleTestProcessing} 
+      <Button
+        onClick={handleTestProcessing}
         disabled={loading || !user}
         className="w-full"
       >
         {loading ? 'Testando Inserção...' : 'Testar Inserção Direta'}
       </Button>
-      
+
       {result && (
         <div className={`mt-3 p-3 rounded ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           <p className="text-sm font-bold">{result.success ? 'SUCESSO' : 'FALHA'}</p>
           <p className="text-sm">{result.message}</p>
         </div>
       )}
-      
+
       {!user && (
         <div className="mt-3 p-3 rounded bg-yellow-100 text-yellow-800">
           <p className="text-sm">Faça login para testar a permissão de inserção.</p>
