@@ -1,7 +1,7 @@
 # 🚀 StorySpark - Plataforma de IA para Criação de Copies
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Status-Em%20Desenvolvimento-orange" alt="Status">
+  <img src="https://img.shields.io/badge/Status-Em%20Produção-green" alt="Status">
   <img src="https://img.shields.io/badge/Versão-1.0.0-blue" alt="Versão">
   <img src="https://img.shields.io/badge/React-18.3.1-blue" alt="React">
   <img src="https://img.shields.io/badge/TypeScript-5.0-blue" alt="TypeScript">
