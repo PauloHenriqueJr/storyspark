@@ -30,6 +30,10 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Set lowercase repository name
+      id: repo
+      run: echo "lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
     - name: Build and push Docker image (if forced)
       if: github.event.inputs.force_rebuild == 'true'
       uses: docker/build-push-action@v5
@@ -37,7 +41,7 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        tags: ${{ env.REGISTRY }}/${{ steps.repo.outputs.lowercase }}:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -76,7 +80,7 @@ jobs:
           # Step 3: Check/Pull Image
           echo "3️⃣ CHECKING STORYSPARK IMAGE:"
           REGISTRY="ghcr.io"
-          IMAGE_NAME="${{ github.repository }}"
+          IMAGE_NAME="${{ steps.repo.outputs.lowercase }}"
           FULL_IMAGE="$REGISTRY/$IMAGE_NAME:latest"
           
           echo "Looking for image: $FULL_IMAGE"
