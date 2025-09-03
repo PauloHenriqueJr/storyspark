@@ -110,7 +110,7 @@ jobs:
           
           # Definir variáveis
           REGISTRY="ghcr.io"
-          IMAGE_NAME="${{ steps.repo.outputs.lowercase }}"
+          IMAGE_NAME="paulohenriquejr/storyspark"
           FULL_IMAGE="$REGISTRY/$IMAGE_NAME:latest"
           
           echo "📦 Using image: $FULL_IMAGE"

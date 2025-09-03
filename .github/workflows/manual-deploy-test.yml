@@ -80,7 +80,7 @@ jobs:
           # Step 3: Check/Pull Image
           echo "3️⃣ CHECKING STORYSPARK IMAGE:"
           REGISTRY="ghcr.io"
-          IMAGE_NAME="${{ steps.repo.outputs.lowercase }}"
+          IMAGE_NAME="paulohenriquejr/storyspark"
           FULL_IMAGE="$REGISTRY/$IMAGE_NAME:latest"
           
           echo "Looking for image: $FULL_IMAGE"
