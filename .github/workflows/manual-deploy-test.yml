@@ -1,0 +1,194 @@
+name: Manual Deploy Test
+on:
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild Docker image'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test-manual-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker image (if forced)
+      if: github.event.inputs.force_rebuild == 'true'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Manual VPS Deploy Test
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          echo "🔧 Manual Deploy Test - Step by Step"
+          echo "===================================="
+          echo "📅 Timestamp: $(date)"
+          echo ""
+          
+          # Step 1: Check Docker
+          echo "1️⃣ CHECKING DOCKER SERVICE:"
+          docker --version
+          systemctl is-active docker
+          echo "✅ Docker check complete"
+          echo ""
+          
+          # Step 2: Test GHCR Login
+          echo "2️⃣ TESTING GITHUB CONTAINER REGISTRY LOGIN:"
+          echo "Attempting login..."
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          login_status=$?
+          if [ $login_status -eq 0 ]; then
+            echo "✅ GHCR login successful"
+          else
+            echo "❌ GHCR login failed (exit code: $login_status)"
+          fi
+          echo ""
+          
+          # Step 3: Check/Pull Image
+          echo "3️⃣ CHECKING STORYSPARK IMAGE:"
+          REGISTRY="ghcr.io"
+          IMAGE_NAME="${{ github.repository }}"
+          FULL_IMAGE="$REGISTRY/$IMAGE_NAME:latest"
+          
+          echo "Looking for image: $FULL_IMAGE"
+          
+          # Check if image exists locally
+          if docker images | grep -q "$IMAGE_NAME"; then
+            echo "✅ Image found locally"
+            docker images | grep "$IMAGE_NAME"
+          else
+            echo "❌ Image not found locally"
+          fi
+          
+          # Try to pull image
+          echo "Attempting to pull latest image..."
+          docker pull $FULL_IMAGE
+          pull_status=$?
+          if [ $pull_status -eq 0 ]; then
+            echo "✅ Image pull successful"
+            docker images | grep "$IMAGE_NAME"
+          else
+            echo "❌ Image pull failed (exit code: $pull_status)"
+            echo "This indicates the image doesn't exist in GHCR or there's an access issue"
+          fi
+          echo ""
+          
+          # Step 4: Network Check
+          echo "4️⃣ CHECKING DOCKER NETWORKS:"
+          echo "Available networks:"
+          docker network ls
+          
+          if docker network ls | grep -q traefik; then
+            echo "✅ Traefik network exists"
+          else
+            echo "⚠️ Traefik network not found, creating..."
+            docker network create traefik
+          fi
+          echo ""
+          
+          # Step 5: Clean up existing containers
+          echo "5️⃣ CLEANING UP EXISTING CONTAINERS:"
+          for container in storyspark-app storyspark-www storyspark-admin storyspark-test; do
+            if docker ps -a | grep -q $container; then
+              echo "Removing existing $container..."
+              docker stop $container 2>/dev/null || true
+              docker rm $container 2>/dev/null || true
+            fi
+          done
+          echo "✅ Cleanup complete"
+          echo ""
+          
+          # Step 6: Test single container deploy (only if image pull was successful)
+          if [ $pull_status -eq 0 ]; then
+            echo "6️⃣ TESTING SINGLE CONTAINER DEPLOYMENT:"
+            echo "Deploying test container..."
+            
+            docker run -d \
+              --name storyspark-test \
+              --network traefik \
+              --restart unless-stopped \
+              --label "traefik.enable=true" \
+              --label "traefik.http.routers.storyspark-test.rule=Host(\`test.storyspark.com.br\`)" \
+              --label "traefik.http.routers.storyspark-test.tls=true" \
+              --label "traefik.http.routers.storyspark-test.tls.certresolver=letsencrypt" \
+              --label "traefik.http.services.storyspark-test.loadbalancer.server.port=3000" \
+              $FULL_IMAGE
+            
+            deploy_status=$?
+            sleep 10
+            
+            if [ $deploy_status -eq 0 ] && docker ps | grep -q storyspark-test; then
+              echo "✅ Test container deployed successfully"
+              echo "Container info:"
+              docker ps | grep storyspark-test
+              echo ""
+              echo "Container logs (last 10 lines):"
+              docker logs storyspark-test --tail=10
+            else
+              echo "❌ Test container deployment failed"
+              if docker ps -a | grep -q storyspark-test; then
+                echo "Container logs:"
+                docker logs storyspark-test
+              fi
+            fi
+            
+            # Cleanup test container
+            echo "Cleaning up test container..."
+            docker stop storyspark-test 2>/dev/null || true
+            docker rm storyspark-test 2>/dev/null || true
+          else
+            echo "6️⃣ SKIPPING CONTAINER TEST (image pull failed)"
+          fi
+          echo ""
+          
+          # Step 7: Summary
+          echo "📊 DEPLOYMENT TEST SUMMARY:"
+          echo "=========================="
+          echo "• Docker service: ✅ Active"
+          echo "• GHCR login: $([ $login_status -eq 0 ] && echo '✅ Success' || echo '❌ Failed')"
+          echo "• Image pull: $([ $pull_status -eq 0 ] && echo '✅ Success' || echo '❌ Failed')"
+          echo "• Traefik network: ✅ Available"
+          
+          if [ $pull_status -ne 0 ]; then
+            echo ""
+            echo "🔧 NEXT STEPS:"
+            echo "The image pull failed, which means either:"
+            echo "1. The Docker build in GitHub Actions is failing"
+            echo "2. The image is not being pushed to GHCR"
+            echo "3. There's a permissions issue with GHCR"
+            echo ""
+            echo "💡 Check GitHub Actions logs for the build job"
+            echo "💡 Verify GitHub Container Registry permissions"
+          fi
+          
+          echo ""
+          echo "✅ Manual deploy test complete!"
