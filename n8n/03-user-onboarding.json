@@ -1,0 +1,76 @@
+{
+  "name": "03 - User Onboarding (Provisioning)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "user_created",
+        "options": {"responseData": "{\"ok\":true}"}
+      },
+      "id": "Webhook",
+      "name": "Webhook: /user_created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 240]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Expecting { userId, email, name }\nconst e = items[0].json;\nif (!e.email || !e.userId) throw new Error('Missing user fields');\nreturn [{ json: { userId: e.userId, email: e.email, name: e.name || '' } }];"
+      },
+      "id": "Parse",
+      "name": "Parse Payload",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [440, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/workspaces",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ owner_id: {{$json.userId}}, name: 'Default Workspace' }"
+      },
+      "id": "CreateWorkspace",
+      "name": "Create Workspace",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "url": "https://api.stripe.com/v1/customers",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {"parameter": [{"name": "Content-Type", "value": "application/x-www-form-urlencoded"}]},
+        "authentication": "genericCredentialType"
+      },
+      "id": "CreateStripeCustomer",
+      "name": "Stripe: Create Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [920, 240],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "stripe-secret-placeholder",
+          "name": "Stripe Secret"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: /user_created": {"main": [[{"node": "Parse Payload", "type": "main", "index": 0}]]},
+    "Parse Payload": {"main": [[{"node": "Create Workspace", "type": "main", "index": 0}, {"node": "Stripe: Create Customer", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {},
+  "staticData": null
+}
+

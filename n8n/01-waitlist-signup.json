@@ -1,0 +1,77 @@
+{
+  "name": "01 - Waitlist Signup (Confirm + Enrich)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ManualTrigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/waitlist_signups?select=*&order=created_at.desc&limit=10",
+        "options": {
+          "response": "json",
+          "ignoreResponseCode": true
+        },
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Accept-Profile", "value": "public"},
+            {"name": "Content-Profile", "value": "public"}
+          ]
+        }
+      },
+      "id": "FetchRecentSignups",
+      "name": "Fetch Recent Signups",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Map to edge function payloads for Resend confirmation\nconst out = [];\nfor (const item of items) {\n  const r = item.json;\n  if (!r.email) continue;\n  out.push({ json: {\n    path: 'send-email',\n    body: { to: r.email, subject: 'Confirmação de inscrição', html: `<p>Obrigado por se inscrever, ${r.email}!</p>` }\n  }});\n}\nreturn out;"
+      },
+      "id": "MapToEmailPayloads",
+      "name": "Map To Email Payloads",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.path}}",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {"parameter": [{"name": "Content-Type", "value": "application/json"}]},
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={{$json.body}}"
+      },
+      "id": "EdgeSendEmail",
+      "name": "Edge Function: send-email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "resend-edge-function-placeholder",
+          "name": "Resend Edge Function"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {"main": [[{"node": "Fetch Recent Signups", "type": "main", "index": 0}]]},
+    "Fetch Recent Signups": {"main": [[{"node": "Map To Email Payloads", "type": "main", "index": 0}]]},
+    "Map To Email Payloads": {"main": [[{"node": "Edge Function: send-email", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {},
+  "staticData": null
+}
+

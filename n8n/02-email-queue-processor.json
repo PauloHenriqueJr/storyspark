@@ -1,0 +1,98 @@
+{
+  "name": "02 - Email Queue Processor",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {"item": [{"mode": "everyMinute"}]}
+      },
+      "id": "Cron",
+      "name": "Every Minute",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [200, 220]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/email_queue?select=*&status=eq.pending&scheduled_at=lte.{{$now.toISO()}}&order=created_at.asc&limit=10",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"}
+          ]
+        }
+      },
+      "id": "FetchPending",
+      "name": "Fetch Pending",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 220]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Iterate items\nreturn items.map(i => ({ json: {\n  id: i.json.id,\n  email: i.json.email,\n  email_type: i.json.email_type,\n  template_data: i.json.template_data,\n  attempts: i.json.attempts,\n  max_attempts: i.json.max_attempts\n}}));"
+      },
+      "id": "PrepareLoop",
+      "name": "Prepare Loop",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [660, 220]
+    },
+    {
+      "parameters": {
+        "url": "=send-email",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {"parameter": [{"name": "Content-Type", "value": "application/json"}]},
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ $json.email_type === 'waitlist_confirmation' ? { to: $json.email, subject: 'Bem-vindo(a)!', html: '<p>Você está na fila! 🎉</p>' } : { to: $json.email, subject: 'Email', html: '<p>Template genérico</p>' } }"
+      },
+      "id": "SendEmail",
+      "name": "Edge Function: send-email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 220],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "resend-edge-function-placeholder",
+          "name": "Resend Edge Function"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/email_queue?id=eq.{{$json.id}}",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ status: 'sent', attempts: {{$json.attempts + 1}}, processed_at: {{$now.toISO()}} }"
+      },
+      "id": "MarkSent",
+      "name": "Mark Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1140, 220]
+    }
+  ],
+  "connections": {
+    "Every Minute": {"main": [[{"node": "Fetch Pending", "type": "main", "index": 0}]]},
+    "Fetch Pending": {"main": [[{"node": "Prepare Loop", "type": "main", "index": 0}]]},
+    "Prepare Loop": {"main": [[{"node": "Edge Function: send-email", "type": "main", "index": 0}]]},
+    "Edge Function: send-email": {"main": [[{"node": "Mark Sent", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {},
+  "staticData": null
+}
+

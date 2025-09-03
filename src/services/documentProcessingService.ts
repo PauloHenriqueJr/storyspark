@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/supabase";
 import { aiContingencyService } from "./aiContingencyService";
 
 // Tipos para processamento de documentos

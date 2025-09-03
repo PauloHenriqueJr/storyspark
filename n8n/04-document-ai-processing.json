@@ -1,0 +1,95 @@
+{
+  "name": "04 - Document AI Processing",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {"item": [{"mode": "everyMinute"}]}
+      },
+      "id": "Cron",
+      "name": "Every Minute",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [200, 220]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/document_jobs?select=*&status=eq.pending&order=created_at.asc&limit=5",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"}
+          ]
+        }
+      },
+      "id": "FetchJobs",
+      "name": "Fetch Pending Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 220]
+    },
+    {
+      "parameters": {
+        "functionCode": "// For each job, call external extraction/AI\nreturn items.map(i => ({ json: { id: i.json.id, storage_path: i.json.storage_path } }));"
+      },
+      "id": "Prepare",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [660, 220]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {"parameter": [
+          {"name": "Authorization", "value": "=Bearer {{$env.OPENAI_API_KEY}}"},
+          {"name": "Content-Type", "value": "application/json"}
+        ]},
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ model: 'gpt-4o-mini', messages: [ { role: 'system', content: 'You extract brand voice, personas, and company info from raw text.' }, { role: 'user', content: `Extract key marketing entities from document: {{$json.storage_path}}` } ] }"
+      },
+      "id": "AIExtract",
+      "name": "AI: Extract Entities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 220]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/document_jobs?id=eq.{{$json.id}}",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ status: 'completed', result: $json }"
+      },
+      "id": "MarkDone",
+      "name": "Mark Done",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1140, 220]
+    }
+  ],
+  "connections": {
+    "Every Minute": {"main": [[{"node": "Fetch Pending Jobs", "type": "main", "index": 0}]]},
+    "Fetch Pending Jobs": {"main": [[{"node": "Prepare", "type": "main", "index": 0}]]},
+    "Prepare": {"main": [[{"node": "AI: Extract Entities", "type": "main", "index": 0}]]},
+    "AI: Extract Entities": {"main": [[{"node": "Mark Done", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {},
+  "staticData": null
+}
+

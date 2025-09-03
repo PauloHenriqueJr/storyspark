@@ -3,7 +3,7 @@
  * Este arquivo centraliza todas as substituições de dados mockados
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 interface RealMetrics {
   confidence: number;

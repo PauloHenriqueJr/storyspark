@@ -3,7 +3,7 @@
  * Substitui o uso de templates hardcoded por templates dinâmicos do banco
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/supabase";
 import { toast } from 'sonner';
 
 export interface EmailTemplate {

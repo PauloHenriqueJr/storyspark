@@ -1,0 +1,110 @@
+{
+  "name": "05 - Social Media Scheduler",
+  "nodes": [
+    {
+      "parameters": {"triggerTimes": {"item": [{"mode": "everyMinute"}]}},
+      "id": "Cron",
+      "name": "Every Minute",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [200, 240]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/scheduled_posts?select=*&status=eq.scheduled&scheduled_for=lte.{{$now.toISO()}}&order=scheduled_for.asc&limit=20",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"}
+          ]
+        }
+      },
+      "id": "FetchDuePosts",
+      "name": "Fetch Due Posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 240]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Route to different APIs based on platform\nreturn items.map(i => ({ json: { id: i.json.id, platform: i.json.platform, content: i.json.content } }));"
+      },
+      "id": "Route",
+      "name": "Route by Platform",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [660, 240]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v19.0/{{PAGE_ID}}/feed",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {"parameter": [{"name": "Content-Type", "value": "application/json"}]},
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ message: $json.content, access_token: $env.META_ACCESS_TOKEN }"
+      },
+      "id": "PostMeta",
+      "name": "Post to Meta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 160]
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/v2/ugcPosts",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {"parameter": [
+          {"name": "Content-Type", "value": "application/json"},
+          {"name": "Authorization", "value": "=Bearer {{$env.LINKEDIN_ACCESS_TOKEN}}"}
+        ]},
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ author: 'urn:li:person:YOUR_ID', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: $json.content }, shareMediaCategory: 'NONE' } }, visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' } }"
+      },
+      "id": "PostLinkedIn",
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/scheduled_posts?id=eq.{{$json.id}}",
+        "options": {"response": "json"},
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={ status: 'published', published_at: {{$now.toISO()}} }"
+      },
+      "id": "MarkPublished",
+      "name": "Mark Published",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1140, 240]
+    }
+  ],
+  "connections": {
+    "Every Minute": {"main": [[{"node": "Fetch Due Posts", "type": "main", "index": 0}]]},
+    "Fetch Due Posts": {"main": [[{"node": "Route by Platform", "type": "main", "index": 0}]]},
+    "Route by Platform": {"main": [[{"node": "Post to Meta", "type": "main", "index": 0}, {"node": "Post to LinkedIn", "type": "main", "index": 0}, {"node": "Mark Published", "type": "main", "index": 0}]]},
+    "Post to Meta": {"main": [[{"node": "Mark Published", "type": "main", "index": 0}]]},
+    "Post to LinkedIn": {"main": [[{"node": "Mark Published", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {},
+  "staticData": null
+}
+

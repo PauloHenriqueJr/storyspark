@@ -153,9 +153,7 @@ class EmailService {
   }
 
   // Enviar e-mail genérico
-  public async sendEmail(
-    options: SendEmailOptions
-  ): Promise<{
+  public async sendEmail(options: SendEmailOptions): Promise<{
     success: boolean;
     messageId?: string;
     error?: string;
@@ -283,9 +281,7 @@ class EmailService {
   }
 
   // Enviar convite da waitlist usando template
-  public async sendWaitlistInvite(
-    data: WaitlistInviteData
-  ): Promise<{
+  public async sendWaitlistInvite(data: WaitlistInviteData): Promise<{
     success: boolean;
     messageId?: string;
     error?: string;
@@ -490,9 +486,7 @@ class EmailService {
   }
 
   // Enviar e-mail de teste para verificar configuração
-  public async sendTestEmail(
-    email: string
-  ): Promise<{
+  public async sendTestEmail(email: string): Promise<{
     success: boolean;
     messageId?: string;
     error?: string;
