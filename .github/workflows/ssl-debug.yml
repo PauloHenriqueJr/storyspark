@@ -1,0 +1,211 @@
+name: SSL Certificate Debug and Fix
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ssl-debug:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Debug SSL Certificates and Fix Issues
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          echo "🔐 SSL Certificate Debug and Fix"
+          echo "================================"
+          echo "📅 Timestamp: $(date)"
+          echo ""
+          
+          # Step 1: Check containers status
+          echo "1️⃣ CONTAINERS STATUS:"
+          docker ps | grep -E "(traefik|storyspark)"
+          echo ""
+          
+          # Step 2: Check Traefik network and StorySpark containers
+          echo "2️⃣ NETWORK CONNECTIVITY:"
+          traefik_container=$(docker ps | grep traefik | awk '{print $NF}')
+          
+          if [ -n "$traefik_container" ]; then
+            echo "Traefik container: $traefik_container"
+            traefik_network=$(docker inspect $traefik_container | grep -A 5 '"Networks"' | grep -E '"[a-zA-Z0-9_-]+"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+            echo "Traefik network: $traefik_network"
+            
+            echo ""
+            echo "Containers in Traefik network:"
+            docker network inspect $traefik_network | grep -A 20 '"Containers"' | grep -E '"Name"|"IPv4Address"'
+          fi
+          echo ""
+          
+          # Step 3: Check Traefik configuration and labels
+          echo "3️⃣ TRAEFIK ROUTING CONFIGURATION:"
+          for container in storyspark-app storyspark-www storyspark-admin; do
+            echo "--- $container Labels ---"
+            if docker ps | grep -q $container; then
+              docker inspect $container | grep -A 30 '"Labels"' | grep traefik
+              echo ""
+            else
+              echo "Container not running"
+              echo ""
+            fi
+          done
+          
+          # Step 4: Check Traefik logs for SSL errors
+          echo "4️⃣ TRAEFIK SSL LOGS (last 50 lines):"
+          docker logs $traefik_container --tail 50 | grep -i -E "(ssl|cert|tls|error|acme)" || echo "No SSL-related logs found"
+          echo ""
+          
+          # Step 5: Check ACME certificates
+          echo "5️⃣ ACME CERTIFICATES STATUS:"
+          if docker exec $traefik_container ls -la /letsencrypt/ 2>/dev/null; then
+            echo "ACME directory exists"
+            docker exec $traefik_container find /letsencrypt/ -name "*.json" -o -name "*.key" -o -name "*.crt" 2>/dev/null | head -10
+          else
+            echo "❌ ACME directory not found - checking alternative paths"
+            docker exec $traefik_container find / -name "*acme*" -type d 2>/dev/null | head -5
+          fi
+          echo ""
+          
+          # Step 6: Test HTTP vs HTTPS
+          echo "6️⃣ CONNECTIVITY TESTS:"
+          
+          echo "Testing HTTP (should work):"
+          for domain in app.storyspark.com.br www.storyspark.com.br admin.storyspark.com.br; do
+            echo "  $domain:"
+            curl -s -o /dev/null -w "    HTTP Status: %{http_code} | Response Time: %{time_total}s\n" http://$domain --max-time 10 || echo "    ❌ HTTP connection failed"
+          done
+          echo ""
+          
+          echo "Testing HTTPS (problematic):"
+          for domain in app.storyspark.com.br www.storyspark.com.br admin.storyspark.com.br; do
+            echo "  $domain:"
+            
+            # Test HTTPS with detailed error info
+            https_result=$(curl -s -o /dev/null -w "%{http_code}" https://$domain --max-time 10 --insecure 2>&1)
+            ssl_info=$(curl -s --connect-timeout 5 https://$domain -vI 2>&1 | grep -E "(SSL|TLS|certificate|error)" | head -3)
+            
+            echo "    HTTPS Status: $https_result"
+            if [ -n "$ssl_info" ]; then
+              echo "    SSL Info: $ssl_info"
+            fi
+          done
+          echo ""
+          
+          # Step 7: Check if Traefik has Let's Encrypt resolver
+          echo "7️⃣ TRAEFIK LETSENCRYPT CONFIGURATION:"
+          
+          # Check Traefik command line or config
+          traefik_cmd=$(docker inspect $traefik_container | grep -A 10 '"Cmd"' | grep -E "(letsencrypt|acme|email)" || echo "No Let's Encrypt config found in command")
+          echo "Traefik command: $traefik_cmd"
+          echo ""
+          
+          # Check environment variables
+          echo "Traefik environment variables:"
+          docker inspect $traefik_container | grep -A 20 '"Env"' | grep -E "(ACME|LETSENCRYPT|EMAIL)" || echo "No ACME environment variables found"
+          echo ""
+          
+          # Step 8: Force certificate generation if needed
+          echo "8️⃣ CERTIFICATE GENERATION FIX:"
+          
+          # Check if we need to restart Traefik to trigger certificate generation
+          echo "Checking if Traefik needs restart for certificate generation..."
+          
+          # Get current Traefik uptime
+          traefik_start=$(docker inspect $traefik_container | grep '"StartedAt"' | sed 's/.*"\([^"]*\)".*/\1/')
+          echo "Traefik started at: $traefik_start"
+          
+          # Test if certificates are being requested
+          echo ""
+          echo "Recent Traefik logs (looking for certificate requests):"
+          docker logs $traefik_container --since="10m" | grep -i -E "(certificate|acme|challenge)" | tail -10 || echo "No recent certificate activity"
+          
+          # Step 9: Manual certificate trigger (if needed)
+          echo ""
+          echo "9️⃣ MANUAL CERTIFICATE REFRESH:"
+          
+          echo "Triggering certificate refresh by restarting containers..."
+          
+          # Restart StorySpark containers to trigger new certificate requests
+          for container in storyspark-app storyspark-www storyspark-admin; do
+            if docker ps | grep -q $container; then
+              echo "Restarting $container to trigger certificate generation..."
+              docker restart $container
+              sleep 5
+            fi
+          done
+          
+          echo "Waiting 30 seconds for certificate generation..."
+          sleep 30
+          
+          # Step 10: Final verification
+          echo ""
+          echo "🔟 FINAL SSL VERIFICATION:"
+          
+          echo "Testing HTTPS after certificate refresh:"
+          for domain in app.storyspark.com.br www.storyspark.com.br admin.storyspark.com.br; do
+            echo "  Testing $domain..."
+            
+            # Test with curl
+            https_status=$(curl -s -o /dev/null -w "%{http_code}" https://$domain --max-time 15 2>/dev/null || echo "timeout")
+            
+            # Test SSL certificate
+            ssl_test=$(echo | openssl s_client -servername $domain -connect $domain:443 -verify_return_error 2>&1 | grep -E "(Verify return code|CN=)" | head -2)
+            
+            echo "    HTTPS Status: $https_status"
+            if [ -n "$ssl_test" ]; then
+              echo "    SSL Cert: $ssl_test"
+            fi
+            
+            # Quick browser-friendly test
+            if [ "$https_status" = "200" ]; then
+              echo "    ✅ Domain should work in browser"
+            else
+              echo "    ❌ Domain may have issues"
+            fi
+            echo ""
+          done
+          
+          echo ""
+          echo "📋 TROUBLESHOOTING SUMMARY:"
+          echo "=========================="
+          
+          # Count working domains
+          working_domains=0
+          for domain in app.storyspark.com.br www.storyspark.com.br admin.storyspark.com.br; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" https://$domain --max-time 10 2>/dev/null || echo "0")
+            if [ "$status" = "200" ]; then
+              working_domains=$((working_domains + 1))
+            fi
+          done
+          
+          echo "• Working HTTPS domains: $working_domains/3"
+          
+          if [ $working_domains -eq 3 ]; then
+            echo ""
+            echo "🎉 SUCCESS! All domains should now work with HTTPS!"
+            echo ""
+            echo "🌐 Test in your browser:"
+            echo "  • https://app.storyspark.com.br"
+            echo "  • https://www.storyspark.com.br"
+            echo "  • https://admin.storyspark.com.br"
+          else
+            echo ""
+            echo "⚠️ Some domains still have SSL issues. Common solutions:"
+            echo ""
+            echo "1️⃣ Wait 2-5 minutes for Let's Encrypt validation"
+            echo "2️⃣ Check if email is configured in Traefik for ACME"
+            echo "3️⃣ Verify Traefik has internet access for ACME challenge"
+            echo "4️⃣ Check firewall allows ports 80 and 443"
+            echo ""
+            echo "📱 Browser troubleshooting:"
+            echo "• Clear browser cache and cookies"
+            echo "• Try incognito/private mode"
+            echo "• Check for browser security warnings"
+          fi
+          
+          echo ""
+          echo "✅ SSL debug and fix attempt complete!"
