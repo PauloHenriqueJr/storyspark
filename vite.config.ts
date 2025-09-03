@@ -15,8 +15,8 @@ export default defineConfig(({ mode }) => ({
       output: {
         // Keep manual chunks for better caching
         manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            return 'vendor';
+          if (id.includes("node_modules")) {
+            return "vendor";
           }
         },
       },
@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
     // Enable source maps for debugging in production
     sourcemap: mode === "development",
     // Ensure proper asset handling for SPA
-    assetsDir: 'assets',
+    assetsDir: "assets",
   },
   plugins: [
     react(),
