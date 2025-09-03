@@ -1,0 +1,165 @@
+name: Debug Deployment Issues
+on:
+  workflow_dispatch:
+    inputs:
+      debug_level:
+        description: 'Debug level'
+        required: true
+        default: 'detailed'
+        type: choice
+        options:
+        - basic
+        - detailed
+        - full
+
+jobs:
+  debug-deployment:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Debug Docker Registry and Deployment
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        script: |
+          echo "🔍 StorySpark Deployment Debug Report"
+          echo "===================================="
+          echo "📅 Timestamp: $(date)"
+          echo "🎯 Debug Level: ${{ github.event.inputs.debug_level }}"
+          echo ""
+          
+          # Check Docker status
+          echo "🐳 DOCKER STATUS:"
+          docker --version
+          systemctl is-active docker || echo "❌ Docker service issue"
+          echo ""
+          
+          # Check GitHub Container Registry login
+          echo "📦 REGISTRY ACCESS:"
+          echo "Testing GitHub Container Registry access..."
+          if docker images | grep -q ghcr.io; then
+            echo "✅ GHCR images found locally"
+            docker images | grep ghcr.io | head -5
+          else
+            echo "❌ No GHCR images found locally"
+          fi
+          echo ""
+          
+          # Try to login to GHCR
+          echo "🔐 TESTING GHCR LOGIN:"
+          echo "Note: This will show if login credentials work"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin 2>&1 | head -3
+          echo ""
+          
+          # Check if StorySpark image exists
+          echo "🎯 STORYSPARK IMAGE CHECK:"
+          image_name="ghcr.io/paulohenriquejr/storyspark:latest"
+          echo "Looking for image: $image_name"
+          
+          if docker images | grep -q "ghcr.io/paulohenriquejr/storyspark"; then
+            echo "✅ StorySpark image found locally"
+            docker images | grep storyspark
+          else
+            echo "❌ StorySpark image not found locally"
+            echo "🔄 Attempting to pull..."
+            docker pull $image_name 2>&1 | tail -5
+          fi
+          echo ""
+          
+          # Check container history
+          echo "📋 CONTAINER HISTORY:"
+          echo "Recent StorySpark containers (including stopped):"
+          docker ps -a | grep storyspark | head -5 || echo "❌ No StorySpark containers found"
+          echo ""
+          
+          # Check logs from failed containers
+          if [ "${{ github.event.inputs.debug_level }}" != "basic" ]; then
+            echo "📜 CONTAINER LOGS:"
+            for container in storyspark-app storyspark-www storyspark-admin; do
+              if docker ps -a | grep -q $container; then
+                echo "--- Logs for $container ---"
+                docker logs $container --tail=10 2>&1 | sed 's/^/  /'
+                echo ""
+              fi
+            done
+          fi
+          
+          # Check Traefik configuration
+          echo "🌐 TRAEFIK CONFIGURATION:"
+          if docker ps | grep -q traefik; then
+            echo "✅ Traefik is running"
+            if [ "${{ github.event.inputs.debug_level }}" = "full" ]; then
+              echo "Traefik networks:"
+              docker network ls | grep traefik
+              echo "Containers in traefik network:"
+              docker network inspect traefik | jq '.[0].Containers' 2>/dev/null || echo "Could not inspect traefik network"
+            fi
+          else
+            echo "❌ Traefik is not running"
+          fi
+          echo ""
+          
+          # Test docker run command manually
+          if [ "${{ github.event.inputs.debug_level }}" = "full" ]; then
+            echo "🧪 MANUAL DEPLOYMENT TEST:"
+            echo "Testing a single container deployment..."
+            
+            # Stop any existing test container
+            docker stop storyspark-test 2>/dev/null || true
+            docker rm storyspark-test 2>/dev/null || true
+            
+            # Try to run one container manually
+            echo "Running test container..."
+            docker run -d \
+              --name storyspark-test \
+              --network traefik \
+              --restart unless-stopped \
+              --label "traefik.enable=true" \
+              --label "traefik.http.routers.storyspark-test.rule=Host(\`test.storyspark.com.br\`)" \
+              --label "traefik.http.routers.storyspark-test.tls=true" \
+              --label "traefik.http.routers.storyspark-test.tls.certresolver=letsencrypt" \
+              --label "traefik.http.services.storyspark-test.loadbalancer.server.port=3000" \
+              $image_name 2>&1 | tail -3
+            
+            sleep 5
+            
+            if docker ps | grep -q storyspark-test; then
+              echo "✅ Test container started successfully"
+              docker ps | grep storyspark-test
+            else
+              echo "❌ Test container failed to start"
+              docker logs storyspark-test 2>&1 | tail -5
+            fi
+            
+            # Cleanup
+            docker stop storyspark-test 2>/dev/null || true
+            docker rm storyspark-test 2>/dev/null || true
+          fi
+          
+          echo ""
+          echo "📊 SUMMARY:"
+          echo "==========​"
+          docker_running=$(systemctl is-active docker)
+          ghcr_images=$(docker images | grep ghcr.io | wc -l)
+          storyspark_containers=$(docker ps | grep storyspark | wc -l)
+          traefik_running=$(docker ps | grep traefik | wc -l)
+          
+          echo "• Docker service: $docker_running"
+          echo "• GHCR images: $ghcr_images"
+          echo "• StorySpark containers: $storyspark_containers"
+          echo "• Traefik running: $traefik_running"
+          
+          if [ $storyspark_containers -eq 0 ] && [ $ghcr_images -eq 0 ]; then
+            echo ""
+            echo "🔧 RECOMMENDED ACTIONS:"
+            echo "1. Check if GitHub Actions completed successfully"
+            echo "2. Verify GitHub Container Registry has the image"
+            echo "3. Check deployment workflow logs"
+            echo "4. Ensure secrets are configured correctly"
+          fi
+          
+          echo ""
+          echo "✅ Debug complete!"
