@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 // Usar variáveis de ambiente
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
@@ -9,66 +9,96 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Variáveis de ambiente do Supabase não configuradas corretamente')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    debug: import.meta.env.DEV, // Debug apenas em desenvolvimento
-    storageKey: 'storyspark-auth-token', // Chave específica para evitar conflitos
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'storyspark-web@1.0.0',
-      'apikey': supabaseAnonKey,
-      'Prefer': 'return=representation'
+// Singleton instance para evitar múltiplas instâncias GoTrueClient
+let supabaseInstance: SupabaseClient | null = null
+
+// Função para criar/retornar a única instância
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: localStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+        debug: false, // Sempre false para evitar logs
+        storageKey: 'storyspark-auth-token', // Chave específica para evitar conflitos
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'storyspark-web@1.0.0',
+          'apikey': supabaseAnonKey,
+          'Prefer': 'return=representation'
+        }
+      },
+      db: {
+        schema: 'public'
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    })
+
+    // Configurar listener de auth state uma vez
+    supabaseInstance.auth.onAuthStateChange((_event, session) => {
+      // Não é necessário manipular headers manualmente
+      // O Supabase Client já faz isso automaticamente
+      if (import.meta.env.DEV && session) {
+        console.log('🔐 Auth state changed: user logged in')
+      } else if (import.meta.env.DEV && !session) {
+        console.log('🔐 Auth state changed: user logged out')
+      }
+    })
+
+    // Log apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.log('🔧 Supabase configurado (singleton):', {
+        url: supabaseUrl.substring(0, 20) + '...',
+        hasKey: !!supabaseAnonKey,
+        keyLength: supabaseAnonKey.length
+      })
     }
-  },
-  db: {
-    schema: 'public'
-  },
-  realtime: {
-    timeout: 30000,
-    heartbeatIntervalMs: 30000
   }
-})
-
-// Interceptar requisições para garantir que o token seja enviado
-supabase.auth.onAuthStateChange((event, session) => {
-  if (session?.access_token) {
-    // Atualizar headers globais com o token de acesso
-    supabase.rest.headers['Authorization'] = `Bearer ${session.access_token}`
-  } else {
-    // Remover header de autorização se não houver sessão
-    delete supabase.rest.headers['Authorization']
-  }
-})
-
-// Log da configuração em desenvolvimento
-if (import.meta.env.DEV) {
-  console.log('🔧 Supabase configurado:', {
-    url: supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    keyLength: supabaseAnonKey.length
-  })
+  
+  return supabaseInstance
 }
 
-// Tipos de usuário
+// Exportar a instância única
+export const supabase = getSupabaseClient()
+
+// Função helper para verificar se o usuário está autenticado
+export const isAuthenticated = async (): Promise<boolean> => {
+  const { data: { session } } = await supabase.auth.getSession()
+  return !!session
+}
+
+// Tipos para autenticação
 export type User = {
   id: string
-  email: string
-  name: string
-  avatar_url?: string
+  email?: string
+  user_metadata: Record<string, any>
+  app_metadata: Record<string, any>
+  aud: string
   created_at: string
-  updated_at: string
 }
 
-// Tipos de autenticação
 export type AuthError = {
   message: string
   status?: number
+  statusCode?: number
+  error_description?: string
+  error_code?: string
+}
+
+export type AuthResponse = {
+  data: {
+    user: User | null
+    session: any
+  }
+  error: AuthError | null
 }
 
 export type SignUpData = {
@@ -82,7 +112,7 @@ export type SignInData = {
   password: string
 }
 
-// Helper functions para autenticação
+// Helpers de autenticação usando a instância única
 export const authHelpers = {
   // Login com email e senha
   signIn: async (data: SignInData) => {
@@ -95,7 +125,7 @@ export const authHelpers = {
     return authData
   },
 
-  // Registro com email e senha
+  // Registro de novo usuário
   signUp: async (data: SignUpData) => {
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
