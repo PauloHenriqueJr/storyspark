@@ -14,6 +14,8 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import LandingWaitlist from "./pages/LandingWaitlist";
+import WaitlistAB from "./pages/WaitlistAB";
+import Success from "./pages/Success";
 
 // Blog Pages
 import Blog from "./pages/Blog";
@@ -47,6 +49,7 @@ const CallScripts = React.lazy(() => import('./pages/CallScripts'));
 const ContentLibrary = React.lazy(() => import('./pages/ContentLibrary'));
 const AIIdeas = React.lazy(() => import('./pages/AIIdeas'));
 const TrendingHooks = React.lazy(() => import('./pages/TrendingHooks'));
+const Hooks = React.lazy(() => import('./pages/Hooks'));
 const CRM = React.lazy(() => import('./pages/CRM'));
 const Feedback = React.lazy(() => import('./pages/Feedback'));
 const TestUploadPage = React.lazy(() => import('./pages/TestUploadPage'));
@@ -98,6 +101,8 @@ const App = () => (
       {/* Public Routes */}
       <Route path="/" element={<Index />} />
       <Route path="/waitlist" element={<LandingWaitlist />} />
+      <Route path="/waitlist-ab" element={<WaitlistAB />} />
+      <Route path="/success" element={<Success />} />
       
       {/* Blog Routes */}
       <Route path="/blog" element={<Blog />} />
@@ -321,6 +326,15 @@ const App = () => (
           <AppLayout>
             <LazyLoadWrapper>
               <TrendingHooks />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/hooks" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <Hooks />
             </LazyLoadWrapper>
           </AppLayout>
         </ProtectedRoute>

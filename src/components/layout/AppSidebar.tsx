@@ -114,6 +114,7 @@ const navSections: NavSection[] = [
       { title: 'Biblioteca', url: '/content-library', icon: Library },
       { title: 'Ideias IA', url: '/ai-ideas', icon: Lightbulb, badge: 'IA' },
       { title: 'Trending Hooks', url: '/trending-hooks', icon: TrendingUp },
+      { title: 'Hooks', url: '/hooks', icon: Zap },
     ]
   },
   {

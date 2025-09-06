@@ -1,0 +1,165 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { Copy, RefreshCw, Save, Share2, Calendar, Instagram, Facebook, Linkedin, Mail, MessageCircle, Download, Eye, Sparkles, Zap, Heart, Star, TrendingUp } from "lucide-react";
+
+interface CopyResultActionsProps {
+  generatedCopy: string;
+  onRegenerate?: () => void;
+  onSave?: () => void;
+  canRegenerate?: boolean;
+  isRegenerating?: boolean;
+}
+
+export const CopyResultActions = ({ 
+  generatedCopy, 
+  onRegenerate, 
+  onSave, 
+  canRegenerate = true,
+  isRegenerating = false 
+}: CopyResultActionsProps) => {
+  const { toast } = useToast();
+  const [isCopied, setIsCopied] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedCopy);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+      toast({ title: "Copy copiada!", description: "Texto copiado para área de transferência." });
+    } catch (error) {
+      toast({ title: "Erro ao copiar", description: "Não foi possível copiar o texto.", variant: "destructive" });
+    }
+  };
+
+  const schedulePost = () => {
+    toast({ title: "Agendamento", description: "Funcionalidade de agendamento em breve!" });
+  };
+
+  const shareTo = (network: 'Instagram' | 'Facebook' | 'LinkedIn') => {
+    copyToClipboard();
+    toast({ title: `Copy preparada para ${network}`, description: "Texto copiado! Abra a rede e cole na sua nova postagem." });
+  };
+
+  const createEmailCampaign = () => {
+    toast({ title: "Campanha de Email", description: "Redirecionando para criador de campanhas..." });
+  };
+
+  const shareViaWhatsApp = () => {
+    const encodedText = encodeURIComponent(generatedCopy);
+    const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+    window.open(whatsappUrl, '_blank');
+    toast({ title: "WhatsApp aberto", description: "Copy carregada no WhatsApp Web." });
+  };
+
+  const exportToPDF = () => {
+    toast({ title: "Exportar PDF", description: "Funcionalidade de exportação em breve!" });
+  };
+
+  const saveToLibrary = () => {
+    onSave?.();
+    toast({ title: "Copy salva!", description: "Adicionada à sua biblioteca pessoal." });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-success text-success-foreground flex items-center justify-center">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle className="flex items-center gap-2 text-success">
+                <Zap className="h-5 w-5" />
+                Copy Gerada com Sucesso!
+              </CardTitle>
+              <div className="text-sm text-muted-foreground">Pronta para uso em qualquer plataforma</div>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <Badge variant="outline" className="border-success/30 bg-success/10 text-success">
+              <Star className="h-3 w-3 mr-1" />
+              Premium
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="relative">
+          <div className={`bg-background border border-success/20 rounded-lg p-4 transition-all ${isExpanded ? 'max-h-none' : 'max-h-48 overflow-hidden'}`}>
+            <pre className="whitespace-pre-wrap text-sm leading-relaxed font-medium">{generatedCopy}</pre>
+            {!isExpanded && generatedCopy.length > 500 && (
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
+            )}
+          </div>
+          {generatedCopy.length > 500 && (
+            <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="w-full mt-2 text-xs">
+              <Eye className="h-3 w-3 mr-1" />
+              {isExpanded ? 'Ver menos' : 'Ver copy completa'}
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button onClick={copyToClipboard} variant={isCopied ? "default" : "outline"} size="lg" className="h-12">
+            {isCopied ? (<><Heart className="h-4 w-4 mr-2 text-red-500" />Copiado!</>) : (<><Copy className="h-4 w-4 mr-2" />Copiar Copy</>)}
+          </Button>
+          <Button onClick={onRegenerate} variant="outline" size="lg" className="h-12" disabled={!canRegenerate || isRegenerating}>
+            {isRegenerating ? (<><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Gerando...</>) : (<><RefreshCw className="h-4 w-4 mr-2" />Regenerar</>)}
+          </Button>
+        </div>
+
+        <Separator />
+
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Share2 className="h-4 w-4" />
+            <span className="text-sm font-medium">Publicar Direto</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="outline" size="sm" onClick={() => shareTo('Instagram')} className="flex flex-col gap-1 h-auto py-3">
+              <Instagram className="h-4 w-4" />
+              <span className="text-xs">Instagram</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => shareTo('Facebook')} className="flex flex-col gap-1 h-auto py-3">
+              <Facebook className="h-4 w-4" />
+              <span className="text-xs">Facebook</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => shareTo('LinkedIn')} className="flex flex-col gap-1 h-auto py-3">
+              <Linkedin className="h-4 w-4" />
+              <span className="text-xs">LinkedIn</span>
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="h-4 w-4" />
+            <span className="text-sm font-medium">Ações Avançadas</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" size="sm" onClick={schedulePost} className="justify-start"><Calendar className="h-4 w-4 mr-2" />Agendar Post</Button>
+            <Button variant="outline" size="sm" onClick={createEmailCampaign} className="justify-start"><Mail className="h-4 w-4 mr-2" />Email Campaign</Button>
+            <Button variant="outline" size="sm" onClick={shareViaWhatsApp} className="justify-start"><MessageCircle className="h-4 w-4 mr-2" />WhatsApp</Button>
+            <Button variant="outline" size="sm" onClick={saveToLibrary} className="justify-start"><Save className="h-4 w-4 mr-2" />Salvar</Button>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t">
+          <Button variant="ghost" size="sm" onClick={exportToPDF} className="w-full justify-start text-muted-foreground">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar como PDF
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+

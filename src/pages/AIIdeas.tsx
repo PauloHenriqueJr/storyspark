@@ -1,620 +1,600 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { useWorkspace } from '@/hooks/useWorkspace';
-import GenerateIdeasModal from '@/components/modals/GenerateIdeasModal';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GerarIdeiaModal } from "@/components/modals/GerarIdeiaModal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Lightbulb, 
-  Target, 
-  Zap, 
-  TrendingUp, 
-  Brain, 
-  Plus, 
   Sparkles, 
+  TrendingUp, 
+  Target,
+  Wand2,
+  RefreshCw,
+  Save,
+  Share,
+  Heart,
+  Brain,
+  Zap,
+  Search,
   Loader2,
-  TrendingUp as TrendingUpIcon,
-  Calendar,
-  Eye,
-  Heart
-} from 'lucide-react';
-import { aiIdeasService, type IdeaPayload } from '@/services/aiIdeasService';
+  Plus
+} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { useNavigate } from "react-router-dom";
+import { aiIdeasService, type IdeaPayload } from "@/services/aiIdeasService";
 
-interface FetchedIdea extends IdeaPayload {
-  id: number | string;
-  title?: string;
-  generated?: string;
-  used?: boolean;
+interface Idea {
+  id: string | number;
+  title: string;
+  description: string;
+  category: 'campaign' | 'content' | 'strategy' | 'product' | 'engagement';
+  industry: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  potential: 'low' | 'medium' | 'high';
+  tags: string[];
+  createdAt: Date;
+  isFavorite: boolean;
+  isGenerated: boolean;
 }
 
+const categoryIcons = {
+  campaign: Target,
+  content: Lightbulb,
+  strategy: TrendingUp,
+  product: Wand2,
+  engagement: Heart
+};
+
+const difficultyColors = {
+  easy: 'bg-green-500/10 text-green-500',
+  medium: 'bg-yellow-500/10 text-yellow-500',
+  hard: 'bg-red-500/10 text-red-500'
+};
+
+const potentialColors = {
+  low: 'bg-gray-500/10 text-gray-500',
+  medium: 'bg-blue-500/10 text-blue-500',
+  high: 'bg-purple-500/10 text-purple-500'
+};
+
 const AIIdeas = () => {
-  const navigate = useNavigate();
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
+  const [isGeneratorModalOpen, setIsGeneratorModalOpen] = useState(false);
   const { toast } = useToast();
   const { workspace, user } = useWorkspace();
+  const navigate = useNavigate();
+  
+  // Generation form
+  const [generationPrompt, setGenerationPrompt] = useState('');
+  const [generationContext, setGenerationContext] = useState({
+    industry: '',
+    target: '',
+    goal: '',
+    style: ''
+  });
 
-  const [generateModalOpen, setGenerateModalOpen] = useState(false);
-  const [ideas, setIdeas] = useState<FetchedIdea[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Load ideas on component mount
+  useEffect(() => {
+    loadIdeas();
+  }, [workspace?.id]);
 
   const loadIdeas = async () => {
-    if (!workspace?.id) {
-      setLoading(false);
-      return;
-    }
+    if (!workspace?.id) return;
+    
     try {
       setLoading(true);
       const data = await aiIdeasService.fetchIdeas(workspace.id, 50);
-      setIdeas(data as FetchedIdea[]);
-    } catch (e) {
-      setError((e as Error)?.message || 'Erro ao carregar ideias');
+      
+      // Map the fetched data to the new Idea structure
+      const mappedIdeas: Idea[] = data.map((item: any) => ({
+        id: item.id,
+        title: item.title || "Ideia sem título",
+        description: item.content?.[0] || "Descrição não disponível",
+        category: mapCategory(item.category),
+        industry: item.audience || "Geral",
+        difficulty: 'medium',
+        potential: mapPotential(item.confidence),
+        tags: [...(item.keywords || []), ...(item.trends || [])],
+        createdAt: new Date(item.generated || new Date()),
+        isFavorite: false,
+        isGenerated: true
+      }));
+      
+      setIdeas(mappedIdeas);
+    } catch (error) {
+      toast({
+        title: "Erro ao carregar ideias",
+        description: "Não foi possível carregar as ideias salvas.",
+        variant: "destructive"
+      });
+      console.error("Error loading ideas:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  React.useEffect(() => {
-    loadIdeas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspace?.id]);
-
-  const getCategoryIcon = (category: string) => {
+  const mapCategory = (category: string): 'campaign' | 'content' | 'strategy' | 'product' | 'engagement' => {
     switch (category) {
-      case 'headlines': return <Target className="h-4 w-4" />;
-      case 'email-sequence': return <Zap className="h-4 w-4" />;
-      case 'social-media': return <TrendingUp className="h-4 w-4" />;
-      case 'sales-script': return <Brain className="h-4 w-4" />;
-      default: return <Lightbulb className="h-4 w-4" />;
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'headlines': return 'bg-blue-500/10 text-blue-700 dark:text-blue-400';
-      case 'email-sequence': return 'bg-purple-500/10 text-purple-700 dark:text-purple-400';
-      case 'social-media': return 'bg-green-500/10 text-green-700 dark:text-green-400';
-      case 'sales-script': return 'bg-orange-500/10 text-orange-700 dark:text-orange-400';
-      default: return 'bg-gray-500/10 text-gray-700 dark:text-gray-400';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'sugestao': return 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400';
-      case 'campanha': return 'bg-red-500/10 text-red-700 dark:text-red-400';
-      case 'conteudo': return 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400';
-      case 'conversao': return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
-      default: return 'bg-gray-500/10 text-gray-700 dark:text-gray-400';
-    }
-  };
-
-  const deriveType = (category?: string) => {
-    switch ((category || '').toLowerCase()) {
+      case 'headlines':
+        return 'content';
       case 'email-sequence':
-        return 'campanha';
+        return 'campaign';
       case 'social-media':
-        return 'conteudo';
+        return 'content';
       case 'sales-script':
-        return 'conversao';
+        return 'engagement';
       default:
-        return 'sugestao';
+        return 'strategy';
     }
   };
 
-  const handleUseIdea = (idea: FetchedIdea) => {
-    const text = idea.content?.[0] || '';
+  const mapPotential = (confidence?: number): 'low' | 'medium' | 'high' => {
+    if (!confidence) return 'medium';
+    if (confidence >= 80) return 'high';
+    if (confidence >= 60) return 'medium';
+    return 'low';
+  };
+
+  const handleGenerateIdeas = async () => {
+    if (!generationPrompt.trim()) return;
+    
+    setLoading(true);
+    
+    try {
+      // Simulate AI generation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const newIdeas: Idea[] = [
+        {
+          id: Date.now().toString(),
+          title: `Campanha Inovadora: ${generationPrompt}`,
+          description: `Ideia gerada com base no contexto: ${generationPrompt}. Esta campanha foca em conectar emocionalmente com o público através de storytelling autêntico e call-to-actions irresistíveis.`,
+          category: 'campaign',
+          industry: generationContext.industry || 'Geral',
+          difficulty: 'medium',
+          potential: 'high',
+          tags: ['gerado-ia', 'campanha', 'inovação'],
+          createdAt: new Date(),
+          isFavorite: false,
+          isGenerated: true
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          title: 'Estratégia de Conteúdo Viral',
+          description: 'Estratégia baseada em tendências atuais e comportamento do público. Combina elementos de urgência, exclusividade e valor social.',
+          category: 'strategy',
+          industry: generationContext.industry || 'Geral',
+          difficulty: 'hard',
+          potential: 'high',
+          tags: ['viral', 'tendências', 'estratégia'],
+          createdAt: new Date(),
+          isFavorite: false,
+          isGenerated: true
+        }
+      ];
+      
+      setIdeas(prev => [...newIdeas, ...prev]);
+      
+      toast({
+        title: "Ideias geradas!",
+        description: "2 ideias criativas foram geradas com sucesso."
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na geração",
+        description: "Não foi possível gerar as ideias. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+      setGenerationPrompt('');
+    }
+  };
+
+  const toggleFavorite = (ideaId: string | number) => {
+    setIdeas(prev =>
+      prev.map(idea =>
+        idea.id === ideaId ? { ...idea, isFavorite: !idea.isFavorite } : idea
+      )
+    );
+  };
+
+  const handleUseIdea = (idea: Idea) => {
     navigate('/composer', {
       state: {
-        initialContent: text,
+        initialContent: idea.description,
         meta: {
           category: idea.category,
-          topic: idea.topic,
-          tone: idea.tone,
+          topic: idea.title,
+          industry: idea.industry,
         },
       },
     });
   };
 
-  const handleSaveIdea = async (idea: FetchedIdea) => {
+  const handleSaveIdea = async (idea: Idea) => {
     if (!workspace?.id || !user?.id) {
       toast({
-        title: 'Autenticação necessária',
-        description: 'Faça login para salvar a ideia.',
-        variant: 'destructive',
+        title: "Autenticação necessária",
+        description: "Faça login para salvar ideias.",
+        variant: "destructive"
       });
       return;
     }
+    
     try {
-      await aiIdeasService.saveIdeas(workspace.id, user.id, [
-        {
-          category: idea.category,
-          confidence: idea.confidence,
-          content: idea.content || [idea.title || ''],
-          topic: idea.topic,
-          audience: idea.audience,
-          goal: idea.goal,
-          tone: idea.tone,
-          platform: idea.platform,
-          keywords: idea.keywords,
-          trends: idea.trends,
-        },
-      ]);
+      const payload: IdeaPayload = {
+        category: idea.category,
+        confidence: idea.potential === 'high' ? 90 : idea.potential === 'medium' ? 70 : 50,
+        content: [idea.description],
+        topic: idea.title,
+        audience: idea.industry,
+        keywords: idea.tags,
+        trends: []
+      };
+      
+      await aiIdeasService.saveIdeas(workspace.id, user.id, [payload]);
+      
       toast({
-        title: 'Ideia salva',
-        description: 'Esta ideia foi salva na sua biblioteca.',
+        title: "Ideia salva!",
+        description: "A ideia foi adicionada à sua biblioteca."
       });
-    } catch (e) {
+    } catch (error) {
       toast({
-        title: 'Erro ao salvar',
-        description: (e as Error)?.message || 'Falha ao salvar ideia.',
-        variant: 'destructive',
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a ideia.",
+        variant: "destructive"
       });
     }
   };
 
-  const totalIdeas = ideas.length;
-  const usedCount = ideas.filter((i) => i.used).length;
-  const avgConfidence =
-    totalIdeas > 0
-      ? Math.round(ideas.reduce((a, i) => a + (i.confidence || 0), 0) / totalIdeas)
-      : 0;
-  const activeTrends = Array.from(
-    new Set<string>(ideas.flatMap((i) => i.trends || []))
-  ).length;
+  const filteredIdeas = ideas.filter(idea => {
+    const matchesCategory = selectedCategory === 'all' || idea.category === selectedCategory;
+    const matchesIndustry = selectedIndustry === 'all' || idea.industry === selectedIndustry;
+    return matchesCategory && matchesIndustry;
+  });
 
-  if (loading) {
-    return (
-      <div className="space-y-8 p-4 sm:p-6">
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Carregando ideias...</span>
-        </div>
-      </div>
-    );
-  }
+  const favoriteIdeas = ideas.filter(idea => idea.isFavorite);
 
-  if (error) {
+  if (loading && ideas.length === 0) {
     return (
-      <div className="space-y-8 p-4 sm:p-6">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Lightbulb className="w-8 h-8 text-red-500 mx-auto mb-2" />
-            <h3 className="text-lg font-semibold text-foreground mb-1">Erro ao carregar ideias</h3>
-            <p className="text-muted-foreground">{error}</p>
-            <Button className="mt-4" onClick={loadIdeas}>
-              Tentar Novamente
-            </Button>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">Carregando ideias...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-4 sm:p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Ideias IA</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Ideias IA</h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Ideias inteligentes baseadas em tendências e dados de mercado
+            Gerador automático de ideias criativas para campanhas e estratégias
           </p>
         </div>
-        <Button className="gap-2 w-full sm:w-auto" onClick={() => setGenerateModalOpen(true)}>
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Gerar Novas Ideias</span>
-          <span className="sm:hidden">Gerar</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2">
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:inline">Salvar Sessão</span>
+            <span className="sm:hidden">Salvar</span>
+          </Button>
+          <Button className="gap-2" onClick={() => setIsGeneratorModalOpen(true)}>
+            <Brain className="h-4 w-4" />
+            <span className="hidden sm:inline">Gerador IA</span>
+            <span className="sm:hidden">Gerar</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ideias Geradas</CardTitle>
-            <Lightbulb className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalIdeas}</div>
-            <p className="text-xs text-muted-foreground">
-              +23 esta semana
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ideias Utilizadas</CardTitle>
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{usedCount}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalIdeas > 0 ? `Taxa de uso: ${Math.round((usedCount / totalIdeas) * 100)}%` : 'Taxa de uso: 0%'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confiança Média</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{avgConfidence}%</div>
-            <p className="text-xs text-muted-foreground">
-              +2% vs mês anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tendências Ativas</CardTitle>
-            <Brain className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeTrends}</div>
-            <p className="text-xs text-muted-foreground">
-              Sendo monitoradas
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="recent" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="recent">Recentes</TabsTrigger>
-          <TabsTrigger value="trending">Em Alta</TabsTrigger>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
+      <Tabs defaultValue="generator" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="generator" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            <span className="hidden sm:inline">Gerador</span>
+          </TabsTrigger>
+          <TabsTrigger value="ideas" className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4" />
+            <span className="hidden sm:inline">Todas</span>
+            <span>({filteredIdeas.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="favorites" className="flex items-center gap-2">
+            <Heart className="h-4 w-4" />
+            <span className="hidden sm:inline">Favoritas</span>
+            <span>({favoriteIdeas.length})</span>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="recent" className="space-y-4">
-          <div className="grid gap-4">
-            {ideas.map((idea) => (
-              <Card key={idea.id} className={`hover:border-primary/50 transition-colors ${idea.used ? 'bg-muted/20' : ''}`}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg">{idea.title}</CardTitle>
-                        {idea.used && (
-                          <Badge variant="outline" className="text-xs">
-                            Usado
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getCategoryColor(idea.category)}>
-                          {getCategoryIcon(idea.category)}
-                          <span className="ml-1">{idea.category}</span>
-                        </Badge>
-                        <Badge className={getTypeColor(idea.type || deriveType(idea.category))}>
-                          {idea.type || deriveType(idea.category)}
-                        </Badge>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {new Date(idea.generated).toLocaleDateString('pt-BR')}
-                        </div>
-                      </div>
-                      <CardDescription>
-                        Confiança: {idea.confidence}% • Baseado em: {idea.trends.join(', ')}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* Content Preview */}
-                    <div className="space-y-2">
-                      {idea.content.slice(0, 3).map((item, index) => (
-                        <div key={index} className="p-3 bg-muted/50 rounded-lg">
-                          <p className="text-sm">{item}</p>
-                        </div>
-                      ))}
-                      {idea.content.length > 3 && (
-                        <div className="text-center">
-                          <Button variant="ghost" size="sm">
-                            Ver todas as {idea.content.length} ideias
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Trending Tags */}
-                    <div className="flex flex-wrap gap-1">
-                      {idea.trends.map((trend) => (
-                        <Badge key={trend} variant="secondary" className="text-xs">
-                          #{trend}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        Ver Completo
-                      </Button>
-                      {!idea.used && (
-                        <>
-                          <Button size="sm" onClick={() => handleUseIdea(idea)}>
-                            Usar Agora
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleSaveIdea(idea)}>
-                            Salvar
-                          </Button>
-                        </>
-                      )}
-                      <Button variant="outline" size="sm">
-                        Gerar Variações
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="trending" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                trend: 'IA para Pequenas Empresas',
-                growth: '+340%',
-                content: '23 ideias',
-                confidence: 94
-              },
-              {
-                trend: 'Marketing Conversacional',
-                growth: '+280%',
-                content: '18 ideias',
-                confidence: 89
-              },
-              {
-                trend: 'Automação para Creators',
-                growth: '+245%',
-                content: '15 ideias',
-                confidence: 87
-              },
-              {
-                trend: 'Vídeo Marketing B2B',
-                growth: '+210%',
-                content: '21 ideias',
-                confidence: 85
-              },
-              {
-                trend: 'Copy Emocional',
-                growth: '+195%',
-                content: '31 ideias',
-                confidence: 92
-              },
-              {
-                trend: 'Neuromarketing Digital',
-                growth: '+175%',
-                content: '12 ideias',
-                confidence: 88
-              }
-            ].map((trend) => (
-              <Card key={trend.trend} className="hover:border-primary/50 cursor-pointer transition-colors">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{trend.trend}</CardTitle>
-                    <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
-                      {trend.growth}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    {trend.content} • {trend.confidence}% confiança
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Gerar Ideias
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="categories" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                name: 'Headlines & Títulos',
-                icon: Target,
-                count: 34,
-                description: 'Títulos que capturam atenção'
-              },
-              {
-                name: 'Email Marketing',
-                icon: Zap,
-                count: 28,
-                description: 'Sequências e campanhas'
-              },
-              {
-                name: 'Social Media',
-                icon: TrendingUp,
-                count: 45,
-                description: 'Posts que geram engajamento'
-              },
-              {
-                name: 'Scripts de Vendas',
-                icon: Brain,
-                count: 19,
-                description: 'Conversões por telefone/chat'
-              },
-              {
-                name: 'Landing Pages',
-                icon: Target,
-                count: 22,
-                description: 'Páginas de alta conversão'
-              },
-              {
-                name: 'Anúncios Pagos',
-                icon: TrendingUp,
-                count: 31,
-                description: 'Ads para Facebook/Google'
-              }
-            ].map((category) => (
-              <Card key={category.name} className="hover:border-primary/50 cursor-pointer transition-colors">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <category.icon className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">{category.name}</CardTitle>
-                  </div>
-                  <CardDescription>{category.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{category.count}</span>
-                    <Button variant="outline">Ver Ideias</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="insights" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Padrões de Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>Headlines com números</span>
-                    <span className="font-medium text-green-600">+42% CTR</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Copy emocional</span>
-                    <span className="font-medium text-green-600">+38% conversão</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Urgência + escassez</span>
-                    <span className="font-medium text-green-600">+29% vendas</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Social proof</span>
-                    <span className="font-medium text-green-600">+25% confiança</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Storytelling</span>
-                    <span className="font-medium text-green-600">+31% engajamento</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Recomendações IA</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <h4 className="font-medium">Oportunidade Detectada</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Headlines com "IA" no título estão performando 67% melhor. 
-                      Considere incluir em suas próximas campanhas.
-                    </p>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <h4 className="font-medium">Tendência Emergente</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      "Marketing Conversacional" está em alta. Gere ideias sobre 
-                      chatbots e WhatsApp marketing.
-                    </p>
-                    <Button variant="outline" size="sm" className="mt-2">
-                      Gerar Ideias
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Generator Tab */}
+        <TabsContent value="generator" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Forecast de Tendências</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Gerador de Ideias IA
+              </CardTitle>
               <CardDescription>
-                Tendências previstas para os próximos 3 meses
+                Descreva seu contexto e deixe a IA gerar ideias criativas para você
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="h-64 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-sm">Tendências Emergentes</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 rounded bg-muted/20">
-                        <span className="text-sm">IA Conversacional</span>
-                        <Badge variant="secondary">+85%</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 rounded bg-muted/20">
-                        <span className="text-sm">Marketing Sustentável</span>
-                        <Badge variant="secondary">+72%</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 rounded bg-muted/20">
-                        <span className="text-sm">Personalização Ultra</span>
-                        <Badge variant="secondary">+68%</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 rounded bg-muted/20">
-                        <span className="text-sm">Micro-Influenciadores</span>
-                        <Badge variant="secondary">+61%</Badge>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-sm">Previsões por Mês</h4>
-                    <div className="space-y-2">
-                      <div className="p-2 rounded bg-gradient-to-r from-primary/10 to-primary/5">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Janeiro 2025</span>
-                          <span className="text-xs text-muted-foreground">Alto Potencial</span>
-                        </div>
-                        <p className="text-xs mt-1">Foco em resoluções de ano novo e transformação pessoal</p>
-                      </div>
-                      <div className="p-2 rounded bg-gradient-to-r from-blue-100/50 to-blue-50/50">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Fevereiro 2025</span>
-                          <span className="text-xs text-muted-foreground">Médio Potencial</span>
-                        </div>
-                        <p className="text-xs mt-1">Marketing romântico e conexões emocionais</p>
-                      </div>
-                      <div className="p-2 rounded bg-gradient-to-r from-green-100/50 to-green-50/50">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Março 2025</span>
-                          <span className="text-xs text-muted-foreground">Alto Potencial</span>
-                        </div>
-                        <p className="text-xs mt-1">Renovação, crescimento e primavera dos negócios</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  placeholder="Indústria/Nicho (ex: E-commerce, SaaS)"
+                  value={generationContext.industry}
+                  onChange={(e) =>
+                    setGenerationContext(prev => ({ ...prev, industry: e.target.value }))
+                  }
+                />
+                <Input
+                  placeholder="Público-alvo (ex: Mulheres 25-35)"
+                  value={generationContext.target}
+                  onChange={(e) =>
+                    setGenerationContext(prev => ({ ...prev, target: e.target.value }))
+                  }
+                />
+                <Input
+                  placeholder="Objetivo (ex: Aumentar vendas, Engajamento)"
+                  value={generationContext.goal}
+                  onChange={(e) =>
+                    setGenerationContext(prev => ({ ...prev, goal: e.target.value }))
+                  }
+                />
+                <Input
+                  placeholder="Estilo (ex: Descontraído, Profissional)"
+                  value={generationContext.style}
+                  onChange={(e) =>
+                    setGenerationContext(prev => ({ ...prev, style: e.target.value }))
+                  }
+                />
               </div>
+
+              <Textarea
+                placeholder="Descreva o que você precisa... Ex: 'Quero criar uma campanha viral para lançamento de produto, focada em sustentabilidade'"
+                value={generationPrompt}
+                onChange={(e) => setGenerationPrompt(e.target.value)}
+                rows={3}
+              />
+
+              <Button 
+                onClick={handleGenerateIdeas}
+                disabled={loading || !generationPrompt.trim()}
+                className="w-full gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Sparkles className="h-4 w-4 animate-spin" />
+                    Gerando Ideias...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4" />
+                    Gerar Ideias IA
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
+
+          {/* Quick Ideas */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setGenerationPrompt('Campanha de lançamento de produto inovador')}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">Lançamento de Produto</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Estratégias para criar buzz e gerar vendas no lançamento
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setGenerationPrompt('Conteúdo viral para redes sociais')}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <span className="font-medium">Conteúdo Viral</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Ideias para criar conteúdo que engaja e viraliza
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setGenerationPrompt('Estratégia de retenção de clientes')}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="h-4 w-4 text-red-500" />
+                  <span className="font-medium">Retenção de Clientes</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Campanhas para manter clientes engajados e fiéis
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Ideas Tab */}
+        <TabsContent value="ideas" className="space-y-6">
+          {/* Filters */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Categorias</SelectItem>
+                <SelectItem value="campaign">Campanhas</SelectItem>
+                <SelectItem value="content">Conteúdo</SelectItem>
+                <SelectItem value="strategy">Estratégias</SelectItem>
+                <SelectItem value="product">Produtos</SelectItem>
+                <SelectItem value="engagement">Engajamento</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Indústria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Indústrias</SelectItem>
+                <SelectItem value="E-commerce">E-commerce</SelectItem>
+                <SelectItem value="SaaS">SaaS</SelectItem>
+                <SelectItem value="Beleza">Beleza</SelectItem>
+                <SelectItem value="Geral">Geral</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Ideas List */}
+          <div className="grid gap-4">
+            {filteredIdeas.map((idea) => {
+              const CategoryIcon = categoryIcons[idea.category];
+              
+              return (
+                <Card key={idea.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <CategoryIcon className="h-4 w-4" />
+                          <CardTitle className="text-base">{idea.title}</CardTitle>
+                          {idea.isGenerated && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              IA
+                            </Badge>
+                          )}
+                        </div>
+                        <CardDescription className="text-sm">
+                          {idea.industry} • {idea.createdAt.toLocaleDateString('pt-BR')}
+                        </CardDescription>
+                      </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleFavorite(idea.id)}
+                      >
+                        <Heart
+                          className={`h-4 w-4 ${
+                            idea.isFavorite ? 'text-red-500 fill-current' : 'text-muted-foreground'
+                          }`}
+                        />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{idea.description}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge className={difficultyColors[idea.difficulty]}>
+                          {idea.difficulty === 'easy' ? 'Fácil' :
+                           idea.difficulty === 'medium' ? 'Médio' : 'Difícil'}
+                        </Badge>
+                        <Badge className={potentialColors[idea.potential]}>
+                          Potencial {idea.potential === 'low' ? 'Baixo' :
+                                   idea.potential === 'medium' ? 'Médio' : 'Alto'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {idea.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleUseIdea(idea)}>
+                        Usar Ideia
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleSaveIdea(idea)}>
+                        Salvar
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setIsGeneratorModalOpen(true)}>
+                        Expandir
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </TabsContent>
+
+        {/* Favorites Tab */}
+        <TabsContent value="favorites" className="space-y-6">
+          <div className="grid gap-4">
+            {favoriteIdeas.map((idea) => {
+              const CategoryIcon = categoryIcons[idea.category];
+              
+              return (
+                <Card key={idea.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <CategoryIcon className="h-4 w-4" />
+                          <CardTitle className="text-base">{idea.title}</CardTitle>
+                          <Heart className="h-4 w-4 text-red-500 fill-current" />
+                        </div>
+                        <CardDescription>
+                          {idea.industry} • {idea.createdAt.toLocaleDateString('pt-BR')}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{idea.description}</p>
+                    
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleUseIdea(idea)}>
+                        Implementar Ideia
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleSaveIdea(idea)}>
+                        Salvar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </TabsContent>
       </Tabs>
-      
-      <GenerateIdeasModal
-        open={generateModalOpen}
-        onOpenChange={(open) => {
-          setGenerateModalOpen(open);
-          if (!open) {
-            loadIdeas();
-          }
+
+      {/* Generator Modal */}
+      <GerarIdeiaModal
+        isOpen={isGeneratorModalOpen}
+        onClose={() => setIsGeneratorModalOpen(false)}
+        onSaveIdea={(idea) => {
+          const newIdea: Idea = {
+            ...idea,
+            category: idea.category as 'campaign' | 'content' | 'strategy' | 'product' | 'engagement',
+            industry: 'Geral',
+            createdAt: new Date(),
+            isFavorite: false,
+            isGenerated: true
+          };
+          setIdeas(prev => [newIdea, ...prev]);
         }}
       />
     </div>

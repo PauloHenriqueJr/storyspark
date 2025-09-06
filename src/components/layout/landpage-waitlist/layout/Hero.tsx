@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import SignupCounter from '@/components/layout/landpage-waitlist/SignupCounter';
-import TestimonialsGrid from '@/components/layout/landpage-waitlist/TestimonialsGrid';
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,7 +174,6 @@ const Hero = () => {
             </motion.div>
             <div className="mt-8 lg:mt-12">
               <div className="max-w-3xl mx-auto lg:mx-0">
-                <TestimonialsGrid />
               </div>
             </div>
           </motion.div>

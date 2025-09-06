@@ -1,0 +1,10 @@
+import { HooksLibrary } from "@/components/HooksLibrary";
+import { useEffect } from "react";
+
+const Hooks = () => {
+  useEffect(() => { document.title = "Biblioteca de Hooks - StorySpark"; }, []);
+  return <HooksLibrary />;
+};
+
+export default Hooks;
+
