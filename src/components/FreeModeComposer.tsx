@@ -26,6 +26,8 @@ interface FreeModeComposerProps {
   initialTemplateId?: string;
   onInitialTemplateConsumed?: () => void;
   onStepChange?: (step: number) => void;
+  initialHook?: any;
+  mode?: 'simplified' | 'advanced';
 }
 
 interface AIConfig {
@@ -37,11 +39,8 @@ interface AIConfig {
 
 interface Variable { name: string; value: string; description?: string; }
 
-export const FreeModeComposer = ({ credits, onCreditsUpdate, onStatsUpdate, selectedHook, initialTemplateId, onInitialTemplateConsumed, onStepChange }: FreeModeComposerProps) => {
-  const [composerMode, setComposerMode] = useState<'simplified' | 'advanced'>(() => {
-    const saved = localStorage.getItem('storyspark_composer_mode');
-    return (saved === 'advanced' || saved === 'simplified') ? saved : 'simplified';
-  });
+export const FreeModeComposer = ({ credits, onCreditsUpdate, onStatsUpdate, selectedHook, initialTemplateId, onInitialTemplateConsumed, onStepChange, initialHook, mode }: FreeModeComposerProps) => {
+  const composerMode = mode || 'simplified';
   const [prompt, setPrompt] = useState(() => {
     return selectedHook?.text 
       ? `Baseado neste hook validado: "${selectedHook.text}"\n\nExemplo de aplicação: "${selectedHook.example}"\n\nExpanda este hook em uma copy completa para {produto} que {objetivo} usando um tom {tom}.\n\nDetalhes:\n- Público-alvo: {publico}\n- Benefício principal: {beneficio}\n- Canal: {canal}\n- Categoria do hook: ${selectedHook.category}`
@@ -135,7 +134,7 @@ ${processedPrompt}`.trim();
           onStatsUpdate={onStatsUpdate}
           initialTemplateId={initialTemplateId}
           onInitialTemplateConsumed={onInitialTemplateConsumed}
-          initialHook={selectedHook}
+          initialHook={initialHook || selectedHook}
           onStepChange={onStepChange}
         />
       ) : (

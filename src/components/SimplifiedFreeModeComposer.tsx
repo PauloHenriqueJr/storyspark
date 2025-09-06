@@ -12,6 +12,7 @@ import { storage, aiProvider } from "@/lib/adapters";
 import { BRAZILIAN_TEMPLATES, BRAZILIAN_TONES, getCategoryColor, getDifficultyColor, type BrazilianTemplate, type BrazilianTone } from "@/lib/brazilianTemplates";
 import { CopyResultActions } from "./CopyResultActions";
 import { Sparkles, RefreshCw, ArrowLeft, CheckCircle2, ChevronRight, Brain, Wand2, AlertCircle, CreditCard, TrendingUp, Target, Zap } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { Hook } from "@/data/hooks";
 import { HookQuickPicker } from "@/components/HookQuickPicker";
 
@@ -63,8 +64,20 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
   const handleToneSelect = useCallback((tone: BrazilianTone) => { setProgress(prev => ({ ...prev, step: 3, selectedTone: tone })); onStepChange?.(3); }, [onStepChange]);
   const handleQuickConfigChange = useCallback((config: Partial<QuickConfig>) => { setProgress(prev => ({ ...prev, quickConfig: { ...prev.quickConfig, ...config } })); }, []);
   const handleQuickConfigComplete = useCallback(() => { setProgress(prev => ({ ...prev, step: 4 })); onStepChange?.(4); }, [onStepChange]);
-  const handleCustomInputChange = useCallback((fieldId: string, value: string) => { setProgress(prev => ({ ...prev, customInputs: { ...prev.customInputs, [fieldId]: value } })); }, []);
-  const goToStep = useCallback((step: 1 | 2 | 3 | 4) => { if (step <= progress.step || step === 1) { setProgress(prev => ({ ...prev, step })); onStepChange?.(step); } }, [progress.step, onStepChange]);
+  const handleCustomInputChange = useCallback((fieldId: string, value: string) => {
+    setProgress(prev => ({
+      ...prev,
+      customInputs: { ...prev.customInputs, [fieldId]: value }
+    }));
+  }, []);
+
+  // Navigation
+  const goToStep = useCallback((step: 1 | 2 | 3 | 4) => {
+    if (step <= progress.step || step === 1) {
+      setProgress(prev => ({ ...prev, step }));
+      onStepChange?.(step);
+    }
+  }, [progress.step, onStepChange]);
 
   const canProceedToGeneration = useMemo(() => {
     if (!progress.selectedTemplate || !progress.selectedTone) return false;
@@ -107,54 +120,100 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
   const regenerate = useCallback(() => { handleGenerate(); }, [handleGenerate]);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto">
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Step container: mostra apenas um card por vez */}
           {progress.step === 1 && (
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="text-xl">Selecione um Template Brasileiro</CardTitle>
-                <CardDescription>Modelos otimizados para o mercado BR</CardDescription>
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                    1
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Escolha o Template Brasileiro</CardTitle>
+                    <CardDescription>Templates otimizados para o mercado e cultura brasileira</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="pt-6 grid gap-3 sm:grid-cols-2">
-                {BRAZILIAN_TEMPLATES.map((template) => {
-                  const Icon = template.icon;
-                  const selected = progress.selectedTemplate?.id === template.id;
-                  return (
-                    <button key={template.id} onClick={() => handleTemplateSelect(template)} className={`text-left p-4 rounded-lg border transition hover:shadow-md ${selected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded bg-primary/10 text-primary"><Icon className="w-4 h-4" /></div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium truncate">{template.name}</div>
-                            <span className={`text-[10px] px-2 py-0.5 rounded border ${getCategoryColor(template.category)}`}>{template.category}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded ${getDifficultyColor(template.difficultyLevel)}`}>{template.difficultyLevel}</span>
+              <CardContent>
+                <div className="grid gap-4">
+                  {BRAZILIAN_TEMPLATES.map((template) => {
+                    const IconComponent = template.icon;
+                    return (
+                      <button
+                        key={template.id}
+                        onClick={() => handleTemplateSelect(template)}
+                        className="w-full p-4 text-left rounded-lg border-2 border-border hover:border-primary/50 transition-all hover:shadow-md group"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <IconComponent className="w-5 h-5 text-primary" />
                           </div>
-                          <div className="text-xs text-muted-foreground line-clamp-2">{template.description}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                {template.name}
+                              </h3>
+                              <Badge className={getDifficultyColor(template.difficultyLevel)}>
+                                {template.difficultyLevel}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                              {template.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              <Badge variant="outline" className={getCategoryColor(template.category)}>
+                                {template.category}
+                              </Badge>
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                                {template.conversionRate} conversão
+                              </Badge>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                {template.engagement} engajamento
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {template.platform}
+                              </Badge>
+                            </div>
+                            {template.audienceTag && (
+                              <div className="text-xs text-muted-foreground">
+                                <span className="font-medium">Ideal para:</span> {template.audienceTag}
+                              </div>
+                            )}
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}
 
           {progress.step === 2 && progress.selectedTemplate && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2"><Zap className="h-5 w-5" /><CardTitle>Tom de Voz Brasileiro</CardTitle></div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setProgress(prev => ({ ...prev, step: 1, selectedTone: null }));
-                    onStepChange?.(1);
-                  }}
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />Voltar
-                </Button>
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      2
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Tom Brasileiro da Sua Marca</CardTitle>
+                      <CardDescription>
+                        Template: <span className="font-medium text-foreground">{progress.selectedTemplate.name}</span>
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => goToStep(1)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <BrazilianToneSelector tones={BRAZILIAN_TONES} selectedTone={progress.selectedTone} onToneSelect={handleToneSelect} />
@@ -166,19 +225,23 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
           )}
 
           {progress.step === 3 && progress.selectedTemplate && progress.selectedTone && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2"><Target className="h-5 w-5" /><CardTitle>Configuração Rápida</CardTitle></div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setProgress(prev => ({ ...prev, step: 2 }));
-                    onStepChange?.(2);
-                  }}
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />Voltar
-                </Button>
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      3
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Configuração Rápida</CardTitle>
+                      <CardDescription>Clique nos chips para configurar rapidamente</CardDescription>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => goToStep(2)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <QuickConfigSelector config={progress.quickConfig} onConfigChange={handleQuickConfigChange} onComplete={handleQuickConfigComplete} />
@@ -187,10 +250,23 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
           )}
 
           {progress.step === 4 && progress.selectedTemplate && (
-            <Card>
-              <CardHeader className="flex items-center justify-between">
-                <div className="flex items-center gap-2"><Wand2 className="h-5 w-5" /><CardTitle className="text-xl">Informações Específicas</CardTitle></div>
-                <Button variant="outline" size="sm" onClick={() => goToStep(3)}><ArrowLeft className="h-4 w-4 mr-2" />Voltar</Button>
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      4
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Informações Específicas</CardTitle>
+                      <CardDescription>Preencha apenas os campos essenciais</CardDescription>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => goToStep(3)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {progress.selectedTemplate.requiredFields.map((field) => (

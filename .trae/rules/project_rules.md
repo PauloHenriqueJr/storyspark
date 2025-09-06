@@ -6,6 +6,26 @@
 
 ---
 
+## 📂 PASTA DE REFERÊNCIA AUXILIAR - spark-copy-fast-79
+
+**IMPORTANTE**: A pasta `spark-copy-fast-79` serve como **referência auxiliar** para aprimoramento do código principal do StorySpark. Esta pasta contém implementações de referência que devem ser utilizadas **EXCLUSIVAMENTE** quando solicitado especificamente.
+
+### Regras de Uso:
+- **Uso Condicional**: Os códigos desta pasta devem ser consultados APENAS quando explicitamente solicitado
+- **Não Substituição**: Nunca substituir código principal sem autorização específica
+- **Referência**: Utilizar como base para melhorias e otimizações quando indicado
+- **Consulta Auxiliar**: Serve como apoio para entender padrões e implementações alternativas
+
+### Quando Consultar:
+- Quando o usuário mencionar explicitamente "consultar pasta auxiliar"
+- Para comparação de implementações quando solicitado
+- Como referência para melhorias específicas quando indicado
+- Para análise de padrões alternativos quando requisitado
+
+**ATENÇÃO**: Esta pasta NÃO faz parte da estrutura principal do projeto e deve ser tratada apenas como material de referência auxiliar.
+
+---
+
 ## 🎯 Visão Geral do Projeto
 
 **StorySpark** é uma plataforma SaaS de criação de copies com IA para marketing digital. O projeto utiliza React 18 + TypeScript com foco em performance, acessibilidade e experiência do usuário moderna.
@@ -54,10 +74,13 @@ src/
 │   ├── help/           # Sistema de ajuda
 │   ├── notifications/  # Sistema de notificações
 │   ├── onboarding/     # Tutorial/onboarding
+│   ├── performance/    # Componentes de performance
 │   ├── pwa/            # Componentes PWA
 │   ├── search/         # Busca global
 │   ├── templates/      # Templates
-│   └── upload/         # Upload de arquivos
+│   ├── upload/         # Upload de arquivos
+│   ├── StorySpark/     # Componentes específicos do StorySpark
+│   └── debug/          # Componentes de debug
 ├── pages/              # Páginas da aplicação
 │   └── admin/          # Páginas administrativas
 ├── hooks/              # Custom hooks
@@ -66,8 +89,24 @@ src/
 ├── lib/                # Utilitários e configurações
 ├── types/              # Definições de tipos
 ├── utils/              # Funções utilitárias
+├── data/               # Dados e hooks de dados
 └── integrations/       # Integrações externas
     └── supabase/       # Configuração Supabase
+
+# Estrutura Raiz do Projeto:
+├── .github/workflows/   # GitHub Actions e CI/CD
+├── .kiro/steering/     # Documentos de direcionamento
+├── .qoder/quests/      # Tarefas e quests do projeto
+├── .trae/rules/        # Regras do projeto
+├── backup/             # Backups de componentes
+├── backups/            # Backups adicionais
+├── docs/               # Documentação completa
+├── landpage/           # Landing page separada
+├── n8n/                # Automações e workflows
+├── public/             # Assets públicos
+├── scripts/            # Scripts de automação
+├── sql/                # Scripts SQL e migrações
+└── supabase/           # Configuração Supabase
 ```
 
 ---
@@ -103,6 +142,22 @@ const Button = ({ className, ...props }) => (
   />
 )
 ```
+
+### Componentes Específicos do StorySpark
+- **AIControls**: Controles de IA para geração de conteúdo
+- **ActiveIndicators**: Indicadores de status ativo
+- **BrazilianToneSelector**: Seletor de tom brasileiro
+- **CopyResultActions**: Ações para resultados de copy
+- **FloatingActiveIndicator**: Indicador flutuante de atividade
+- **FreeModeComposer**: Compositor em modo livre
+- **FunnelStageSelector**: Seletor de estágio de funil
+- **HookCard/HookFilters/HooksLibrary**: Sistema de hooks de marketing
+- **PersonaSelector**: Seletor de personas
+- **PromptEditor**: Editor de prompts
+- **QuickConfigSelector**: Seletor de configuração rápida
+- **ReferralWidget**: Widget de indicações
+- **TestimonialForm/TestimonialsGrid**: Sistema de depoimentos
+- **VariableManager**: Gerenciador de variáveis
 
 ---
 
@@ -217,6 +272,12 @@ export const useData = <T>(): UseDataReturn<T> => {
 - **useCampaigns**: Gerenciamento de campanhas
 - **usePersonas**: Gerenciamento de personas
 - **useAnalytics**: Dados de analytics
+- **useCalendar**: Gerenciamento de calendário
+- **useMobile**: Detecção de dispositivos móveis
+- **usePWA**: Funcionalidades PWA
+- **useRole**: Gerenciamento de roles e permissões
+- **useStats**: Estatísticas e métricas
+- **useUTM**: Parâmetros UTM e tracking
 
 ### Padrão de Service:
 ```tsx
@@ -324,15 +385,19 @@ npm run type-check       # Verificação TypeScript
 
 ## 🌐 Integrações Externas
 
+### Integrações Externas
+
 ### APIs Suportadas
 - **Supabase**: Database e autenticação
-- **OpenAI/Anthropic**: IA para geração de copies (planejado)
+- **OpenAI/Anthropic**: IA para geração de copies (implementado)
 - **Social Media APIs**: Facebook, Instagram, Twitter, LinkedIn
 - **Analytics**: Google Analytics integration
+- **N8N**: Automações e workflows
 
 ### Webhooks
 - **Sistema**: Suporte para webhooks customizados
 - **Integrações**: Zapier e automações externas
+- **N8N Workflows**: Processamento de documentos, email marketing, onboarding
 
 ---
 
@@ -377,6 +442,15 @@ npm run type-check       # Verificação TypeScript
 - `ARCHITECTURE.md`: Arquitetura detalhada
 - `README.md`: Setup e visão geral
 - `PROJECT_INDEX.md`: Índice completo do projeto
+- `docs/ARCHITECTURE.md`: Arquitetura expandida
+- `docs/RESUMO_EXECUTIVO.md`: Resumo executivo do projeto
+- `docs/ROLES_SYSTEM.md`: Sistema de roles e permissões
+- `docs/IMPLEMENTATION_STATUS.md`: Status de implementação
+- `docs/ROADMAP_IMPLEMENTACAO.md`: Roadmap de implementação
+- `docs/NOTIFICATIONS_SYSTEM.md`: Sistema de notificações
+- `docs/CONTINGENCY_SYSTEM.md`: Sistema de contingência
+- `ROADMAP_EMAIL_MARKETING.md`: Roadmap de email marketing
+- `FLOATING_COPY_BUTTON_ROADMAP.md`: Roadmap do botão flutuante
 
 ### Recursos Externos
 - [React Documentation](https://react.dev/)
