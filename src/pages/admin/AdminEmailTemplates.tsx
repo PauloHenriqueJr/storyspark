@@ -1594,6 +1594,9 @@ Equipe StorySpark
 
   // Criar novo template
   const handleCreateTemplate = async () => {
+    console.log('=== CRIANDO TEMPLATE ===');
+    console.log('newTemplate:', newTemplate);
+
     // Validação básica
     if (!newTemplate.name.trim()) {
       toast.error('Nome do template é obrigatório');
@@ -1610,6 +1613,8 @@ Equipe StorySpark
       return;
     }
 
+    console.log('Validações OK, iniciando criação...');
+
     setIsCreating(true);
     try {
       const templateInput: Partial<EmailTemplate> = {
@@ -1622,7 +1627,10 @@ Equipe StorySpark
         is_active: true
       };
 
+      console.log('templateInput:', templateInput);
+
       const result = await createTemplate(templateInput);
+      console.log('Resultado da criação:', result);
       if (result) {
         setIsCreateDialogOpen(false);
         setNewTemplate({

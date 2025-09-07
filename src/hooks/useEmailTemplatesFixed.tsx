@@ -112,51 +112,57 @@ export const useEmailTemplatesFixed = () => {
         try {
             setLoading(true);
 
-            const templateToInsert = {
-                name: templateData.name || 'Novo Template',
-                subject: templateData.subject || 'Assunto',
-                html_content: templateData.html_content || '',
-                text_content: templateData.text_content || '',
-                category: templateData.category || 'Geral',
-                variables: templateData.variables || [],
-                is_active: templateData.is_active !== false,
-                metadata: {
-                    description: templateData.description || '',
-                    ...templateData.metadata
-                },
-                created_by: 'system'
-            };
+            // Detectar variáveis do HTML
+            const detectedVariables = detectTemplateVariables(templateData.html_content || '');
 
-            const { data, error: supabaseError } = await supabase
+            // Usar a função create_email_template_admin
+            const { data: newId, error: functionError } = await supabase
+                .rpc('create_email_template_admin', {
+                    p_name: templateData.name || 'Novo Template',
+                    p_subject: templateData.subject || 'Assunto',
+                    p_html_content: templateData.html_content || '',
+                    p_text_content: templateData.text_content || '',
+                    p_category: templateData.category || 'Geral',
+                    p_variables: JSON.stringify(templateData.variables || detectedVariables),
+                    p_description: templateData.description || ''
+                });
+
+            if (functionError) {
+                console.error('Erro ao criar template:', functionError);
+                throw functionError;
+            }
+
+            // Buscar o template recém-criado
+            const { data: createdTemplate, error: fetchError } = await supabase
                 .from('email_templates' as any)
-                .insert([templateToInsert])
-                .select()
+                .select('*')
+                .eq('id', newId)
                 .single();
 
-            if (supabaseError) {
-                throw supabaseError;
+            if (fetchError) {
+                throw fetchError;
             }
 
             // Mapear o dado retornado para o formato do hook
             const newTemplate: EmailTemplate = {
-                id: data.id,
-                name: data.name,
-                subject: data.subject,
-                html_content: data.html_content,
-                text_content: data.text_content || '',
-                template_variables: data.variables || [],
-                variables: data.variables || [],
-                category: data.category,
-                is_active: data.is_active,
-                metadata: data.metadata || {},
-                created_at: data.created_at,
-                updated_at: data.updated_at || data.created_at,
-                created_by: data.created_by,
+                id: createdTemplate.id,
+                name: createdTemplate.name,
+                subject: createdTemplate.subject,
+                html_content: createdTemplate.html_content,
+                text_content: createdTemplate.text_content || '',
+                template_variables: Array.isArray(createdTemplate.variables) ? createdTemplate.variables : detectedVariables,
+                variables: Array.isArray(createdTemplate.variables) ? createdTemplate.variables : detectedVariables,
+                category: createdTemplate.category,
+                is_active: createdTemplate.is_active,
+                metadata: createdTemplate.metadata || {},
+                created_at: createdTemplate.created_at,
+                updated_at: createdTemplate.updated_at || createdTemplate.created_at,
+                created_by: createdTemplate.created_by,
 
                 // Campos calculados
-                description: data.metadata?.description || `Template: ${data.name}`,
+                description: createdTemplate.metadata?.description || `Template: ${createdTemplate.name}`,
                 usage_count: 0,
-                workspace_id: data.created_by
+                workspace_id: createdTemplate.created_by
             };
 
             // Atualizar a lista local
@@ -182,9 +188,7 @@ export const useEmailTemplatesFixed = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    // Atualizar template no banco de dados
+    };    // Atualizar template no banco de dados
     const updateTemplate = async (id: string, templateData: Partial<EmailTemplate>) => {
         try {
             setLoading(true);
