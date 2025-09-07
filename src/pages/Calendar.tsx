@@ -139,7 +139,7 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
     }
   };
 
-  // Expor a função para o FloatingCopyButton
+  // Expor a função para o FloatingAIAssistant
   React.useEffect(() => {
     if (onScheduleModalReady) {
       onScheduleModalReady(handleOpenScheduleModal);

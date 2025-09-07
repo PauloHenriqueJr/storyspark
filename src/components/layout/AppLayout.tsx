@@ -8,7 +8,7 @@ import { SystemToastNotifications } from '@/components/ui/system-toast-notificat
 import { useSystemNotifications } from '@/hooks/useSystemNotifications';
 import { useToastNotifications } from '@/hooks/useToastNotifications';
 import { useSystemToastNotifications } from '@/hooks/useSystemToastNotifications';
-import FloatingCopyButton from '@/components/floating/FloatingAIAssistant';
+import FloatingAIAssistant from '@/components/floating/FloatingAIAssistant';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -18,10 +18,10 @@ interface AppLayoutProps {
 export const AppLayout = ({ children, onOpenScheduleModal }: AppLayoutProps) => {
   // Inicializar monitoramento automático de notificações
   useSystemNotifications();
-  
+
   // Toast notifications para feedback da plataforma (funcionalidade)
   const toastNotifications = useToastNotifications();
-  
+
   // System notifications para feedback visual (login, logout, etc.)
   const systemToastNotifications = useSystemToastNotifications();
 
@@ -29,32 +29,30 @@ export const AppLayout = ({ children, onOpenScheduleModal }: AppLayoutProps) => 
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-subtle">
         <AppSidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <AppHeader />
-          
+
           <main className="flex-1 p-6 md:p-8 overflow-auto">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>
           </main>
         </div>
-        
+
         {/* Platform notifications - para funcionalidades */}
         <ToastNotifications
           notifications={toastNotifications.notifications}
           onRemove={toastNotifications.removeNotification}
         />
-        
+
         {/* System notifications - para login/logout (efeito visual) */}
         <SystemToastNotifications
           notifications={systemToastNotifications.notifications}
           onRemove={systemToastNotifications.removeNotification}
         />
-        
-        <FloatingCopyButton
-          toastNotifications={toastNotifications}
-          systemToastNotifications={systemToastNotifications}
+
+        <FloatingAIAssistant
           onOpenScheduleModal={onOpenScheduleModal}
         />
       </div>

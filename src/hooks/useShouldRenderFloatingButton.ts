@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 
-// Hook para verificar se deve renderizar o FloatingCopyButton
+// Hook para verificar se deve renderizar o FloatingAIAssistant
 export const useShouldRenderFloatingButton = () => {
   const location = useLocation();
 
