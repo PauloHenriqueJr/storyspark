@@ -99,7 +99,10 @@ export const useFeatureFlags = () => {
     // Se qualquer entrada no banco marcou esse path como desabilitado, respeitar
     if (disabledByPath[path] === true) return false;
     const key = `${groupId}-${path}`;
-    return featureFlags[key] !== false; // Default para true
+    // Se a flag existe no banco, usar seu valor; se não existe, default false
+    return featureFlags.hasOwnProperty(key)
+      ? featureFlags[key] === true
+      : false;
   };
 
   return {

@@ -188,7 +188,14 @@ export const AppSidebar = () => {
   const isActive = (path: string) => currentPath === path;
 
   const filterNavItems = (items: NavItem[], groupId: string): NavItem[] => {
-    return items.filter(item => isFlagEnabled(groupId, item.url));
+    return items.filter(item => {
+      // Para páginas administrativas, verificar se o usuário tem acesso admin E se a feature flag está habilitada
+      if (groupId === 'admin') {
+        return hasAdminAccess() && isFlagEnabled(groupId, item.url);
+      }
+      // Para outras páginas, usar apenas as feature flags (controle de lançamento gradual)
+      return isFlagEnabled(groupId, item.url);
+    });
   };
 
   const isSectionVisible = (items: NavItem[], groupId: string) => {
@@ -341,14 +348,14 @@ export const AppSidebar = () => {
   const creditsPercent = totalCredits === 99999 ? 0 : (remainingCredits / Math.max(1, totalCredits)) * 100;
   const lowCredits = creditsPercent < 30;  // Alertar quando menos de 30%
   const criticalCredits = creditsPercent < 15;  // Crítico quando menos de 15%
-  
+
   // Determinar cor do indicador baseado no percentual
   const getCreditsColor = () => {
     if (criticalCredits) return 'text-red-500';
     if (lowCredits) return 'text-orange-500';
     return 'text-green-500';
   };
-  
+
   // Determinar cor da progress bar
   const getProgressColor = () => {
     if (criticalCredits) return 'bg-red-500';
@@ -364,92 +371,89 @@ export const AppSidebar = () => {
           {!collapsed ? (
             <>
               <div className="space-y-3">
-              {/* Logo e Título */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow flex-shrink-0">
-                  {hasAdminAccess() ? (
-                    <Flame className="w-5 h-5 text-white" />
-                  ) : (
-                    <Zap className="w-5 h-5 text-white" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-bold text-sidebar-foreground text-lg truncate">
-                    {hasAdminAccess() ? 'StorySpark Admin' : 'StorySpark'}
-                  </h2>
-                  <p className="text-xs text-sidebar-foreground/60 truncate">
-                    {hasAdminAccess() ? 'Admin Panel' : 'IA Copy Creator'}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Seção de Créditos - Sempre visível (admin pode ver experiência do cliente) */}
-              {workspace && (
-                <div className="w-full bg-sidebar-accent/50 rounded-lg p-3 border border-sidebar-border">
-                  <div className="space-y-2">
-                    {/* Badge de Créditos */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-sidebar-foreground/70">
-                        Créditos do Plano
-                        {hasAdminAccess() && (
-                          <span className="ml-1 text-[9px] text-orange-500 font-bold">
-                            (ADMIN VIEW)
-                          </span>
-                        )}
-                      </span>
-                      <Badge 
-                        variant={criticalCredits ? "destructive" : lowCredits ? "secondary" : "default"}
-                        className={`text-xs font-bold ${
-                          criticalCredits ? 'animate-pulse bg-red-500/20 text-red-500 border-red-500' : 
-                          lowCredits ? 'bg-orange-500/20 text-orange-500 border-orange-500' : 
-                          'bg-green-500/20 text-green-500 border-green-500'
-                        }`}
-                      >
-                        <Zap className="w-3 h-3 mr-1" />
-                        {totalCredits === 99999 ? '∞' : `${remainingCredits}/${totalCredits}`}
-                      </Badge>
-                    </div>
-                    
-                    {/* Progress Bar */}
-                    {totalCredits !== 99999 && (
-                      <div className="space-y-1">
-                        <Progress 
-                          value={creditsPercent} 
-                          className={`h-2 bg-sidebar-accent ${
-                            criticalCredits ? 'animate-pulse' : ''
-                          }`}
-                          style={{
-                            '--progress-foreground': criticalCredits ? 'rgb(239 68 68)' : 
-                              lowCredits ? 'rgb(249 115 22)' : 'rgb(34 197 94)'
-                          } as React.CSSProperties}
-                        />
-                        <div className="flex justify-between text-[10px] text-sidebar-foreground/50">
-                          <span>{Math.min(100, Math.round(creditsPercent))}% restante</span>
-                          <span>{remainingCredits} créditos</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Botão de Upgrade */}
-                    {(lowCredits || criticalCredits) && (
-                      <Button 
-                        asChild 
-                        size="sm" 
-                        variant={criticalCredits ? "destructive" : "default"}
-                        className={`w-full text-xs font-bold ${
-                          criticalCredits ? 'animate-pulse' : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
-                        }`}
-                      >
-                        <Link to="/billing">
-                          <ArrowUpRight className="w-3 h-3 mr-1" />
-                          {criticalCredits ? '🔥 Recarregar Urgente!' : '⚡ Fazer Upgrade'}
-                        </Link>
-                      </Button>
+                {/* Logo e Título */}
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow flex-shrink-0">
+                    {hasAdminAccess() ? (
+                      <Flame className="w-5 h-5 text-white" />
+                    ) : (
+                      <Zap className="w-5 h-5 text-white" />
                     )}
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-bold text-sidebar-foreground text-lg truncate">
+                      {hasAdminAccess() ? 'StorySpark Admin' : 'StorySpark'}
+                    </h2>
+                    <p className="text-xs text-sidebar-foreground/60 truncate">
+                      {hasAdminAccess() ? 'Admin Panel' : 'IA Copy Creator'}
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Seção de Créditos - Sempre visível (admin pode ver experiência do cliente) */}
+                {workspace && (
+                  <div className="w-full bg-sidebar-accent/50 rounded-lg p-3 border border-sidebar-border">
+                    <div className="space-y-2">
+                      {/* Badge de Créditos */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-sidebar-foreground/70">
+                          Créditos do Plano
+                          {hasAdminAccess() && (
+                            <span className="ml-1 text-[9px] text-orange-500 font-bold">
+                              (ADMIN VIEW)
+                            </span>
+                          )}
+                        </span>
+                        <Badge
+                          variant={criticalCredits ? "destructive" : lowCredits ? "secondary" : "default"}
+                          className={`text-xs font-bold ${criticalCredits ? 'animate-pulse bg-red-500/20 text-red-500 border-red-500' :
+                              lowCredits ? 'bg-orange-500/20 text-orange-500 border-orange-500' :
+                                'bg-green-500/20 text-green-500 border-green-500'
+                            }`}
+                        >
+                          <Zap className="w-3 h-3 mr-1" />
+                          {totalCredits === 99999 ? '∞' : `${remainingCredits}/${totalCredits}`}
+                        </Badge>
+                      </div>
+
+                      {/* Progress Bar */}
+                      {totalCredits !== 99999 && (
+                        <div className="space-y-1">
+                          <Progress
+                            value={creditsPercent}
+                            className={`h-2 bg-sidebar-accent ${criticalCredits ? 'animate-pulse' : ''
+                              }`}
+                            style={{
+                              '--progress-foreground': criticalCredits ? 'rgb(239 68 68)' :
+                                lowCredits ? 'rgb(249 115 22)' : 'rgb(34 197 94)'
+                            } as React.CSSProperties}
+                          />
+                          <div className="flex justify-between text-[10px] text-sidebar-foreground/50">
+                            <span>{Math.min(100, Math.round(creditsPercent))}% restante</span>
+                            <span>{remainingCredits} créditos</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Botão de Upgrade */}
+                      {(lowCredits || criticalCredits) && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant={criticalCredits ? "destructive" : "default"}
+                          className={`w-full text-xs font-bold ${criticalCredits ? 'animate-pulse' : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
+                            }`}
+                        >
+                          <Link to="/billing">
+                            <ArrowUpRight className="w-3 h-3 mr-1" />
+                            {criticalCredits ? '🔥 Recarregar Urgente!' : '⚡ Fazer Upgrade'}
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <div className="flex justify-center items-center">
