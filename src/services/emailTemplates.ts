@@ -29,7 +29,7 @@ export const waitlistConfirmationTemplate: EmailTemplate = {
     userEmail: "",
     selectedIdeas: "",
     waitlistPosition: "",
-    supportEmail: "suporte@storyspark.com",
+    supportEmail: "suporte@storyspark.com.br",
   },
   html: getBrandEmailTemplate(
     "Bem-vindo à nossa waitlist! 🎉",
@@ -148,7 +148,7 @@ export const waitlistInviteTemplate: EmailTemplate = {
     userName: "",
     inviteCode: "",
     loginUrl: "",
-    supportEmail: "suporte@storyspark.com",
+    supportEmail: "suporte@storyspark.com.br",
   },
   html: getBrandEmailTemplate(
     "Bem-vindo ao futuro do marketing!",
@@ -242,7 +242,7 @@ export const welcomeTemplate: EmailTemplate = {
     userName: "",
     dashboardUrl: "",
     tutorialUrl: "",
-    supportEmail: "suporte@storyspark.com",
+    supportEmail: "suporte@storyspark.com.br",
   },
   html: `
     <!DOCTYPE html>

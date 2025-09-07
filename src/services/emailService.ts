@@ -52,6 +52,7 @@ export interface WaitlistInviteData {
 
 export interface WaitlistConfirmationData {
   email: string;
+  name?: string;
   selectedIdeas?: string[];
   waitlistPosition: number;
 }
@@ -62,9 +63,10 @@ class EmailService {
 
   private config = {
     token: "",
-    senderEmail: "onboarding@resend.dev",
+    senderEmail: "suporte@storyspark.com.br",
     senderName: "StorySpark",
     accountId: "2428199",
+    emailMode: "development" as "development" | "production",
   };
 
   constructor() {
@@ -72,19 +74,26 @@ class EmailService {
   }
 
   private initializeFromEnv() {
-    // Tentar carregar configurações das variáveis de ambiente
-    const token =
-      import.meta.env.VITE_MAILTRAP_API_TOKEN ||
-      "552c751d51d3c55f146fc238df0264c9";
-    const senderEmail =
-      import.meta.env.VITE_DEFAULT_FROM_EMAIL || "onboarding@resend.dev";
-    const accountId = import.meta.env.VITE_MAILTRAP_ACCOUNT_ID || "2428199";
+    // Configuração para usar Resend em vez de Mailtrap
+    const resendToken = import.meta.env.VITE_RESEND_API_KEY || "";
+    const emailMode = import.meta.env.VITE_EMAIL_MODE || "development";
+    const fromEmail = import.meta.env.VITE_EMAIL_FROM || "suporte@storyspark.com.br";
+    const fromName = import.meta.env.VITE_EMAIL_FROM_NAME || "StorySpark";
 
-    if (token) {
-      this.config.token = token;
-      this.config.senderEmail = senderEmail;
-      this.config.accountId = accountId;
+    if (resendToken) {
+      this.config.token = resendToken;
+      this.config.senderEmail = fromEmail;
+      this.config.senderName = fromName;
+      this.config.emailMode = emailMode;
       this.initialize();
+      
+      // Log modo de operação
+      console.log(`📧 EmailService inicializado em modo: ${emailMode}`);
+      if (emailMode === "development") {
+        console.log("⚠️ Modo desenvolvimento: emails serão redirecionados para o email de teste");
+      }
+    } else {
+      console.warn("⚠️ VITE_RESEND_API_KEY não configurado. Emails não serão enviados.");
     }
   }
 
@@ -303,7 +312,7 @@ class EmailService {
         userName: data.name || "Usuário",
         inviteCode: data.inviteCode,
         loginUrl,
-        supportEmail: "suporte@storyspark.com",
+        supportEmail: "suporte@storyspark.com.br",
         expiresAt: data.expiresAt,
       };
 
@@ -351,34 +360,46 @@ class EmailService {
     warning?: string;
   }> {
     try {
-      const template = await emailTemplatesService.getTemplateWithFallback(
-        "waitlist-confirmation"
+      // Buscar template APENAS do banco de dados pelo nome exato
+      const template = await emailTemplatesService.getTemplateByName(
+        "Confirmação da Waitlist"
       );
+      
       if (!template) {
+        console.error("Template 'Confirmação da Waitlist' não encontrado no banco de dados");
         return {
           success: false,
-          error: "Template de confirmação da waitlist não encontrado",
+          error: "Template 'Confirmação da Waitlist' não encontrado no banco de dados. Por favor, verifique se o template existe.",
         };
       }
 
       // Formatar ideias selecionadas para o template
       let selectedIdeasHtml = "";
       let selectedIdeasText = "";
+      let hasSelectedIdeas = false;
 
       if (data.selectedIdeas && data.selectedIdeas.length > 0) {
+        hasSelectedIdeas = true;
         selectedIdeasHtml = data.selectedIdeas
-          .map((idea) => `<div class="idea-item">${idea}</div>`)
+          .map((idea) => `<div style="margin: 8px 0; padding: 8px 12px; background: #f1f5f9; border-radius: 6px; color: #475569;">• ${idea}</div>`)
           .join("");
         selectedIdeasText = data.selectedIdeas
           .map((idea) => `- ${idea}`)
           .join("\n");
       }
 
+      // Variáveis compatíveis com o template que usa {name} e {position}
       const variables: TemplateVariables = {
-        userEmail: data.email,
-        selectedIdeas: selectedIdeasHtml,
-        waitlistPosition: data.waitlistPosition.toString(),
-        supportEmail: "suporte@storyspark.com",
+        name: data.name || "Usuário", // Nome do usuário
+        email: data.email,
+        userEmail: data.email, // Adicionar userEmail para compatibilidade
+        selectedIdeas: hasSelectedIdeas ? selectedIdeasHtml : '', // Passa string vazia se não houver ideias
+        position: data.waitlistPosition.toString(), // Usar 'position' em vez de 'waitlistPosition'
+        waitlistPosition: data.waitlistPosition.toString(), // Manter ambos para compatibilidade
+        supportEmail: "suporte@storyspark.com.br",
+        website_url: "https://storyspark.com.br",
+        unsubscribe_url: "https://storyspark.com.br/unsubscribe",
+        currentYear: new Date().getFullYear().toString(),
       };
 
       // Validar variáveis obrigatórias
@@ -400,11 +421,8 @@ class EmailService {
         variables
       );
 
-      // Substituir as ideias também na versão texto
+      // O processamento já deve ter sido feito pelo processTemplate, não precisa substituir novamente
       let finalText = processedTemplate.text;
-      if (selectedIdeasText) {
-        finalText = finalText.replace("{{selectedIdeas}}", selectedIdeasText);
-      }
 
       return this.sendEmail({
         to: [{ email: data.email }],
@@ -448,7 +466,7 @@ class EmailService {
         userName: name || "Usuário",
         dashboardUrl,
         tutorialUrl,
-        supportEmail: "suporte@storyspark.com",
+        supportEmail: "suporte@storyspark.com.br",
       };
 
       // Validar variáveis obrigatórias

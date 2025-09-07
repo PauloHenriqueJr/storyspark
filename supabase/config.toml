@@ -1,15 +1,4 @@
 project_id = "qgtgvqfikqfjbeixzbyb"
 
-[functions]
-# Configurações das Edge Functions
+[functions."send-email"]
 verify_jwt = false
-
-[functions.send-email]
-# Variáveis de ambiente para a função send-email
-verify_jwt = false
-
-[functions.send-email.env]
-SUPABASE_URL = "https://qgtgvqfikqfjbeixzbyb.supabase.co"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFndGd2cWZpa3FmamJlaXh6YnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzE2MTcsImV4cCI6MjA3MDI0NzYxN30.iNAOOITHhXMfAY2kJnQ_Dtrd44UZ7bhlufekerTdtw4"
-RESEND_API_KEY = "re_g2jbn5Pg_8pVbqLrhnxMfZ4c3ucABUzJG"
-RESEND_FROM_DOMAIN = "storyspark.com.br"

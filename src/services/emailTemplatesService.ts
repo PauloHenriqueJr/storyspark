@@ -81,6 +81,47 @@ class EmailTemplatesService {
   }
 
   /**
+   * Busca template por nome do banco de dados (tabela email_templates)
+   */
+  async getTemplateByName(templateName: string): Promise<EmailTemplate | null> {
+    try {
+      // Buscar diretamente na tabela email_templates por nome
+      const { data, error } = await supabase
+        .from("email_templates")
+        .select("*")
+        .eq("name", templateName)
+        .single();
+
+      if (error || !data) {
+        console.warn(
+          `Template '${templateName}' não encontrado na tabela email_templates`
+        );
+        return null;
+      }
+
+      // Mapear para o formato EmailTemplate
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description || "",
+        subject: data.subject,
+        html_content: data.html_content,
+        text_content: data.text_content || "",
+        template_variables: data.variables || [],
+        category: data.category || "general",
+        is_active: data.is_active ?? true,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        workspace_id: data.workspace_id,
+        metadata: data.metadata || {},
+      };
+    } catch (error) {
+      console.error("Erro ao buscar template por nome:", error);
+      return null;
+    }
+  }
+
+  /**
    * Busca todos os templates ativos do banco de dados
    */
   async getAllTemplates(): Promise<EmailTemplate[]> {
@@ -134,7 +175,7 @@ class EmailTemplatesService {
   }
 
   /**
-   * Processa template substituindo variáveis
+   * Processa template substituindo variáveis e removendo diretivas Handlebars não utilizadas
    */
   processTemplate(
     template: EmailTemplate,
@@ -144,24 +185,63 @@ class EmailTemplatesService {
     let processedHtml = template.html_content;
     let processedText = template.text_content || "";
 
-    // Substituir variáveis no formato {{variableName}}
+    // Substituir variáveis em AMBOS os formatos: {variableName} e {{variableName}}
     Object.entries(variables).forEach(([key, value]) => {
-      const placeholder = `{{${key}}}`;
       const stringValue = String(value);
-
-      processedSubject = processedSubject.replace(
-        new RegExp(placeholder, "g"),
-        stringValue
-      );
-      processedHtml = processedHtml.replace(
-        new RegExp(placeholder, "g"),
-        stringValue
-      );
-      processedText = processedText.replace(
-        new RegExp(placeholder, "g"),
-        stringValue
-      );
+      
+      // Suportar múltiplos formatos de placeholders
+      const patterns = [
+        `{{${key}}}`,           // {{name}}
+        `{{ ${key} }}`,         // {{ name }}
+        `{${key}}`,             // {name}
+        `{ ${key} }`,           // { name }
+        `{{\\s*${key}\\s*}}`,  // Qualquer espaço dentro de {{}}
+      ];
+      
+      patterns.forEach(pattern => {
+        // Criar regex que escapa caracteres especiais corretamente
+        const regex = new RegExp(
+          pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\s\*/g, '\\s*'),
+          'gi'
+        );
+        
+        processedSubject = processedSubject.replace(regex, stringValue);
+        processedHtml = processedHtml.replace(regex, stringValue);
+        processedText = processedText.replace(regex, stringValue);
+      });
     });
+
+    // Processar condicionais {{#if}} ... {{/if}}
+    // Se a variável existe e tem valor, mostra o conteúdo, senão remove
+    const ifRegex = /\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g;
+    
+    processedHtml = processedHtml.replace(ifRegex, (match, varName, content) => {
+      const varValue = variables[varName];
+      // Se a variável existe e tem valor verdadeiro (não vazio, não false, não 0)
+      if (varValue && varValue !== '' && varValue !== '0' && varValue !== false) {
+        return content;
+      }
+      return '';
+    });
+
+    processedText = processedText.replace(ifRegex, (match, varName, content) => {
+      const varValue = variables[varName];
+      if (varValue && varValue !== '' && varValue !== '0' && varValue !== false) {
+        return content;
+      }
+      return '';
+    });
+
+    // Processar loops {{#each}} ... {{/each}}
+    // Como não temos suporte real para loops, vamos remover essas seções
+    const eachRegex = /\{\{#each\s+\w+\}\}[\s\S]*?\{\{\/each\}\}/g;
+    processedHtml = processedHtml.replace(eachRegex, '');
+    processedText = processedText.replace(eachRegex, '');
+
+    // Remover quaisquer placeholders não substituídos que não foram definidos
+    const unusedPlaceholderRegex = /\{\{[^}]*\}\}/g;
+    processedHtml = processedHtml.replace(unusedPlaceholderRegex, '');
+    processedText = processedText.replace(unusedPlaceholderRegex, '');
 
     return {
       subject: processedSubject,

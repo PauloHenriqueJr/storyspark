@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { emailQueueService } from './emailQueueService';
+import { emailService } from './emailService';
 // UTM type removed because it's not referenced directly in this module
 
 const payloadSchema = z.object({
@@ -23,37 +24,23 @@ const payloadSchema = z.object({
 
 export type WaitlistPayload = z.infer<typeof payloadSchema>;
 
-async function sendWaitlistConfirmationEmail(toEmail: string, selectedIdeas?: string[]) {
+async function sendWaitlistConfirmationEmail(toEmail: string, selectedIdeas?: string[], position?: number, name?: string) {
   try {
-    const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (typeof process !== 'undefined' ? (process as any).env?.VITE_SUPABASE_URL : undefined);
-    if (!supabaseUrl) return;
-
-    const fromName = 'StorySpark';
-    const fromDomain = (import.meta as any).env?.VITE_RESEND_FROM_DOMAIN;
-    const defaultFrom = (import.meta as any).env?.VITE_DEFAULT_FROM_EMAIL || (fromDomain ? `suporte@${fromDomain}` : undefined);
-
-    const body = {
-      ...(defaultFrom ? { from: { email: defaultFrom, name: fromName } } : {}),
-      to: [{ email: toEmail }],
-      subject: 'Você entrou na lista de espera! 🚀',
-      html: `
-        <div style="font-family: Inter, Arial, sans-serif; line-height:1.6; color:#0A0A0A">
-          <h2>Bem-vindo(a) à StorySpark!</h2>
-          <p>Seu e‑mail <strong>${toEmail}</strong> foi confirmado na nossa lista de espera.</p>
-          ${selectedIdeas && selectedIdeas.length ? `<p>Preferências marcadas:</p><ul>${selectedIdeas.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
-          <p>Em breve enviaremos novidades e acesso antecipado. Obrigado por se juntar! 💛</p>
-          <p style="margin-top:24px; font-size:12px; color:#6B7280">Se você não se inscreveu, ignore este e‑mail.</p>
-        </div>
-      `,
-    };
-
-    await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    // Usar o emailService com o template do banco de dados
+    const result = await emailService.sendWaitlistConfirmation({
+      email: toEmail,
+      name: name || toEmail.split('@')[0], // Usar parte do email como nome se não fornecido
+      selectedIdeas: selectedIdeas,
+      waitlistPosition: position || 1 // Posição padrão se não fornecida
     });
+
+    if (!result.success) {
+      console.warn('Falha ao enviar e-mail de confirmação:', result.error);
+    } else {
+      console.log('✅ Email de confirmação enviado com sucesso para:', toEmail);
+    }
   } catch (e) {
-    console.warn('Falha ao enviar e-mail de confirmação da waitlist:', e);
+    console.warn('Erro ao enviar e-mail de confirmação da waitlist:', e);
   }
 }
 
@@ -83,7 +70,6 @@ export async function addToWaitlist(payload: WaitlistPayload) {
           (typeof document !== "undefined" ? document.referrer : null)) ||
         null,
       p_variant: variant ?? null,
-      p_ideas: ideas ?? null,
     });
 
     if (error) return { ok: false, error: error.message };
@@ -132,9 +118,19 @@ export async function addToWaitlist(payload: WaitlistPayload) {
         }
       } catch {}
 
-      // Disparar e-mail de confirmação (best-effort, não bloqueante)
+      // Obter posição real na waitlist e enviar email de confirmação
       try {
-        sendWaitlistConfirmationEmail(email, ideas).catch(() => {});
+        // Buscar a posição real do usuário na waitlist
+        const { data: signupData } = await supabase
+          .from('waitlist_signups')
+          .select('position, metadata')
+          .eq('email', email)
+          .single();
+        
+        const position = signupData?.position || next; // Usar contador local como fallback
+        const name = signupData?.metadata?.name || email.split('@')[0]; // Usar nome do metadata se disponível
+        
+        sendWaitlistConfirmationEmail(email, ideas, position, name).catch(() => {});
       } catch {}
 
       return { ok: true };

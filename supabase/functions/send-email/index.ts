@@ -83,6 +83,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Obter token do Resend das variáveis de ambiente
     const resendToken = Deno.env.get('RESEND_API_KEY')
+    const emailMode = Deno.env.get('EMAIL_MODE') || 'development'
+    const testEmail = Deno.env.get('TEST_EMAIL') || 'paulojack2011@gmail.com'
+    
     if (!resendToken) {
       console.error('RESEND_API_KEY não configurado')
       return new Response(
@@ -97,17 +100,41 @@ Deno.serve(async (req: Request): Promise<Response> => {
       )
     }
 
-    // Configurar domínio do remetente
-    const fromDomain = Deno.env.get('RESEND_FROM_DOMAIN') || 'resend.dev'
+    // Configurar domínio do remetente (domínio verificado no Resend)
+    const fromDomain = 'storyspark.com.br'
     const defaultFromEmail = `suporte@${fromDomain}`
     const fromEmail = from || defaultFromEmail
     const senderName = fromName || 'StorySpark'
     
-    // Log para depuração do domínio
+    // Verificar modo de operação baseado no token e configuração
+    const isProductionToken = resendToken.includes('_live_')
+    const isDevelopmentMode = emailMode === 'development' || !isProductionToken
+    
+    let finalTo = to
+    let warningMessage = null
+    
+    if (isDevelopmentMode) {
+      // Em modo desenvolvimento, redirecionar para email de teste
+      console.log('⚠️ Modo desenvolvimento ativo')
+      console.log('📧 Email original:', to)
+      console.log('🔄 Redirecionando para:', testEmail)
+      console.log('📝 Modo:', emailMode)
+      console.log('🔑 Token type:', resendToken.substring(0, 15) + '...')
+      
+      // Adicionar informação do destinatário original no subject
+      subject = `[DEV - Para: ${to}] ${subject}`
+      finalTo = testEmail
+      warningMessage = `Modo desenvolvimento: email redirecionado de ${to} para ${testEmail}`
+    } else {
+      console.log('✅ Modo produção ativo')
+      console.log('📧 Enviando para:', to)
+    }
+    
+    // Log para depuração
     console.log('From domain configurado:', fromDomain)
     console.log('From email configurado:', fromEmail)
     console.log('Sender name:', senderName)
-    console.log('RESEND_FROM_DOMAIN env:', Deno.env.get('RESEND_FROM_DOMAIN'))
+    console.log('Destinatário final:', finalTo)
 
     // Preparar dados do e-mail para o Resend
     // Verificar se o fromEmail já está no formato correto
@@ -145,7 +172,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const emailData = {
       from: formattedFrom,
-      to: [to],
+      to: [finalTo],
       subject: subject,
       html: html
     }
@@ -176,7 +203,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const response: any = {
         success: true,
         messageId: responseData.id || 'sent',
-        message: 'E-mail enviado com sucesso'
+        message: 'E-mail enviado com sucesso',
+        ...(warningMessage && { warning: warningMessage })
       }
       
       return new Response(

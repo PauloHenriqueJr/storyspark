@@ -541,7 +541,7 @@ const AdminEmailTemplates = () => {
             <div style="margin: 20px 0;">
                 <a href="https://storyspark.com">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
-                <a href="mailto:suporte@storyspark.com">Suporte</a>
+                <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
             <div style="margin-top: 20px; font-size: 12px;">
@@ -679,7 +679,7 @@ const AdminEmailTemplates = () => {
             <div style="margin: 20px 0;">
                 <a href="https://storyspark.com">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
-                <a href="mailto:suporte@storyspark.com">Suporte</a>
+                <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
             <div style="margin-top: 20px; font-size: 12px;">
@@ -996,9 +996,9 @@ const AdminEmailTemplates = () => {
               
               <div class="brand-footer">
                 <div class="social-links">
-                  <a href="https://storyspark.com">Website</a> |
-                  <a href="https://storyspark.com/blog">Blog</a> |
-                  <a href="mailto:suporte@storyspark.com">Suporte</a>
+                  <a href="https://storyspark.com.">Website</a> |
+.                  <a href="https://storyspark.com/blog">Blog</a> |
+                  <a href="mailto:suporte@storyspark.com.br">Suporte</a>
                 </div>
                 <p>© 2024 StorySpark. Todos os direitos reservados.</p>
                 <p class="unsubscribe-text">
@@ -1119,9 +1119,9 @@ const AdminEmailTemplates = () => {
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com">Website</a> |
-                <a href="https://blog.storyspark.com">Blog</a> |
-                <a href="mailto:suporte@storyspark.com">Suporte</a>
+                <a href="https://storyspark.com.br">Website</a> |
+                <a href="https://blog.storyspark.com.br">Blog</a> |
+                <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
             <div style="margin-top: 20px; font-size: 12px;">
@@ -1305,9 +1305,9 @@ Preferências: {{preferencesUrl}}`
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com">Website</a> |
+                <a href="https://storyspark.com.br">Website</a> |
                 <a href="https://blog.storyspark.com">Blog</a> |
-                <a href="mailto:suporte@storyspark.com">Suporte</a>
+                <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
             <div style="margin-top: 20px; font-size: 12px;">
@@ -1468,9 +1468,9 @@ Primeiros passos:
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com">Website</a> |
-                <a href="https://blog.storyspark.com">Blog</a> |
-                <a href="mailto:suporte@storyspark.com">Suporte</a>
+                <a href="https://storyspark.com.br">Website</a> |
+                <a href="https://blog.storyspark.com.br">Blog</a> |
+                <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
             <div style="margin-top: 20px; font-size: 12px;">
@@ -1532,7 +1532,7 @@ Equipe StorySpark
 
       // Empresa
       companyName: 'StorySpark',
-      supportEmail: 'suporte@storyspark.com',
+      supportEmail: 'suporte@storyspark.com.br',
       senderName: 'Equipe StorySpark',
 
       // Waitlist

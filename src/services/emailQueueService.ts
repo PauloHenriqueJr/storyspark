@@ -179,16 +179,23 @@ class EmailQueueService {
   private async sendWaitlistConfirmation(
     emailItem: EmailQueueItem
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const templateData = emailItem.template_data as WaitlistConfirmationData;
+    const templateData = emailItem.template_data as any;
 
-    if (!templateData.email || !templateData.waitlistPosition) {
+    if (!emailItem.email || !templateData.waitlistPosition) {
       return {
         success: false,
         error: "Dados do template inválidos para confirmação da waitlist",
       };
     }
 
-    return await emailService.sendWaitlistConfirmation(templateData);
+    // Construir dados completos para o serviço de email
+    const waitlistData: WaitlistConfirmationData = {
+      email: emailItem.email,
+      waitlistPosition: templateData.waitlistPosition,
+      selectedIdeas: templateData.selectedIdeas || []
+    };
+
+    return await emailService.sendWaitlistConfirmation(waitlistData);
   }
 
   // Atualizar status do email na fila
