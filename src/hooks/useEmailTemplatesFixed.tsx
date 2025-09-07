@@ -2,11 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
-// Interface para os templates de email
+// Interface para os templates de email (baseada na estrutura real da tabela)
 export interface EmailTemplate {
     id: string;
     name: string;
-    description: string;
     subject: string;
     html_content: string;
     text_content: string;
@@ -14,15 +13,15 @@ export interface EmailTemplate {
     variables: string[];
     category: string;
     is_active: boolean;
-    usage_count: number;
+    metadata: any;
     created_at: string;
     updated_at: string;
-    workspace_id: string;
-    metadata: {
-        subject: string;
-        html_content: string;
-        text_content: string;
-    };
+    created_by?: string;
+
+    // Campos adicionais para compatibilidade com componentes existentes
+    description?: string; // Calculado a partir do metadata ou nome
+    usage_count?: number; // Pode ser calculado se necessário
+    workspace_id?: string; // Alias para created_by
 }
 
 // Detectar variáveis no template
@@ -54,31 +53,35 @@ export const useEmailTemplatesFixed = () => {
                 throw supabaseError;
             }
 
+            console.log('Dados brutos do banco:', rawData);
+
             // Mapear dados do banco para o formato do hook
             const mappedTemplates: EmailTemplate[] = (rawData || []).map((template: any) => {
                 const htmlContent = template.html_content || '';
                 const templateVariables = detectTemplateVariables(htmlContent);
+                const variablesFromDB = Array.isArray(template.variables) ? template.variables : templateVariables;
+
+                console.log('Mapeando template:', template.name, template);
 
                 return {
                     id: template.id,
                     name: template.name,
-                    description: template.description || '',
                     subject: template.subject || template.name,
                     html_content: htmlContent,
                     text_content: template.text_content || '',
-                    template_variables: template.variables || templateVariables,
-                    variables: template.variables || templateVariables,
+                    template_variables: variablesFromDB,
+                    variables: variablesFromDB,
                     category: template.category || 'Geral',
                     is_active: template.is_active !== false,
-                    usage_count: 0,
+                    metadata: template.metadata || {},
                     created_at: template.created_at || '',
                     updated_at: template.updated_at || '',
-                    workspace_id: template.created_by || 'default',
-                    metadata: {
-                        subject: template.subject || template.name,
-                        html_content: htmlContent,
-                        text_content: template.text_content || ''
-                    }
+                    created_by: template.created_by,
+
+                    // Campos calculados para compatibilidade
+                    description: template.metadata?.description || `Template: ${template.name}`,
+                    usage_count: template.metadata?.usage_count || 0,
+                    workspace_id: template.created_by || 'default'
                 };
             });
 
@@ -111,13 +114,16 @@ export const useEmailTemplatesFixed = () => {
 
             const templateToInsert = {
                 name: templateData.name || 'Novo Template',
-                description: templateData.description || '',
                 subject: templateData.subject || 'Assunto',
                 html_content: templateData.html_content || '',
                 text_content: templateData.text_content || '',
                 category: templateData.category || 'Geral',
                 variables: templateData.variables || [],
                 is_active: templateData.is_active !== false,
+                metadata: {
+                    description: templateData.description || '',
+                    ...templateData.metadata
+                },
                 created_by: 'system'
             };
 
@@ -135,7 +141,6 @@ export const useEmailTemplatesFixed = () => {
             const newTemplate: EmailTemplate = {
                 id: data.id,
                 name: data.name,
-                description: data.description || '',
                 subject: data.subject,
                 html_content: data.html_content,
                 text_content: data.text_content || '',
@@ -143,15 +148,15 @@ export const useEmailTemplatesFixed = () => {
                 variables: data.variables || [],
                 category: data.category,
                 is_active: data.is_active,
-                usage_count: 0,
+                metadata: data.metadata || {},
                 created_at: data.created_at,
                 updated_at: data.updated_at || data.created_at,
-                workspace_id: data.created_by,
-                metadata: {
-                    subject: data.subject,
-                    html_content: data.html_content,
-                    text_content: data.text_content || ''
-                }
+                created_by: data.created_by,
+
+                // Campos calculados
+                description: data.metadata?.description || `Template: ${data.name}`,
+                usage_count: 0,
+                workspace_id: data.created_by
             };
 
             // Atualizar a lista local
@@ -184,33 +189,32 @@ export const useEmailTemplatesFixed = () => {
         try {
             setLoading(true);
 
-            const updateData = {
-                name: templateData.name,
-                description: templateData.description,
-                subject: templateData.subject,
-                html_content: templateData.html_content,
-                text_content: templateData.text_content,
-                category: templateData.category,
-                variables: templateData.variables,
-                is_active: templateData.is_active,
-                updated_at: new Date().toISOString()
-            };
+            console.log('Atualizando template com dados:', templateData);
+            console.log('Template ID:', id);
 
-            // Remover campos undefined
-            Object.keys(updateData).forEach(key => {
-                if (updateData[key as keyof typeof updateData] === undefined) {
-                    delete updateData[key as keyof typeof updateData];
-                }
-            });
-
-            const { error: supabaseError } = await supabase
-                .from('email_templates' as any)
-                .update(updateData)
-                .eq('id', id);
+            // Usar a função RPC que bypassa o RLS
+            const { data: updateResult, error: supabaseError } = await supabase
+                .rpc('update_email_template', {
+                    template_id: id,
+                    template_name: templateData.name,
+                    template_subject: templateData.subject,
+                    template_html_content: templateData.html_content,
+                    template_text_content: templateData.text_content,
+                    template_category: templateData.category,
+                    template_variables: templateData.variables ? JSON.stringify(templateData.variables) : null,
+                    template_is_active: templateData.is_active
+                });
 
             if (supabaseError) {
+                console.error('Erro do Supabase:', supabaseError);
                 throw supabaseError;
             }
+
+            if (!updateResult?.success) {
+                throw new Error(updateResult?.error || 'Erro ao atualizar template');
+            }
+
+            console.log('Template atualizado com sucesso:', updateResult);
 
             // Atualizar a lista local
             setTemplates(prev => prev.map(template =>

@@ -125,7 +125,7 @@ const EmailPreview = ({ html, width }: { html: string; width?: number }) => {
         title="Email Preview"
         className="w-full"
         style={{ height: 300, border: 'none', backgroundColor: 'white' }}
-        sandbox="allow-same-origin"
+        sandbox="allow-same-origin allow-scripts"
         loading="lazy"
       />
     </div>
@@ -329,7 +329,7 @@ const AdminEmailTemplates = () => {
   useEffect(() => {
     if (selectedTemplate && isEditDialogOpen) {
       const initialVars: Record<string, string> = {};
-      selectedTemplate.variables.forEach(v => {
+      (selectedTemplate.variables || []).forEach(v => {
         initialVars[v] = getDefaultTestValues(v);
       });
       setEditTemplateVars(initialVars);
@@ -1655,27 +1655,34 @@ Equipe StorySpark
       return;
     }
 
-    if (!selectedTemplate.metadata?.subject?.trim()) {
+    if (!selectedTemplate.subject?.trim()) {
       toast.error('Assunto do email é obrigatório');
       return;
     }
 
-    if (!selectedTemplate.metadata?.html_content?.trim()) {
+    if (!selectedTemplate.html_content?.trim()) {
       toast.error('Conteúdo HTML é obrigatório');
       return;
     }
 
+    console.log('Dados do template selecionado:', selectedTemplate);
+
     setIsUpdating(true);
     try {
-      const success = await updateTemplate(selectedTemplate.id, {
+      const templateUpdate = {
         name: selectedTemplate.name.trim(),
         description: selectedTemplate.description?.trim(),
-        subject: selectedTemplate.metadata?.subject?.trim(),
-        html_content: selectedTemplate.metadata?.html_content,
-        text_content: selectedTemplate.metadata?.text_content,
+        subject: selectedTemplate.subject?.trim(),
+        html_content: selectedTemplate.html_content,
+        text_content: selectedTemplate.text_content,
         category: selectedTemplate.category,
-        is_active: true
-      });
+        variables: selectedTemplate.variables || [],
+        is_active: selectedTemplate.is_active !== false
+      };
+
+      console.log('Enviando atualização:', templateUpdate);
+
+      const success = await updateTemplate(selectedTemplate.id, templateUpdate);
 
       if (success) {
         setIsEditDialogOpen(false);
@@ -1740,6 +1747,9 @@ Equipe StorySpark
 
   // Editar template
   const handleEditTemplate = (template: EmailTemplate) => {
+    console.log('Editando template:', template);
+    console.log('HTML Content:', template.html_content);
+    console.log('Subject:', template.subject);
     setSelectedTemplate(template);
     setIsEditDialogOpen(true);
   };
@@ -1785,7 +1795,7 @@ Equipe StorySpark
     const matchesSearch = (
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (template.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (template.metadata?.subject || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (template.subject || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
     const norm = (s: string | undefined | null) => (s || '').toLowerCase();
     const hasCategoryFilter = selectedCategory && selectedCategory !== 'all';
@@ -1806,9 +1816,9 @@ Equipe StorySpark
         ...selectedTemplate,
         variables,
         template_variables: variables,
+        html_content: content, // Salvar diretamente no template
         metadata: {
-          ...selectedTemplate.metadata,
-          html_content: content
+          ...selectedTemplate.metadata
         }
       });
       // Sincroniza variáveis do editor
@@ -1871,15 +1881,15 @@ Equipe StorySpark
         }
       } else if (selectedTemplate) {
         const { subject, html } = applyVars(
-          selectedTemplate.metadata?.subject || selectedTemplate.subject,
-          selectedTemplate.metadata?.html_content || selectedTemplate.html_content,
+          selectedTemplate.subject,
+          selectedTemplate.html_content,
           editTemplateVars
         );
         const res = await emailService.sendEmail({
           to: [{ email: testRecipient }],
           subject: subject || '(sem assunto)',
           html,
-          text: selectedTemplate.metadata?.text_content || selectedTemplate.text_content,
+          text: selectedTemplate.text_content,
           category: `${selectedTemplate.id}_test`
         });
         if (res.success) {
@@ -3047,11 +3057,11 @@ Equipe StorySpark
                     </div>
                   )}
                 </div>
-                {newTemplate.variables.length > 0 && (
+                {(newTemplate.variables || []).length > 0 && (
                   <div className="mt-4 space-y-2">
                     <Label>Variáveis para Preview/Teste</Label>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      {newTemplate.variables.map((variable) => (
+                      {(newTemplate.variables || []).map((variable) => (
                         <div key={variable} className="space-y-1">
                           <Label className="text-xs text-muted-foreground">{`{{${variable}}}`}</Label>
                           <Input
@@ -3099,11 +3109,11 @@ Equipe StorySpark
               </TabsContent>
             </Tabs>
 
-            {newTemplate.variables.length > 0 && (
+            {(newTemplate.variables || []).length > 0 && (
               <div>
                 <Label>Variáveis Detectadas</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {newTemplate.variables.map((variable) => (
+                  {(newTemplate.variables || []).map((variable) => (
                     <Badge key={variable} variant="secondary">
                       {variable}
                     </Badge>
@@ -3184,7 +3194,7 @@ Equipe StorySpark
           <DialogHeader>
             <DialogTitle>Visualizar Template</DialogTitle>
             <DialogDescription>
-              {selectedTemplate?.name} - {selectedTemplate?.metadata?.subject}
+              {selectedTemplate?.name} - {selectedTemplate?.subject}
             </DialogDescription>
           </DialogHeader>
 
@@ -3199,21 +3209,21 @@ Equipe StorySpark
               <TabsContent value="preview" className="space-y-4">
                 <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
                   <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-                    <strong>Assunto:</strong> {selectedTemplate.metadata?.subject}
+                    <strong>Assunto:</strong> {selectedTemplate.subject}
                   </div>
-                  <EmailPreview html={selectedTemplate.metadata?.html_content || ''} />
+                  <EmailPreview html={selectedTemplate.html_content || ''} />
                 </div>
               </TabsContent>
 
               <TabsContent value="html">
                 <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg text-sm overflow-auto max-h-96 text-gray-900 dark:text-gray-100">
-                  <code>{selectedTemplate.metadata?.html_content}</code>
+                  <code>{selectedTemplate.html_content}</code>
                 </pre>
               </TabsContent>
 
               <TabsContent value="text">
                 <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg text-sm overflow-auto max-h-96 text-gray-900 dark:text-gray-100">
-                  {selectedTemplate.metadata?.text_content}
+                  {selectedTemplate.text_content}
                 </pre>
               </TabsContent>
             </Tabs>
@@ -3274,13 +3284,10 @@ Equipe StorySpark
                 <Label htmlFor="edit-subject">Assunto do Email</Label>
                 <Input
                   id="edit-subject"
-                  value={selectedTemplate.metadata?.subject}
+                  value={selectedTemplate.subject ?? ''}
                   onChange={(e) => setSelectedTemplate({
                     ...selectedTemplate,
-                    metadata: {
-                      ...selectedTemplate.metadata,
-                      subject: e.target.value
-                    }
+                    subject: e.target.value
                   })}
                 />
               </div>
@@ -3295,7 +3302,7 @@ Equipe StorySpark
                 <TabsContent value="html" className="space-y-2">
                   <Label htmlFor="edit-html-content">Conteúdo HTML</Label>
                   <CodeEditor
-                    value={selectedTemplate.metadata?.html_content ?? ''}
+                    value={selectedTemplate.html_content ?? ''}
                     onChange={handleHtmlContentChange}
                     language="html"
                     height="300px"
@@ -3308,13 +3315,10 @@ Equipe StorySpark
                   <Label htmlFor="edit-text-content">Conteúdo em Texto</Label>
                   <Textarea
                     id="edit-text-content"
-                    value={selectedTemplate.metadata?.text_content}
+                    value={selectedTemplate.text_content ?? ''}
                     onChange={(e) => setSelectedTemplate({
                       ...selectedTemplate,
-                      metadata: {
-                        ...selectedTemplate.metadata,
-                        text_content: e.target.value
-                      }
+                      text_content: e.target.value
                     })}
                     className="min-h-[200px]"
                   />
@@ -3331,10 +3335,10 @@ Equipe StorySpark
                     </div>
                   </div>
                   <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800 min-h-[200px]">
-                    {selectedTemplate.metadata?.subject && (
+                    {selectedTemplate.subject && (
                       <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
                         <strong>Assunto:</strong> {(() => {
-                          let s = selectedTemplate.metadata!.subject as string;
+                          let s = selectedTemplate.subject as string;
                           Object.entries(editTemplateVars).forEach(([k, v]) => {
                             s = s.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
                           });
@@ -3342,10 +3346,10 @@ Equipe StorySpark
                         })()}
                       </div>
                     )}
-                    {selectedTemplate.metadata?.html_content ? (
+                    {selectedTemplate.html_content ? (
                       <EmailPreview
                         html={(() => {
-                          let html = selectedTemplate.metadata?.html_content as string;
+                          let html = selectedTemplate.html_content as string;
                           Object.entries(editTemplateVars).forEach(([k, v]) => {
                             html = html.replace(new RegExp(`{{${k}}}`, 'g'), String(v ?? ''));
                           });
@@ -3359,11 +3363,11 @@ Equipe StorySpark
                       </div>
                     )}
                   </div>
-                  {selectedTemplate.variables.length > 0 && (
+                  {(selectedTemplate.variables || []).length > 0 && (
                     <div className="mt-4 space-y-2">
                       <Label>Variáveis para Preview/Teste</Label>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                        {selectedTemplate.variables.map((variable) => (
+                        {(selectedTemplate.variables || []).map((variable) => (
                           <div key={variable} className="space-y-1">
                             <Label className="text-xs text-muted-foreground">{`{{${variable}}}`}</Label>
                             <Input
@@ -3411,11 +3415,11 @@ Equipe StorySpark
                 </TabsContent>
               </Tabs>
 
-              {selectedTemplate.variables.length > 0 && (
+              {(selectedTemplate.variables || []).length > 0 && (
                 <div>
                   <Label>Variáveis Detectadas</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedTemplate.variables.map((variable) => (
+                    {(selectedTemplate.variables || []).map((variable) => (
                       <Badge key={variable} variant="secondary">
                         {variable}
                       </Badge>
@@ -3440,7 +3444,7 @@ Equipe StorySpark
                         variant="outline"
                         size="sm"
                         onClick={() => handleSendTest('edit')}
-                        disabled={!testRecipient || !selectedTemplate.metadata?.html_content || isSendingTest}
+                        disabled={!testRecipient || !selectedTemplate.html_content || isSendingTest}
                       >
                         {isSendingTest ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -3465,12 +3469,10 @@ Equipe StorySpark
                     ...selectedTemplate,
                     name: selectedTemplate.name,
                     description: selectedTemplate.description,
-                    metadata: {
-                      ...selectedTemplate.metadata,
-                      subject: selectedTemplate.metadata?.subject,
-                      html_content: selectedTemplate.metadata?.html_content,
-                      text_content: selectedTemplate.metadata?.text_content
-                    }
+                    subject: selectedTemplate.subject,
+                    html_content: selectedTemplate.html_content,
+                    text_content: selectedTemplate.text_content,
+                    metadata: selectedTemplate.metadata
                   });
                 }
                 setEditTemplateVars({});
@@ -3482,7 +3484,7 @@ Equipe StorySpark
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateTemplate} disabled={!selectedTemplate?.name || !selectedTemplate?.metadata?.subject || !selectedTemplate?.metadata?.html_content || isUpdating}>
+            <Button onClick={handleUpdateTemplate} disabled={!selectedTemplate?.name || !selectedTemplate?.subject || !selectedTemplate?.html_content || isUpdating}>
               {isUpdating ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
