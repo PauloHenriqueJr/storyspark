@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { VisuallyHidden } from '@/components/ui/visually-hidden';
 
 // Utils
 import { getPageContext } from './utils/contextDetector';
@@ -180,7 +181,10 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = () => {
 
       {/* Modal */}
       <Dialog open={isModalOpen} onOpenChange={(open) => !open && resetModal()}>
-        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col sm:rounded-lg">
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col sm:rounded-lg" aria-describedby={undefined}>
+          <VisuallyHidden asChild>
+            <DialogTitle>{currentContext.title}</DialogTitle>
+          </VisuallyHidden>
           {activeAction ? (
             renderActionModal()
           ) : (
