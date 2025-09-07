@@ -155,6 +155,7 @@ export class CopyGenerationService {
 
       // Fazer requisição usando o serviço de contingência de IA
       console.log("🔄 Executando requisição de IA...");
+      const systemRules = "Você é um copywriter sênior brasileiro. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
       const response = await aiContingencyService.executeRequest(
         {
           prompt,
@@ -162,6 +163,7 @@ export class CopyGenerationService {
           temperature: aiSettings.temperature,
           userId: request.userId,
           context: "copy_generation",
+          systemPrompt: systemRules,
         },
         aiSettings.defaultProvider
       ); // Usar o provedor configurado no banco
@@ -221,7 +223,7 @@ ${request.briefing}
 
     prompt += `
 
-**INSTRUÇÕES:**
+INSTRUÇÕES:
 1. Crie uma copy otimizada especificamente para ${request.platform}
 2. Use um tom ${request.tone || "adequado ao contexto"}
 3. Inclua elementos visuais apropriados (emojis, quebras de linha, hashtags quando relevante)
@@ -230,8 +232,11 @@ ${request.briefing}
 6. Inclua uma call-to-action clara
 7. Use técnicas de copywriting comprovadas
 
-**FORMATO DA RESPOSTA:**
-Retorne apenas a copy final, sem explicações adicionais. A copy deve estar pronta para ser publicada diretamente na plataforma especificada.`;
+FORMATO DA RESPOSTA (OBRIGATÓRIO):
+- Retorne apenas a copy final, sem explicações adicionais.
+- Não use Markdown (sem * ou **, sem cabeçalhos), nem blocos de código.
+- Não escreva "Copy:" ou coisa semelhante antes do texto.
+- A copy deve estar pronta para ser publicada diretamente na plataforma especificada.`;
 
     return prompt;
   }

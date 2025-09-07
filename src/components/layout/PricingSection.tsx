@@ -4,57 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const plans = [
-  {
-    name: 'Starter',
-    price: 'R$ 29',
-    period: '/mês',
-    description: 'Ideal para criadores individuais',
-    features: [
-      '1.000 créditos de IA por mês',
-      '5 campanhas ativas',
-      '2 vozes de marca',
-      'Suporte por email',
-      'Integrações básicas'
-    ],
-    popular: false
-  },
-  {
-    name: 'Pro',
-    price: 'R$ 89',
-    period: '/mês',
-    description: 'Para equipes e agências',
-    features: [
-      '5.000 créditos de IA por mês',
-      'Campanhas ilimitadas',
-      '10 vozes de marca',
-      'Colaboração em equipe',
-      'Analytics avançados',
-      'Suporte prioritário',
-      'Todas as integrações'
-    ],
-    popular: true
-  },
-  {
-    name: 'Enterprise',
-    price: 'Customizado',
-    period: '',
-    description: 'Para grandes empresas',
-    features: [
-      'Créditos ilimitados',
-      'Workspaces ilimitados',
-      'Vozes de marca ilimitadas',
-      'SSO e segurança avançada',
-      'Suporte dedicado',
-      'Integrações customizadas',
-      'Treinamento personalizado'
-    ],
-    popular: false
-  }
-];
+import { useAdminPlansCache } from '@/hooks/useAdminPlansCache';
 
 export const PricingSection = () => {
+  const { activePlans, loading, formatPrice } = useAdminPlansCache();
+
+  if (loading) {
+    return (
+      <section id="pricing" className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando planos...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="pricing" className="py-24">
       <div className="container mx-auto px-4">
@@ -71,14 +38,17 @@ export const PricingSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan, index) => (
+        <div className={`grid gap-8 max-w-7xl mx-auto ${
+          activePlans.length <= 3 ? `md:grid-cols-${Math.min(activePlans.length, 3)}` : 'md:grid-cols-2 lg:grid-cols-4'
+        }`}>
+          {activePlans.map((plan) => (
             <Card
-              key={index}
-              className={`border-0 shadow-elegant hover:shadow-glow transition-all duration-300 hover:-translate-y-1 ${plan.popular ? 'ring-2 ring-primary relative' : ''
-                }`}
+              key={plan.id}
+              className={`border-0 shadow-elegant hover:shadow-glow transition-all duration-300 hover:-translate-y-1 ${
+                plan.is_popular ? 'ring-2 ring-primary relative' : ''
+              }`}
             >
-              {plan.popular && (
+              {plan.is_popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <Badge className="bg-gradient-primary text-primary-foreground px-4 py-1">
                     <Star className="h-3 w-3 mr-1" />
@@ -90,8 +60,8 @@ export const PricingSection = () => {
               <CardHeader className="text-center pb-8">
                 <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground ml-1">{plan.period}</span>
+                  <span className="text-4xl font-bold">{formatPrice(plan.price_brl)}</span>
+                  {plan.price_brl > 0 && <span className="text-muted-foreground ml-1">/mês</span>}
                 </div>
                 <CardDescription className="text-base mt-2">
                   {plan.description}
@@ -110,14 +80,15 @@ export const PricingSection = () => {
 
                 <Button
                   asChild
-                  className={`w-full ${plan.popular
+                  className={`w-full ${
+                    plan.is_popular
                       ? 'bg-gradient-primary hover:shadow-glow'
                       : 'variant-outline'
-                    }`}
-                  variant={plan.popular ? 'default' : 'outline'}
+                  }`}
+                  variant={plan.is_popular ? 'default' : 'outline'}
                 >
                   <Link to="/register">
-                    {plan.name === 'Enterprise' ? 'Falar com Vendas' : 'Começar Agora'}
+                    {plan.slug === 'enterprise' ? 'Falar com Vendas' : 'Começar Agora'}
                   </Link>
                 </Button>
               </CardContent>

@@ -23,71 +23,36 @@ import ChangePlanModal from '@/components/modals/ChangePlanModal';
 import UsageCalculatorModal from '@/components/modals/UsageCalculatorModal';
 import UpdatePaymentModal from '@/components/modals/UpdatePaymentModal';
 import { useToast } from '@/hooks/use-toast';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { useCredits } from '@/context/CreditsProvider';
+import { useAdminPlansCache } from '@/hooks/useAdminPlansCache';
+
+const planNameToKey = (n: string) => n.toLowerCase();
 
 const Billing = () => {
   const { toast } = useToast();
   const [changePlanModal, setChangePlanModal] = useState(false);
   const [calculatorModal, setCalculatorModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
+  
+  const { workspace } = useWorkspace();
+  const { credits, creditsUsed, remainingCredits, plan, refresh } = useCredits();
+  const { activePlans, getPlanBySlug, formatPrice, formatCredits } = useAdminPlansCache();
+
+  const normalizedPlan = (plan || workspace?.plan || 'free').toLowerCase();
+  const currentPlanData = getPlanBySlug(normalizedPlan);
 
   const currentPlan = {
-    name: 'Plano Pro',
-    price: 'R$ 297',
+    name: currentPlanData?.name || 'Free',
+    price: currentPlanData ? formatPrice(currentPlanData.price_brl) : 'Gratuito',
     period: '/mês',
-    features: ['50.000 copies IA/mês', '10 integrações', 'Analytics avançados', 'Equipe até 5 membros'],
+    features: currentPlanData?.features || ['Acesso limitado', 'Suporte via documentação'],
     usage: {
-      copies: { used: 32500, total: 50000 },
+      copies: { used: creditsUsed || 0, total: credits || 0 },
       integrations: { used: 7, total: 10 },
       team: { used: 4, total: 5 }
     }
   };
-
-  const plans = [
-    {
-      name: 'Starter',
-      price: 'R$ 97',
-      period: '/mês',
-      description: 'Perfeito para pequenos negócios',
-      features: [
-        '10.000 copies IA/mês',
-        '3 integrações',
-        'Analytics básicos',
-        '1 usuário',
-        'Templates básicos'
-      ],
-      popular: false
-    },
-    {
-      name: 'Pro',
-      price: 'R$ 297',
-      period: '/mês',
-      description: 'Para equipes em crescimento',
-      features: [
-        '50.000 copies IA/mês',
-        '10 integrações',
-        'Analytics avançados',
-        'Até 5 usuários',
-        'Templates premium',
-        'Brand voices ilimitadas'
-      ],
-      popular: true
-    },
-    {
-      name: 'Enterprise',
-      price: 'R$ 697',
-      period: '/mês',
-      description: 'Para grandes organizações',
-      features: [
-        'Copies IA ilimitadas',
-        'Integrações ilimitadas',
-        'Analytics enterprise',
-        'Usuários ilimitados',
-        'API personalizada',
-        'Suporte prioritário'
-      ],
-      popular: false
-    }
-  ];
 
   const invoices = [
     {
@@ -179,7 +144,7 @@ const Billing = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Crown className="w-5 h-5 text-primary" />
-                {currentPlan.name}
+                {`Plano ${currentPlan.name}`}
               </CardTitle>
               <Badge className="bg-gradient-primary text-white">
                 Ativo
@@ -236,29 +201,36 @@ const Billing = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Copies Usage */}
+            {/* Copies Usage (dados reais do banco) */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Copies IA</span>
                 <span className="text-sm text-muted-foreground">
-                  {currentPlan.usage.copies.used.toLocaleString()} / {currentPlan.usage.copies.total.toLocaleString()}
+                  {credits === 99999 
+                    ? `${creditsUsed.toLocaleString()} usado · Ilimitado`
+                    : `${creditsUsed.toLocaleString()} / ${credits.toLocaleString()}`}
                 </span>
               </div>
+              <div className="text-xs text-muted-foreground mb-1">
+                {!currentPlanData || currentPlanData.monthly_credits === null 
+                  ? 'Cota mensal planejada: Ilimitado'
+                  : `Cota mensal planejada: ${formatCredits(currentPlanData.monthly_credits)}/mês`}
+              </div>
               <Progress 
-                value={getUsagePercentage(currentPlan.usage.copies.used, currentPlan.usage.copies.total)} 
+                value={credits === 99999 ? 0 : getUsagePercentage(creditsUsed, Math.max(1, credits))} 
                 className="h-2"
               />
               <div className="flex items-center gap-1 mt-1">
-                {getUsagePercentage(currentPlan.usage.copies.used, currentPlan.usage.copies.total) >= 75 && (
+                {credits !== 99999 && getUsagePercentage(creditsUsed, Math.max(1, credits)) >= 75 && (
                   <AlertTriangle 
                     className="w-3 h-3 text-warning cursor-pointer" 
-                    onClick={() => showUsageLimitAlert('Copies IA', getUsagePercentage(currentPlan.usage.copies.used, currentPlan.usage.copies.total))}
+                    onClick={() => showUsageLimitAlert('Copies IA', getUsagePercentage(creditsUsed, Math.max(1, credits)))}
                   />
                 )}
                 <span className="text-xs text-muted-foreground">
-                  {getUsagePercentage(currentPlan.usage.copies.used, currentPlan.usage.copies.total)}% usado
+                  {credits === 99999 ? 'Ilimitado' : `${getUsagePercentage(creditsUsed, Math.max(1, credits))}% usado · ${remainingCredits} restantes`}
                 </span>
-                {getUsagePercentage(currentPlan.usage.copies.used, currentPlan.usage.copies.total) >= 85 && (
+                {credits !== 99999 && getUsagePercentage(creditsUsed, Math.max(1, credits)) >= 85 && (
                   <Button 
                     variant="link" 
                     size="sm" 
@@ -311,10 +283,12 @@ const Billing = () => {
         </TabsList>
 
         <TabsContent value="plans" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <Card key={plan.name} className={`relative ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
-                {plan.popular && (
+          <div className={`grid gap-6 ${
+            activePlans.length <= 3 ? `grid-cols-1 md:grid-cols-${activePlans.length}` : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+          }`}>
+            {activePlans.map((p) => (
+              <Card key={p.id} className={`relative ${p.is_popular ? 'border-primary shadow-lg' : ''}`}>
+                {p.is_popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                     <Badge className="bg-gradient-primary text-white px-3 py-1">
                       <Star className="w-3 h-3 mr-1" />
@@ -324,19 +298,21 @@ const Billing = () => {
                 )}
                 
                 <CardHeader className="text-center">
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
+                  <CardTitle>{p.name}</CardTitle>
+                  <CardDescription>{p.description}</CardDescription>
                   <div className="text-3xl font-bold text-foreground mt-4">
-                    {plan.price}
-                    <span className="text-base font-normal text-muted-foreground">
-                      {plan.period}
-                    </span>
+                    {formatPrice(p.price_brl)}
+                    {p.price_brl > 0 && (
+                      <span className="text-base font-normal text-muted-foreground">
+                        /mês
+                      </span>
+                    )}
                   </div>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    {plan.features.map((feature, index) => (
+                    {p.features.map((feature, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-success" />
                         <span className="text-sm">{feature}</span>
@@ -346,13 +322,13 @@ const Billing = () => {
 
                   <Button 
                     className={`w-full ${
-                      plan.name === 'Pro' ? 'bg-gradient-primary hover:opacity-90' : ''
+                      (plan && plan.toLowerCase() === p.slug) ? 'bg-gradient-primary hover:opacity-90' : ''
                     }`}
-                    variant={plan.name === 'Pro' ? 'default' : 'outline'}
-                    onClick={() => plan.name !== 'Pro' && setChangePlanModal(true)}
-                    disabled={plan.name === 'Pro'}
+                    variant={(plan && plan.toLowerCase() === p.slug) ? 'default' : 'outline'}
+                    onClick={() => (!plan || plan.toLowerCase() !== p.slug) && setChangePlanModal(true)}
+                    disabled={!!plan && plan.toLowerCase() === p.slug}
                   >
-                    {plan.name === 'Pro' ? 'Plano Atual' : 'Selecionar Plano'}
+                    {(plan && plan.toLowerCase() === p.slug) ? 'Plano Atual' : 'Selecionar Plano'}
                   </Button>
                 </CardContent>
               </Card>

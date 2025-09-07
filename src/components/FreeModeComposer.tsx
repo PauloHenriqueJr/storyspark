@@ -115,24 +115,31 @@ export const FreeModeComposer = ({ credits, onCreditsUpdate, onStatsUpdate, sele
       const personaData = selectedPersona ? defaultPersonas.find(p => p.id === selectedPersona) : null;
       const funnelData = selectedFunnelStage ? funnelStages.find(s => s.id === selectedFunnelStage) : null;
       const freeModeContext = `
-Configurações de IA:
-- Temperatura: ${aiConfig.temperatura}
-- Tokens máximos: ${aiConfig.maxTokens}
-- Criatividade: ${aiConfig.criatividade}
-- Formato de saída: ${aiConfig.formato}
+[CONFIG]
+Temperatura: ${aiConfig.temperatura}
+MaxTokens: ${aiConfig.maxTokens}
+Criatividade: ${aiConfig.criatividade}
+Formato: ${aiConfig.formato}
 
-${personaData ? `Persona do público-alvo:
-- Nome: ${personaData.name}
-- Descrição: ${personaData.description}
-- Características: ${personaData.characteristics.join(', ')}
-- Tom preferido: ${personaData.tone}
+${personaData ? `[PERSONA]
+Nome: ${personaData.name}
+Descrição: ${personaData.description}
+Características: ${personaData.characteristics.join(', ')}
+Tom preferido: ${personaData.tone}
 
-` : ''}${funnelData ? `Etapa do funil de vendas:
-- Posição: ${funnelData.name}
-- Objetivo: ${funnelData.description}
+` : ''}${funnelData ? `[FUNIL]
+Etapa: ${funnelData.name}
+Objetivo: ${funnelData.description}
 
-` : ''}Prompt personalizado:
-${processedPrompt}`.trim();
+` : ''}[PROMPT]
+${processedPrompt}
+
+[REGRAS_DE_SAIDA]
+- Responda apenas com a copy final (sem títulos/explicações/prefixos).
+- Não use Markdown (sem * ou **, sem cabeçalhos), nem blocos de código.
+- Integre qualquer hook fornecido de forma natural, sem repetir literalmente.
+- Mantenha pt-BR e quebras de linha adequadas ao canal informado em {canal}.
+`.trim();
 
       // Usar o sistema real de IA com contingência
       const aiRequest = {
@@ -143,12 +150,24 @@ ${processedPrompt}`.trim();
         context: 'composer_advanced_mode'
       };
       
-      const aiResult = await aiContingencyService.executeRequest(aiRequest);
+      const systemRules = "Você é um copywriter sênior brasileiro. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
+      const aiResult = await aiContingencyService.executeRequest({ ...aiRequest, systemPrompt: systemRules });
       if (!aiResult || !aiResult.success) {
         throw new Error('Falha na geração de conteúdo via IA');
       }
       
-      const generatedContent = aiResult.content;
+      const sanitizeAIOutput = (txt: string) => {
+        let s = (txt || '').trim();
+        s = s.replace(/```[\s\S]*?```/g, '');
+        s = s.replace(/^\s*(Copy|Saída)\s*:\s*/i, '');
+        s = s.replace(/\*\*(.+?)\*\*/g, '$1');
+        s = s.replace(/\*(.+?)\*/g, '$1');
+        s = s.replace(/^#.+\n/gm, '');
+        // Remover menções explícitas de faixas etárias do tipo "de 25 a 45 (anos)"
+        s = s.replace(/\bde\s*\d{2}\s*(a|à|até|-)\s*\d{2}(\s*anos?)?\b/gi, '');
+        return s.trim();
+      };
+      const generatedContent = sanitizeAIOutput(aiResult.content);
       console.log(`✨ Copy gerada via ${aiResult.provider} (${aiResult.model}) - ${aiResult.tokensUsed} tokens`);
       // Persistência paralela: memória (atual) e banco (copies)
       const tokensIn = Math.ceil(freeModeContext.length / 4);
@@ -192,22 +211,9 @@ ${processedPrompt}`.trim();
         console.warn('Falha ao salvar copy no banco:', e);
       }
       setGeneratedCopy(generatedContent);
-      
-      // Atualizar créditos a partir do backend (tempo real)
-      try {
-        if (user?.id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('credits')
-            .eq('id', user.id)
-            .single();
-          if (typeof profile?.credits === 'number') {
-            onCreditsUpdate(profile.credits);
-          }
-        }
-      } catch (e) {
-        console.warn('Falha ao buscar créditos atualizados:', e);
-      }
+
+      // Solicitar atualização global (CreditsProvider) e evitar sobrescrever localmente
+      onCreditsUpdate(0);
       
       notifications.success.copyGenerated();
       onStatsUpdate?.();

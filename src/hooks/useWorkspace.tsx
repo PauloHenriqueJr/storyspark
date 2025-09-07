@@ -25,7 +25,7 @@ export const useWorkspace = () => {
         return;
       }
 
-      // Cache simples para workspace
+      // Cache simples para workspace (atualizado por realtime quando disponível)
       const cacheKey = `workspace_${user.id}`;
       const cached = localStorage.getItem(cacheKey);
       const cacheTime = localStorage.getItem(`${cacheKey}_time`);
@@ -35,7 +35,7 @@ export const useWorkspace = () => {
         if (ageMinutes < 10) { // Cache por 10 minutos
           setWorkspace(JSON.parse(cached));
           setLoading(false);
-          return;
+          // segue adiante para (re)assinar realtime
         }
       }
 
@@ -86,6 +86,52 @@ export const useWorkspace = () => {
         const cacheKey = `workspace_${user.id}`;
         localStorage.setItem(cacheKey, JSON.stringify(workspaceWithCredits));
         localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+
+        // Realtime: assinar mudanças em profiles (credits) e workspaces (credits_used, plan)
+        try {
+          // Perfil (créditos do usuário)
+          const profileChannel = supabase.channel(`realtime-profile-${user.id}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, (payload) => {
+              const newCredits = (payload.new as any)?.credits;
+              if (typeof newCredits === 'number') {
+                setWorkspace((prev) => {
+                  if (!prev) return prev;
+                  const updated = { ...prev, credits: newCredits } as any;
+                  localStorage.setItem(cacheKey, JSON.stringify(updated));
+                  localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+                  return updated;
+                });
+              }
+            })
+            .subscribe();
+
+          // Workspace (credits_used, plan etc.)
+          const wsId = workspace.id;
+          const workspaceChannel = supabase.channel(`realtime-workspace-${wsId}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'workspaces', filter: `id=eq.${wsId}` }, (payload) => {
+              const updatedRow = payload.new as any;
+              setWorkspace((prev) => {
+                if (!prev) return prev;
+                const updated = {
+                  ...prev,
+                  credits_used: typeof updatedRow.credits_used === 'number' ? updatedRow.credits_used : prev.credits_used,
+                  plan: updatedRow.plan ?? prev.plan,
+                } as any;
+                localStorage.setItem(cacheKey, JSON.stringify(updated));
+                localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+                return updated;
+              });
+            })
+            .subscribe();
+
+          // Cleanup quando usuário mudar
+          return () => {
+            try { profileChannel.unsubscribe(); } catch {}
+            try { workspaceChannel.unsubscribe(); } catch {}
+          };
+        } catch (e) {
+          console.warn('Falha ao assinar realtime de créditos:', e);
+        }
         } else {
           // Create default workspace if none exists
           const { data: newWorkspace, error: createError } = await supabase

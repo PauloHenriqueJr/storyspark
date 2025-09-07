@@ -49,6 +49,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Upload, History } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
 import { useWorkspace } from '@/hooks/useWorkspace';
+import { useCredits } from '@/context/CreditsProvider';
 
 // Define the navigation item interface
 interface NavItem {
@@ -155,6 +156,7 @@ const adminSection: NavSection = {
   items: [
     { title: 'Admin Dashboard', url: '/admin', icon: Shield },
     { title: 'Feature Flags', url: '/admin/feature-flags', icon: Settings },
+    { title: 'Gerenciar Planos', url: '/admin/plans', icon: CreditCard, badge: 'Novo' },
     { title: 'Clientes', url: '/admin/users', icon: UserCog },
     { title: 'Gerentes', url: '/admin/managers', icon: Crown },
     { title: 'Email Marketing', url: '/admin/email-templates', icon: Mail },
@@ -176,6 +178,7 @@ export const AppSidebar = () => {
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
   const { workspace } = useWorkspace();
+  const { credits, creditsUsed, remainingCredits } = useCredits();
 
   // State for collapsible sections - keeps Principal open by default
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -333,9 +336,9 @@ export const AppSidebar = () => {
     );
   };
 
-  const remainingCredits = workspace ? Math.max(0, (workspace.credits || 0) - (workspace.credits_used || 0)) : 0;
-  const totalCredits = workspace ? workspace.credits || 0 : 0;
-  const creditsPercent = totalCredits > 0 ? (remainingCredits / totalCredits) * 100 : 0;
+  // Usar fonte única do CreditsProvider
+  const totalCredits = credits;
+  const creditsPercent = totalCredits === 99999 ? 0 : (remainingCredits / Math.max(1, totalCredits)) * 100;
   const lowCredits = creditsPercent < 30;  // Alertar quando menos de 30%
   const criticalCredits = creditsPercent < 15;  // Crítico quando menos de 15%
   
@@ -403,12 +406,12 @@ export const AppSidebar = () => {
                         }`}
                       >
                         <Zap className="w-3 h-3 mr-1" />
-                        {totalCredits === -1 ? '∞' : `${remainingCredits}/${totalCredits}`}
+                        {totalCredits === 99999 ? '∞' : `${remainingCredits}/${totalCredits}`}
                       </Badge>
                     </div>
                     
                     {/* Progress Bar */}
-                    {totalCredits !== -1 && (
+                    {totalCredits !== 99999 && (
                       <div className="space-y-1">
                         <Progress 
                           value={creditsPercent} 
@@ -421,7 +424,7 @@ export const AppSidebar = () => {
                           } as React.CSSProperties}
                         />
                         <div className="flex justify-between text-[10px] text-sidebar-foreground/50">
-                          <span>{creditsPercent.toFixed(0)}% restante</span>
+                          <span>{Math.min(100, Math.round(creditsPercent))}% restante</span>
                           <span>{remainingCredits} créditos</span>
                         </div>
                       </div>

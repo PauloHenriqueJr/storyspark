@@ -23,6 +23,7 @@ import { CreditAlert } from '@/components/ui/credit-alert';
 
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useWorkspace } from '@/hooks/useWorkspace';
+import { useCredits } from '@/context/CreditsProvider';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
@@ -81,6 +82,7 @@ const Dashboard = () => {
     error
   } = useDashboardStats();
   const { workspace, loading: workspaceLoading } = useWorkspace();
+  const { credits, creditsUsed, remainingCredits, plan, refresh } = useCredits();
   const { addNotification } = useNotifications();
   const { isFlagEnabled } = useFeatureFlags();
 
@@ -364,10 +366,14 @@ const Dashboard = () => {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Créditos Usados</span>
-                  <span>{workspace ? Math.round((workspace.credits_used / workspace.credits) * 100) : 0}%</span>
+                  <span>Créditos</span>
+                  {credits === 99999 ? (
+                    <span>Ilimitado</span>
+                  ) : (
+                    <span>{Math.min(100, Math.round((creditsUsed / Math.max(1, credits)) * 100))}% usados · {remainingCredits} restantes</span>
+                  )}
                 </div>
-                <Progress value={workspace ? (workspace.credits_used / workspace.credits) * 100 : 0} className="h-2" />
+                <Progress value={credits === 99999 ? 0 : (creditsUsed / Math.max(1, credits)) * 100} className="h-2" />
               </div>
             </div>
           </CardContent>

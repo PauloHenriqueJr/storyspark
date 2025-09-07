@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -7,9 +6,9 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { NotificationProvider } from '@/hooks/useNotifications';
+import { CreditsProvider } from '@/context/CreditsProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
 import { analytics } from '@/services/analytics';
-
-const queryClient = new QueryClient();
 
 interface AppWrapperProps {
   children: React.ReactNode;
@@ -66,7 +65,7 @@ export const AppWrapper = ({ children }: AppWrapperProps) => {
     return () => window.removeEventListener('scroll', onScroll);
   }, [location.pathname]);
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryProvider>
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <TooltipProvider>
           <Toaster />
@@ -78,14 +77,16 @@ export const AppWrapper = ({ children }: AppWrapperProps) => {
             }}
           >
             <AuthProvider>
-              <NotificationProvider>
-                <RouteTracker />
-                {children}
-              </NotificationProvider>
+              <CreditsProvider>
+                <NotificationProvider>
+                  <RouteTracker />
+                  {children}
+                </NotificationProvider>
+              </CreditsProvider>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
-    </QueryClientProvider>
+    </QueryProvider>
   );
 };

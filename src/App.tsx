@@ -74,6 +74,7 @@ const AdminBackup = React.lazy(() => import('./pages/admin/AdminBackup'));
 const AdminWaitlist = React.lazy(() => import('./pages/admin/AdminWaitlist'));
 const AdminJobs = React.lazy(() => import('./pages/admin/AdminJobs'));
 const AdminEmailTemplates = React.lazy(() => import('./pages/admin/AdminEmailTemplates'));
+const AdminPlans = React.lazy(() => import('./pages/AdminPlans'));
 import { AdminFeatureFlags } from './pages/admin/AdminFeatureFlags';
 
 // Calendar Wrapper Component
@@ -532,6 +533,15 @@ const App = () => (
           <AppLayout>
             <LazyLoadWrapper>
               <AdminEmailTemplates />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/plans" element={
+        <ProtectedRoute adminOnly={true}>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminPlans />
             </LazyLoadWrapper>
           </AppLayout>
         </ProtectedRoute>

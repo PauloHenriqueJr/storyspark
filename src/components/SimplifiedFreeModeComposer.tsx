@@ -121,14 +121,17 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
         .replace(/\{objetivo\}/g, progress.quickConfig.objetivo || 'engajar')
         .replace(/\{canal\}/g, progress.quickConfig.canal || 'redes sociais')
         .replace(/\{tom\}/g, progress.selectedTone.value);
+
+      const outputRules = `\n\nREGRAS DE SAÍDA (OBRIGATÓRIAS):\n- Responda APENAS com a copy final (sem explicações, títulos ou prefixos como \"Copy:\").\n- NÃO use Markdown (sem * ou **, sem ###), nem blocos de código.\n- Integre naturalmente o hook se existir, sem repeti-lo literalmente.\n- Use quebras de linha compatíveis com ${progress.quickConfig.canal || progress.selectedTemplate.platform}.\n- Escreva 100% em pt-BR.\n`;
       for (const field of progress.selectedTemplate.requiredFields) {
         const value = progress.customInputs[field.id] || '';
         processedPrompt = processedPrompt.replace(new RegExp(`\\{${field.id}\\}`, 'g'), value);
       }
       if (selectedHook) {
-        const hookCtx = `Baseado neste hook validado: "${selectedHook.text}"\n\nExemplo de aplicação: "${selectedHook.example}"\nCategoria do hook: ${selectedHook.category}\n\n`;
+        const hookCtx = `Contexto de Hook (usar de forma natural, sem repetir literalmente):\n- Texto do hook: \"${selectedHook.text}\"\n- Categoria: ${selectedHook.category}\n- Exemplo de aplicação: \"${selectedHook.example}\"\n\n`;
         processedPrompt = hookCtx + processedPrompt;
       }
+      processedPrompt += outputRules;
       // Usar o sistema real de IA com contingência
       const aiRequest = {
         prompt: processedPrompt,
@@ -138,12 +141,24 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
         context: 'composer_simplified_mode'
       };
 
-      const aiResult = await aiContingencyService.executeRequest(aiRequest);
+      const systemRules = "Você é um copywriter sênior brasileiro. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
+      const aiResult = await aiContingencyService.executeRequest({ ...aiRequest, systemPrompt: systemRules });
       if (!aiResult || !aiResult.success) {
         throw new Error('Falha na geração de conteúdo via IA');
       }
-
-      const generatedContent = aiResult.content;
+      
+      const sanitizeAIOutput = (txt: string) => {
+        let s = (txt || '').trim();
+        s = s.replace(/```[\s\S]*?```/g, '');
+        s = s.replace(/^\s*(Copy|Saída)\s*:\s*/i, '');
+        s = s.replace(/\*\*(.+?)\*\*/g, '$1');
+        s = s.replace(/\*(.+?)\*/g, '$1');
+        s = s.replace(/^#.+\n/gm, '');
+        // Remover menções explícitas de faixas etárias do tipo "de 25 a 45 (anos)"
+        s = s.replace(/\bde\s*\d{2}\s*(a|à|até|-)\s*\d{2}(\s*anos?)?\b/gi, '');
+        return s.trim();
+      };
+      const generatedContent = sanitizeAIOutput(aiResult.content);
       console.log(`✨ Copy gerada via ${aiResult.provider} (${aiResult.model}) - ${aiResult.tokensUsed} tokens`);
       const tokensIn = Math.ceil(processedPrompt.length / 4);
       const tokensOut = Math.ceil(generatedContent.length / 4);
@@ -178,22 +193,9 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
         console.warn('Falha ao salvar copy no banco (simplified):', e);
       }
       setGeneratedCopy(generatedContent);
-      
-      // Atualizar créditos a partir do backend (tempo real)
-      try {
-        if (user?.id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('credits')
-            .eq('id', user.id)
-            .single();
-          if (typeof profile?.credits === 'number') {
-            onCreditsUpdate(profile.credits);
-          }
-        }
-      } catch (e) {
-        console.warn('Falha ao buscar créditos atualizados:', e);
-      }
+
+      // Solicitar atualização global (CreditsProvider) e evitar sobrescrever localmente
+      onCreditsUpdate(0);
       
       notifications.success.copyGenerated();
       onStatsUpdate?.();

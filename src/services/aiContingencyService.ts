@@ -24,6 +24,7 @@ interface AIRequest {
   temperature?: number;
   userId?: string;
   context?: string;
+  systemPrompt?: string; // regras de saída e instruções globais (não deve aparecer na resposta)
 }
 
 interface AIResponse {
@@ -230,6 +231,10 @@ class AIContingencyService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          system_instruction: request.systemPrompt ? {
+            role: "system",
+            parts: [{ text: request.systemPrompt }]
+          } : undefined,
           contents: [
             {
               parts: [
@@ -294,6 +299,7 @@ class AIContingencyService {
       body: JSON.stringify({
         model: provider.model,
         messages: [
+          ...(request.systemPrompt ? [{ role: "system", content: request.systemPrompt }] : []),
           {
             role: "user",
             content: request.prompt,
@@ -306,9 +312,7 @@ class AIContingencyService {
 
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(
-        `Erro na API da OpenAI: ${response.status} - ${errorData}`
-      );
+      throw new Error(`Erro na API da OpenAI: ${response.status} - ${errorData}`);
     }
 
     const data = await response.json();
@@ -345,6 +349,7 @@ class AIContingencyService {
       },
       body: JSON.stringify({
         model: provider.model,
+        system: request.systemPrompt || undefined,
         messages: [
           {
             role: "user",
@@ -401,6 +406,7 @@ class AIContingencyService {
         body: JSON.stringify({
           model: provider.model,
           messages: [
+            ...(request.systemPrompt ? [{ role: "system", content: request.systemPrompt }] : []),
             {
               role: "user",
               content: request.prompt,

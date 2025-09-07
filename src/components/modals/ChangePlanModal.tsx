@@ -20,18 +20,15 @@ import {
   CreditCard,
   AlertTriangle
 } from 'lucide-react';
+import { useAdminPlansCache, AdminPlan } from '@/hooks/useAdminPlansCache';
 
-interface Plan {
-  name: string;
-  price: string;
+// Usando AdminPlan do hook, mas mantendo interface para compatibilidade
+type Plan = AdminPlan & {
   period: string;
-  description: string;
-  features: string[];
-  popular?: boolean;
   copies: number;
   integrations: number;
   users: number;
-}
+};
 
 interface ChangePlanModalProps {
   isOpen: boolean;
@@ -48,60 +45,36 @@ const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
 }) => {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [step, setStep] = useState<'select' | 'confirm'>('select');
-
-  const plans: Plan[] = [
-    {
-      name: 'Starter',
-      price: 'R$ 97',
-      period: '/mês',
-      description: 'Perfeito para pequenos negócios',
-      features: [
-        '10.000 copies IA/mês',
-        '3 integrações',
-        'Analytics básicos',
-        '1 usuário',
-        'Templates básicos'
-      ],
-      copies: 10000,
-      integrations: 3,
-      users: 1
-    },
-    {
-      name: 'Pro',
-      price: 'R$ 297',
-      period: '/mês',
-      description: 'Para equipes em crescimento',
-      features: [
-        '50.000 copies IA/mês',
-        '10 integrações',
-        'Analytics avançados',
-        'Até 5 usuários',
-        'Templates premium',
-        'Brand voices ilimitadas'
-      ],
-      popular: true,
-      copies: 50000,
-      integrations: 10,
-      users: 5
-    },
-    {
-      name: 'Enterprise',
-      price: 'R$ 697',
-      period: '/mês',
-      description: 'Para grandes organizações',
-      features: [
-        'Copies IA ilimitadas',
-        'Integrações ilimitadas',
-        'Analytics enterprise',
-        'Usuários ilimitados',
-        'API personalizada',
-        'Suporte prioritário'
-      ],
-      copies: 999999,
-      integrations: 999,
-      users: 999
-    }
-  ];
+  
+  // Usar dados dinâmicos do cache
+  const { activePlans, loading, formatPrice } = useAdminPlansCache();
+  
+  // Converter AdminPlan para Plan (com dados adicionais)
+  const plans: Plan[] = activePlans.map(plan => ({
+    ...plan,
+    period: '/mês',
+    // Mapear monthly_credits para copies (compatibilidade)
+    copies: plan.monthly_credits || 999999,
+    // Dados mock para integrations/users (podem ser adicionados ao banco depois)
+    integrations: plan.slug === 'free' ? 1 : plan.slug === 'starter' ? 3 : plan.slug === 'pro' ? 10 : 999,
+    users: plan.slug === 'free' ? 1 : plan.slug === 'starter' ? 1 : plan.slug === 'pro' ? 5 : 999,
+  }));
+  
+  // Loading state
+  if (loading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Carregando planos...</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handleSelectPlan = (plan: Plan) => {
     if (plan.name === currentPlan) return;
@@ -127,17 +100,20 @@ const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
     const currentPlanData = plans.find(p => p.name === currentPlan);
     if (!currentPlanData) return 0;
     
-    const currentPrice = parseInt(currentPlanData.price.replace('R$ ', ''));
-    const newPrice = parseInt(newPlan.price.replace('R$ ', ''));
+    const currentPrice = currentPlanData.price_brl;
+    const newPrice = newPlan.price_brl;
     
     return newPrice - currentPrice;
   };
 
   const isUpgrade = (planName: string) => {
-    const planOrder = { 'Starter': 1, 'Pro': 2, 'Enterprise': 3 };
-    const currentOrder = planOrder[currentPlan as keyof typeof planOrder] || 0;
-    const newOrder = planOrder[planName as keyof typeof planOrder] || 0;
-    return newOrder > currentOrder;
+    const currentPlanData = plans.find(p => p.name === currentPlan);
+    const newPlanData = plans.find(p => p.name === planName);
+    
+    if (!currentPlanData || !newPlanData) return false;
+    
+    // Compara pelo display_order (menor número = menor hierarquia)
+    return newPlanData.display_order > currentPlanData.display_order;
   };
 
   if (step === 'confirm' && selectedPlan) {
@@ -186,7 +162,7 @@ const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Valor do novo plano:</span>
-                  <span className="font-medium">{selectedPlan.price}/mês</span>
+                  <span className="font-medium">{formatPrice(selectedPlan.price_brl)}/mês</span>
                 </div>
                 
                 <div className="flex justify-between">
@@ -300,7 +276,7 @@ const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
                 <CardTitle className="text-lg">{plan.name}</CardTitle>
                 <CardDescription className="text-sm">{plan.description}</CardDescription>
                 <div className="text-2xl font-bold text-foreground mt-2">
-                  {plan.price}
+                  {formatPrice(plan.price_brl)}
                   <span className="text-sm font-normal text-muted-foreground">
                     {plan.period}
                   </span>

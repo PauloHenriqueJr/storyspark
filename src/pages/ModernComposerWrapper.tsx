@@ -6,6 +6,7 @@ import { storage } from "../lib/adapters";
 import { getMappingInfo } from "../lib/templateMapping";
 import { AlertCircle, CheckCircle2, Sparkles, SlidersHorizontal, Palette, Settings2 } from "lucide-react";
 import { useWorkspace } from '@/hooks/useWorkspace';
+import { useCredits } from '@/context/CreditsProvider';
 
 interface ModernComposerWrapperProps {
   onStatsUpdate?: () => void;
@@ -23,6 +24,7 @@ export const ModernComposerWrapper = ({
   onHookChange 
 }: ModernComposerWrapperProps) => {
   const { workspace, loading: workspaceLoading } = useWorkspace();
+  const { remainingCredits, refresh } = useCredits();
   const [credits, setCredits] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [composerMode, setComposerMode] = useState<'simplified' | 'advanced'>(() => {
@@ -36,15 +38,17 @@ export const ModernComposerWrapper = ({
     message: string;
   } | null>(null);
 
+  // Sincronizar créditos exibidos com fonte única do provider
+  useEffect(() => {
+    setCredits(remainingCredits);
+  }, [remainingCredits]);
+
   // Load credits and handle template mapping
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         // Usar créditos reais do workspace
         if (workspace) {
-          const remainingCredits = workspace.credits === -1 
-            ? 99999  // Enterprise ilimitado
-            : Math.max(0, (workspace.credits || 0) - (workspace.credits_used || 0));
           setCredits(remainingCredits);
         } else {
           // Fallback para storage local se workspace não disponível
@@ -72,8 +76,9 @@ export const ModernComposerWrapper = ({
     loadInitialData();
   }, [preSelectedTemplateId, onTemplateChange, workspace]);
 
-  const handleCreditsUpdate = (newCredits: number) => {
-    setCredits(newCredits);
+  const handleCreditsUpdate = (_newCredits?: number) => {
+    // Sempre confiar na fonte única (CreditsProvider) e apenas solicitar refresh
+    refresh();
   };
 
   const handleStatsUpdate = () => {
