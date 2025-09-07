@@ -375,3 +375,12 @@ Para mais informações sobre licenciamento e uso comercial, entre em contato co
   <p><strong>🚀 Construído com ❤️ e IA pela equipe StorySpark</strong></p>
   <p><em>"Transformando ideias em copies que convertem"</em></p>
 </div>
+
+---
+
+## Notas de Banco de Dados (Desenvolvimento)
+
+- Scripts úteis adicionais:
+  - `sql/2025-09-07_create_copies_fts_rpc.sql`: cria as funções RPC para busca full-text em `copies` (Português).
+  - `sql/2025-09-07_copies_optional_fks.sql`: adiciona FKs opcionais em `copies` para `personas`, `brand_voices` e `campaigns` (ON DELETE SET NULL).
+- Para aplicar localmente, use `scripts/apply_sql_file.js` passando o caminho do SQL e configure a variável `DATABASE_URL` no ambiente.

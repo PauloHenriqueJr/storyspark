@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { copiesService, type CopyRecord } from '@/services/copiesService';
+import { useWorkspace } from '@/hooks/useWorkspace';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Download, Filter, History, Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const PAGE_SIZE = 20;
 
@@ -18,24 +21,42 @@ export const CopiesHistory: React.FC = () => {
     const [platform, setPlatform] = useState<string | undefined>();
     const [copyType, setCopyType] = useState<string | undefined>();
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const { workspace, loading: workspaceLoading } = useWorkspace();
 
     const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
 
     const load = async () => {
+        if (!workspace) return;
+
         setLoading(true);
+        setError(null);
         try {
-            const { items, total } = await copiesService.list({ page, pageSize: PAGE_SIZE, platform, copy_type: copyType, q });
-            setItems(items);
-            setTotal(total);
+            const { items: loadedItems, total: loadedTotal } = await copiesService.list({
+                workspace_id: workspace.id,
+                page,
+                pageSize: PAGE_SIZE,
+                platform,
+                copy_type: copyType,
+                q
+            });
+            setItems(loadedItems);
+            setTotal(loadedTotal);
+        } catch (err: any) {
+            console.error('Erro ao carregar copies:', err);
+            setError('Falha ao carregar histórico. Tente novamente.');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        load();
+        if (workspace) {
+            load();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, platform, copyType]);
+    }, [page, platform, copyType, q, workspace?.id]);
 
     const onSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,6 +65,8 @@ export const CopiesHistory: React.FC = () => {
     };
 
     const exportCSV = () => {
+        if (items.length === 0) return;
+
         const headers = ['created_at', 'platform', 'copy_type', 'title', 'content', 'tokens_input', 'tokens_output', 'cost_usd'];
         const rows = items.map(i => [
             i.created_at,
@@ -65,6 +88,24 @@ export const CopiesHistory: React.FC = () => {
         URL.revokeObjectURL(url);
     };
 
+    if (workspaceLoading) {
+        return (
+            <div className="mx-auto w-full max-w-6xl space-y-6">
+                <Skeleton className="h-8 w-64" />
+                <Card>
+                    <CardContent className="p-6">
+                        <Skeleton className="h-4 w-full mb-2" />
+                        <Skeleton className="h-4 w-3/4" />
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!workspace) {
+        return <div className="text-center py-10">Carregando workspace...</div>;
+    }
+
     return (
         <div className="mx-auto w-full max-w-6xl space-y-6">
             <div className="flex items-center gap-3">
@@ -77,6 +118,12 @@ export const CopiesHistory: React.FC = () => {
                 </div>
             </div>
 
+            {error && (
+                <Badge variant="destructive" className="text-sm">
+                    {error}
+                </Badge>
+            )}
+
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">Pesquisar e Filtrar</CardTitle>
@@ -86,7 +133,12 @@ export const CopiesHistory: React.FC = () => {
                     <form onSubmit={onSearch} className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1 relative">
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título ou conteúdo..." className="pl-9" />
+                            <Input
+                                value={q}
+                                onChange={(e) => setQ(e.target.value)}
+                                placeholder="Buscar por título ou conteúdo..."
+                                className="pl-9"
+                            />
                         </div>
                         <Select value={platform ?? 'all'} onValueChange={(v) => setPlatform(v === 'all' ? undefined : v)}>
                             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Plataforma" /></SelectTrigger>
@@ -108,61 +160,81 @@ export const CopiesHistory: React.FC = () => {
                                 <SelectItem value="caption">Legenda</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button type="submit" disabled={loading}><Filter className="w-4 h-4 mr-2" />Filtrar</Button>
-                        <Button type="button" variant="outline" onClick={exportCSV}><Download className="w-4 h-4 mr-2" />Exportar</Button>
+                        <Button type="submit" disabled={loading}>
+                            <Filter className="w-4 h-4 mr-2" /> Filtrar
+                        </Button>
+                        <Button type="button" variant="outline" onClick={exportCSV} disabled={loading || items.length === 0}>
+                            <Download className="w-4 h-4 mr-2" /> Exportar
+                        </Button>
                     </form>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Data</TableHead>
-                                <TableHead>Plataforma</TableHead>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead>Título</TableHead>
-                                <TableHead>Tokens</TableHead>
-                                <TableHead>Custo</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {items.map((i) => (
-                                <TableRow key={i.id}>
-                                    <TableCell className="whitespace-nowrap">{new Date(i.created_at).toLocaleString()}</TableCell>
-                                    <TableCell className="capitalize">{i.platform || '-'}</TableCell>
-                                    <TableCell className="capitalize">{i.copy_type || '-'}</TableCell>
-                                    <TableCell className="max-w-[420px] truncate" title={i.title || i.content.slice(0, 160)}>
-                                        {i.title || i.content.slice(0, 80)}
-                                    </TableCell>
-                                    <TableCell>{(i.tokens_input ?? 0) + (i.tokens_output ?? 0)}</TableCell>
-                                    <TableCell>{i.cost_usd ? `$${i.cost_usd.toFixed(4)}` : '-'}</TableCell>
-                                </TableRow>
-                            ))}
-                            {items.length === 0 && (
+                    {loading ? (
+                        <div className="p-6 space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Nenhum resultado</TableCell>
+                                    <TableHead>Data</TableHead>
+                                    <TableHead>Plataforma</TableHead>
+                                    <TableHead>Tipo</TableHead>
+                                    <TableHead>Título</TableHead>
+                                    <TableHead>Tokens</TableHead>
+                                    <TableHead>Custo</TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {items.map((i) => (
+                                    <TableRow key={i.id}>
+                                        <TableCell className="whitespace-nowrap">{new Date(i.created_at).toLocaleString()}</TableCell>
+                                        <TableCell className="capitalize">{i.platform || '-'}</TableCell>
+                                        <TableCell className="capitalize">{i.copy_type || '-'}</TableCell>
+                                        <TableCell className="max-w-[420px] truncate" title={i.title || i.content.slice(0, 160)}>
+                                            {i.title || i.content.slice(0, 80)}
+                                        </TableCell>
+                                        <TableCell>{(i.tokens_input ?? 0) + (i.tokens_output ?? 0)}</TableCell>
+                                        <TableCell>{i.cost_usd ? `$${i.cost_usd.toFixed(4)}` : '-'}</TableCell>
+                                    </TableRow>
+                                ))}
+                                {items.length === 0 && !loading && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Nenhum resultado</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
 
-            <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">Página {page} de {totalPages} • {total} registros</div>
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                            <PaginationPrevious onClick={() => setPage((p) => Math.max(1, p - 1))} />
-                        </PaginationItem>
-                        <PaginationItem>
-                            <PaginationNext onClick={() => setPage((p) => Math.min(totalPages, p + 1))} />
-                        </PaginationItem>
-                    </PaginationContent>
-                </Pagination>
-            </div>
+            {!loading && (
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Página {page} de {totalPages} • {total} registros</div>
+                    <Pagination>
+                        <PaginationContent>
+                            <PaginationItem>
+                                <PaginationPrevious
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                                />
+                            </PaginationItem>
+                            <PaginationItem>
+                                <PaginationNext
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
+                                />
+                            </PaginationItem>
+                        </PaginationContent>
+                    </Pagination>
+                </div>
+            )}
         </div>
     );
 };

@@ -5,6 +5,7 @@ import { FreeModeComposer } from "../components/FreeModeComposer";
 import { storage } from "../lib/adapters";
 import { getMappingInfo } from "../lib/templateMapping";
 import { AlertCircle, CheckCircle2, Sparkles, SlidersHorizontal, Palette, Settings2 } from "lucide-react";
+import { useWorkspace } from '@/hooks/useWorkspace';
 
 interface ModernComposerWrapperProps {
   onStatsUpdate?: () => void;
@@ -21,6 +22,7 @@ export const ModernComposerWrapper = ({
   onTemplateChange,
   onHookChange 
 }: ModernComposerWrapperProps) => {
+  const { workspace, loading: workspaceLoading } = useWorkspace();
   const [credits, setCredits] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [composerMode, setComposerMode] = useState<'simplified' | 'advanced'>(() => {
@@ -38,8 +40,17 @@ export const ModernComposerWrapper = ({
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const stats = await storage.getStats();
-        setCredits(stats.creditsRemaining);
+        // Usar créditos reais do workspace
+        if (workspace) {
+          const remainingCredits = workspace.credits === -1 
+            ? 99999  // Enterprise ilimitado
+            : Math.max(0, (workspace.credits || 0) - (workspace.credits_used || 0));
+          setCredits(remainingCredits);
+        } else {
+          // Fallback para storage local se workspace não disponível
+          const stats = await storage.getStats();
+          setCredits(stats.creditsRemaining);
+        }
 
         // Handle template mapping if there's a pre-selected template
         if (preSelectedTemplateId) {
@@ -59,7 +70,7 @@ export const ModernComposerWrapper = ({
     };
 
     loadInitialData();
-  }, [preSelectedTemplateId, onTemplateChange]);
+  }, [preSelectedTemplateId, onTemplateChange, workspace]);
 
   const handleCreditsUpdate = (newCredits: number) => {
     setCredits(newCredits);

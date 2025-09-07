@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { notifications } from "@/lib/notifications";
@@ -14,9 +13,14 @@ import { ActiveIndicators } from "./ActiveIndicators";
 import { CopyResultActions } from "./CopyResultActions";
 import { FloatingActiveIndicator } from "./FloatingActiveIndicator";
 import { storage, aiProvider } from "@/lib/adapters";
+import { copiesService } from "@/services/copiesService";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { supabase } from "@/lib/supabase";
 import { defaultPersonas, funnelStages } from "@/types/persona";
 import { Sparkles, RefreshCw, Brain, Code2, Wand2, Settings } from "lucide-react";
 import { SimplifiedFreeModeComposer } from "./SimplifiedFreeModeComposer";
+import { useNotifications } from '@/hooks/useNotifications';
+import { aiContingencyService } from '@/services/aiContingencyService';
 
 interface FreeModeComposerProps {
   credits: number;
@@ -41,8 +45,10 @@ interface Variable { name: string; value: string; description?: string; }
 
 export const FreeModeComposer = ({ credits, onCreditsUpdate, onStatsUpdate, selectedHook, initialTemplateId, onInitialTemplateConsumed, onStepChange, initialHook, mode }: FreeModeComposerProps) => {
   const composerMode = mode || 'simplified';
+  const { workspace, user } = useWorkspace();
+  const { addNotification } = useNotifications();
   const [prompt, setPrompt] = useState(() => {
-    return selectedHook?.text 
+    return selectedHook?.text
       ? `Baseado neste hook validado: "${selectedHook.text}"\n\nExemplo de aplicação: "${selectedHook.example}"\n\nExpanda este hook em uma copy completa para {produto} que {objetivo} usando um tom {tom}.\n\nDetalhes:\n- Público-alvo: {publico}\n- Benefício principal: {beneficio}\n- Canal: {canal}\n- Categoria do hook: ${selectedHook.category}`
       : "Crie uma copy para {produto} que {objetivo} usando um tom {tom}.\n\nDetalhes:\n- Público-alvo: {publico}\n- Benefício principal: {beneficio}\n- Canal: {canal}";
   });
@@ -84,8 +90,25 @@ export const FreeModeComposer = ({ credits, onCreditsUpdate, onStatsUpdate, sele
   };
 
   const handleGenerate = async () => {
-    if (!isFormValid()) { notifications.error.requiredFields(); return; }
-    if (credits < 2) { notifications.warning.freeModeExpensive(); return; }
+    if (!isFormValid()) { 
+      notifications.error.requiredFields(); 
+      return; 
+    }
+    
+    // Verificar créditos localmente (simulação para desenvolvimento)
+    if (credits < 2) { 
+      addNotification({
+        title: '⚡ Créditos Insuficientes',
+        message: 'Você precisa de pelo menos 2 créditos para gerar uma copy avançada.',
+        type: 'error',
+        action: {
+          label: 'Fazer Upgrade',
+          onClick: () => window.location.href = '/billing'
+        }
+      });
+      return;
+    }
+    
     setIsGenerating(true);
     try {
       const processedPrompt = processPromptWithVariables(prompt, variables);
@@ -111,12 +134,81 @@ ${personaData ? `Persona do público-alvo:
 ` : ''}Prompt personalizado:
 ${processedPrompt}`.trim();
 
-      const generatedContent = await aiProvider.generateContent({ templateId: 'modo-livre', inputText: freeModeContext, tone: variables.find(v => v.name === 'tom')?.value || 'casual' });
-      await storage.saveGeneration({ templateId: 'modo-livre', inputText: freeModeContext, tone: variables.find(v => v.name === 'tom')?.value || 'casual', outputText: generatedContent, tokensIn: Math.ceil(freeModeContext.length / 4), tokensOut: Math.ceil(generatedContent.length / 4), costCents: 160 });
-      await storage.addCredits(-1, 'free_mode_premium');
+      // Usar o sistema real de IA com contingência
+      const aiRequest = {
+        prompt: freeModeContext,
+        maxTokens: aiConfig.maxTokens || 1000,
+        temperature: aiConfig.temperatura || 0.7,
+        userId: user?.id || 'anonymous',
+        context: 'composer_advanced_mode'
+      };
+      
+      const aiResult = await aiContingencyService.executeRequest(aiRequest);
+      if (!aiResult || !aiResult.success) {
+        throw new Error('Falha na geração de conteúdo via IA');
+      }
+      
+      const generatedContent = aiResult.content;
+      console.log(`✨ Copy gerada via ${aiResult.provider} (${aiResult.model}) - ${aiResult.tokensUsed} tokens`);
+      // Persistência paralela: memória (atual) e banco (copies)
+      const tokensIn = Math.ceil(freeModeContext.length / 4);
+      const tokensOut = Math.ceil(generatedContent.length / 4);
+      await storage.saveGeneration({
+        templateId: 'modo-livre',
+        inputText: freeModeContext,
+        tone: variables.find(v => v.name === 'tom')?.value || 'casual',
+        outputText: generatedContent,
+        tokensIn,
+        tokensOut,
+        costCents: 160,
+      });
+      // Tentar salvar no Supabase (tabela copies)
+      try {
+        if (user && workspace) {
+          const platform = variables.find(v => v.name === 'canal')?.value || null;
+          const metadata: Record<string, any> = {
+            mode: 'advanced_free_mode',
+            selectedPersona: personaData?.id || null,
+            selectedFunnelStage: funnelData?.id || null,
+            hook: selectedHook ? { id: selectedHook.id, category: selectedHook.category } : null,
+            aiConfig,
+          };
+          await copiesService.create(user.id, workspace.id, {
+            content: generatedContent,
+            platform: platform || undefined,
+            copy_type: selectedHook ? 'hook_expansion' : 'custom_free_mode',
+            persona_id: null,
+            brand_voice_id: null,
+            campaign_id: null,
+            model: 'mock',
+            temperature: aiConfig.temperatura,
+            tokens_input: tokensIn,
+            tokens_output: tokensOut,
+            cost_usd: 1.6, // equivalente a 160 cents
+            metadata,
+          });
+        }
+      } catch (e) {
+        console.warn('Falha ao salvar copy no banco:', e);
+      }
       setGeneratedCopy(generatedContent);
-      const stats = await storage.getStats();
-      onCreditsUpdate(stats.creditsRemaining);
+      
+      // Atualizar créditos a partir do backend (tempo real)
+      try {
+        if (user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('credits')
+            .eq('id', user.id)
+            .single();
+          if (typeof profile?.credits === 'number') {
+            onCreditsUpdate(profile.credits);
+          }
+        }
+      } catch (e) {
+        console.warn('Falha ao buscar créditos atualizados:', e);
+      }
+      
       notifications.success.copyGenerated();
       onStatsUpdate?.();
     } catch {
@@ -179,6 +271,17 @@ ${processedPrompt}`.trim();
           </div>
 
           <div className="space-y-6">
+            {/* Card de resultado da copy gerada - aparece ao lado dos controles de IA */}
+            {generatedCopy && (
+              <CopyResultActions 
+                generatedCopy={generatedCopy} 
+                onRegenerate={() => handleGenerate()} 
+                onSave={() => { notifications.success.copied(); }} 
+                canRegenerate={credits >= 2} 
+                isRegenerating={isGenerating} 
+              />
+            )}
+            
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" />Configurações de IA</CardTitle>
@@ -194,7 +297,7 @@ ${processedPrompt}`.trim();
                 <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" />{selectedHook ? 'Expandir Hook em Copy' : 'Gerar Copy Personalizada'}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="hero" size="lg" className="w-full" onClick={handleGenerate} disabled={!isFormValid() || isGenerating}>
+                <Button variant="default" size="lg" className="w-full" onClick={handleGenerate} disabled={!isFormValid() || isGenerating}>
                   {isGenerating ? (<><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Gerando...</>) : (<><Sparkles className="mr-2 h-4 w-4" />{selectedHook ? 'Expandir Hook em Copy (2 créditos)' : 'Gerar Copy Personalizada (2 créditos)'} </>)}
                 </Button>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -204,9 +307,6 @@ ${processedPrompt}`.trim();
               </CardContent>
             </Card>
 
-            {generatedCopy && (
-              <CopyResultActions generatedCopy={generatedCopy} onRegenerate={() => handleGenerate()} onSave={() => { notifications.success.copied(); }} canRegenerate={credits >= 2} isRegenerating={isGenerating} />
-            )}
           </div>
         </div>
       )}

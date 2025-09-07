@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Settings, Shield, Users, Target, Send, TrendingUp, FileText, Calendar, Bot, Mic, MessageSquare, Phone, Lightbulb, Zap, Crown, Activity, Database, Key, Home, BarChart3, Sparkles, Share2, Globe, TestTube, Library, CreditCard, Puzzle, UserCog, Mail, Upload } from 'lucide-react';
+import { Loader2, Settings, Shield, Users, Target, Send, TrendingUp, FileText, Calendar, Bot, Mic, MessageSquare, Phone, Lightbulb, Zap, Crown, Activity, Database, Key, Home, BarChart3, Sparkles, Share2, Globe, TestTube, Library, CreditCard, Puzzle, UserCog, Mail, Upload, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
 import { cn } from '@/lib/utils';
@@ -68,6 +68,7 @@ const GROUPS = [
     pages: [
       { path: '/templates', title: 'Templates', icon: FileText },
       { path: '/content-library', title: 'Biblioteca', icon: Library },
+      { path: '/copies-history', title: 'Histórico de Copies', icon: History },
       { path: '/ai-ideas', title: 'Ideias IA', icon: Lightbulb },
       { path: '/trending-hooks', title: 'Trending Hooks', icon: TrendingUp },
       { path: '/hooks', title: 'Hooks', icon: Zap },

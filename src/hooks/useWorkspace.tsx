@@ -40,7 +40,18 @@ export const useWorkspace = () => {
       }
 
       try {
-        // First try to get existing workspace
+        // Buscar créditos e tokens usados do profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('credits, monthly_tokens_used, plan, subscription_tier')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile credits:', profileError);
+        }
+
+        // Buscar workspace
         const { data: workspaces, error } = await supabase
           .from('workspaces')
           .select('*')
@@ -53,12 +64,28 @@ export const useWorkspace = () => {
           return;
         }
 
-        if (workspaces && workspaces.length > 0) {
-          setWorkspace(workspaces[0]);
-          // Cache o workspace
-          const cacheKey = `workspace_${user.id}`;
-          localStorage.setItem(cacheKey, JSON.stringify(workspaces[0]));
-          localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+      if (workspaces && workspaces.length > 0) {
+        // Usar dados do workspace diretamente, com fallback para profile se necessário
+        const workspace = workspaces[0];
+        
+        // Verificar se há dados de teste (para admin)
+        const debugCredits = localStorage.getItem('debug_credits');
+        const testData = debugCredits ? JSON.parse(debugCredits) : null;
+        
+        const workspaceWithCredits = {
+          ...workspace,
+          credits: testData?.credits ?? workspace.credits ?? profile?.credits ?? 800,  // Default 800 para teste (plano Pro)
+          credits_used: testData?.credits_used ?? workspace.credits_used ?? Math.floor((profile?.monthly_tokens_used || 0) / 100) ?? 200,  // Default 200 usado
+          plan: testData?.plan ?? (workspace.plan || profile?.subscription_tier || 'pro')  // Default pro para teste
+        };
+        
+        console.log('Workspace with credits:', workspaceWithCredits);
+        
+        setWorkspace(workspaceWithCredits);
+        // Cache o workspace
+        const cacheKey = `workspace_${user.id}`;
+        localStorage.setItem(cacheKey, JSON.stringify(workspaceWithCredits));
+        localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
         } else {
           // Create default workspace if none exists
           const { data: newWorkspace, error: createError } = await supabase

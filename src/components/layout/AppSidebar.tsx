@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   BarChart3,
   Bot,
@@ -33,7 +33,8 @@ import {
   ChevronRight,
   Key,
   Mail,
-  Activity
+  Activity,
+  ArrowUpRight
 } from 'lucide-react';
 import {
   Sidebar,
@@ -42,9 +43,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Upload, History } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
+import { useWorkspace } from '@/hooks/useWorkspace';
 
 // Define the navigation item interface
 interface NavItem {
@@ -171,6 +175,7 @@ export const AppSidebar = () => {
   const { isFlagEnabled } = useFeatureFlags();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+  const { workspace } = useWorkspace();
 
   // State for collapsible sections - keeps Principal open by default
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -328,29 +333,121 @@ export const AppSidebar = () => {
     );
   };
 
+  const remainingCredits = workspace ? Math.max(0, (workspace.credits || 0) - (workspace.credits_used || 0)) : 0;
+  const totalCredits = workspace ? workspace.credits || 0 : 0;
+  const creditsPercent = totalCredits > 0 ? (remainingCredits / totalCredits) * 100 : 0;
+  const lowCredits = creditsPercent < 30;  // Alertar quando menos de 30%
+  const criticalCredits = creditsPercent < 15;  // Crítico quando menos de 15%
+  
+  // Determinar cor do indicador baseado no percentual
+  const getCreditsColor = () => {
+    if (criticalCredits) return 'text-red-500';
+    if (lowCredits) return 'text-orange-500';
+    return 'text-green-500';
+  };
+  
+  // Determinar cor da progress bar
+  const getProgressColor = () => {
+    if (criticalCredits) return 'bg-red-500';
+    if (lowCredits) return 'bg-orange-500';
+    return 'bg-green-500';
+  };
+
   return (
     <Sidebar className="border-r border-sidebar-border/60" collapsible="icon">
       <SidebarContent className="bg-sidebar">
-        {/* Logo Section */}
+        {/* Logo Section with Credits Badge */}
         <div className={`border-b border-sidebar-border/60 ${collapsed ? 'p-2' : 'p-4'}`}>
           {!collapsed ? (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow flex-shrink-0">
-                {hasAdminAccess() ? (
-                  <Flame className="w-5 h-5 text-white" />
-                ) : (
-                  <Zap className="w-5 h-5 text-white" />
-                )}
+            <>
+              <div className="space-y-3">
+              {/* Logo e Título */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow flex-shrink-0">
+                  {hasAdminAccess() ? (
+                    <Flame className="w-5 h-5 text-white" />
+                  ) : (
+                    <Zap className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-bold text-sidebar-foreground text-lg truncate">
+                    {hasAdminAccess() ? 'StorySpark Admin' : 'StorySpark'}
+                  </h2>
+                  <p className="text-xs text-sidebar-foreground/60 truncate">
+                    {hasAdminAccess() ? 'Admin Panel' : 'IA Copy Creator'}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="font-bold text-sidebar-foreground text-lg truncate">
-                  {hasAdminAccess() ? 'StorySpark Admin' : 'StorySpark'}
-                </h2>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
-                  {hasAdminAccess() ? 'Admin Panel' : 'IA Copy Creator'}
-                </p>
-              </div>
+              
+              {/* Seção de Créditos - Sempre visível (admin pode ver experiência do cliente) */}
+              {workspace && (
+                <div className="w-full bg-sidebar-accent/50 rounded-lg p-3 border border-sidebar-border">
+                  <div className="space-y-2">
+                    {/* Badge de Créditos */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-sidebar-foreground/70">
+                        Créditos do Plano
+                        {hasAdminAccess() && (
+                          <span className="ml-1 text-[9px] text-orange-500 font-bold">
+                            (ADMIN VIEW)
+                          </span>
+                        )}
+                      </span>
+                      <Badge 
+                        variant={criticalCredits ? "destructive" : lowCredits ? "secondary" : "default"}
+                        className={`text-xs font-bold ${
+                          criticalCredits ? 'animate-pulse bg-red-500/20 text-red-500 border-red-500' : 
+                          lowCredits ? 'bg-orange-500/20 text-orange-500 border-orange-500' : 
+                          'bg-green-500/20 text-green-500 border-green-500'
+                        }`}
+                      >
+                        <Zap className="w-3 h-3 mr-1" />
+                        {totalCredits === -1 ? '∞' : `${remainingCredits}/${totalCredits}`}
+                      </Badge>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    {totalCredits !== -1 && (
+                      <div className="space-y-1">
+                        <Progress 
+                          value={creditsPercent} 
+                          className={`h-2 bg-sidebar-accent ${
+                            criticalCredits ? 'animate-pulse' : ''
+                          }`}
+                          style={{
+                            '--progress-foreground': criticalCredits ? 'rgb(239 68 68)' : 
+                              lowCredits ? 'rgb(249 115 22)' : 'rgb(34 197 94)'
+                          } as React.CSSProperties}
+                        />
+                        <div className="flex justify-between text-[10px] text-sidebar-foreground/50">
+                          <span>{creditsPercent.toFixed(0)}% restante</span>
+                          <span>{remainingCredits} créditos</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Botão de Upgrade */}
+                    {(lowCredits || criticalCredits) && (
+                      <Button 
+                        asChild 
+                        size="sm" 
+                        variant={criticalCredits ? "destructive" : "default"}
+                        className={`w-full text-xs font-bold ${
+                          criticalCredits ? 'animate-pulse' : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
+                        }`}
+                      >
+                        <Link to="/billing">
+                          <ArrowUpRight className="w-3 h-3 mr-1" />
+                          {criticalCredits ? '🔥 Recarregar Urgente!' : '⚡ Fazer Upgrade'}
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+            </>
           ) : (
             <div className="flex justify-center items-center">
               <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow flex-shrink-0">

@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateCampaignModal from '@/components/modals/CreateCampaignModal';
+import { CreditAlert } from '@/components/ui/credit-alert';
 // import SimpleTest from '@/components/upload/SimpleTest';
 
 import { useDashboardStats } from '@/hooks/useDashboardStats';
@@ -170,6 +171,9 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
+      {/* Credit Alert */}
+      <CreditAlert className="mb-6" />
+      
       {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

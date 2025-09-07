@@ -40,6 +40,8 @@ export class CopyGenerationService {
     }
 
     try {
+      console.log("🔍 Carregando configurações de IA do banco...");
+      
       const { data, error } = await supabase
         .from("admin_llm_settings")
         .select(
@@ -48,15 +50,38 @@ export class CopyGenerationService {
         .single();
 
       if (error) {
-        console.error("Erro ao carregar configurações de IA:", error);
-        throw new Error(
-          "Não foi possível carregar as configurações de IA do banco de dados"
-        );
+        console.error("❌ Erro ao carregar configurações de IA:", error);
+        
+        // Fallback temporário para desenvolvimento
+        console.warn("⚠️ Usando configurações padrão de fallback");
+        this.settings = {
+          defaultProvider: "gemini",
+          defaultModel: "gemini-2.0-flash-exp",
+          temperature: 0.7,
+          maxTokens: 1000,
+        };
+        return this.settings;
+      }
+      
+      console.log("📋 Dados carregados do banco:", data);
+      
+      // Verificar se há dados válidos
+      if (!data || !data.default_provider) {
+        console.warn("⚠️ Dados do banco inválidos, usando configurações padrão");
+        this.settings = {
+          defaultProvider: "gemini",
+          defaultModel: "gemini-2.0-flash-exp",
+          temperature: 0.7,
+          maxTokens: 1000,
+        };
+        return this.settings;
       }
 
       // Mapear o modelo baseado no provedor padrão
       let defaultModel = "";
-      const provider = data.default_provider;
+      let provider = data.default_provider;
+      
+      console.log(`🎯 Provedor configurado: ${provider}`);
 
       switch (provider) {
         case "openai":
@@ -75,12 +100,18 @@ export class CopyGenerationService {
           defaultModel = data.kilocode_model;
           break;
         default:
-          throw new Error(`Provedor padrão '${provider}' não é suportado`);
+          console.error(`❌ Provedor padrão '${provider}' não é suportado`);
+          // Fallback para Gemini se provedor não é suportado
+          defaultModel = "gemini-2.0-flash-exp";
+          provider = "gemini";
       }
 
       if (!defaultModel) {
-        throw new Error(`Modelo não configurado para o provedor '${provider}'`);
+        console.warn(`⚠️ Modelo não configurado para '${provider}', usando padrão`);
+        defaultModel = "gemini-2.0-flash-exp";
       }
+      
+      console.log(`🤖 Modelo selecionado: ${defaultModel}`);
 
       this.settings = {
         defaultProvider: provider,
@@ -103,7 +134,13 @@ export class CopyGenerationService {
     request: CopyGenerationRequest
   ): Promise<CopyGenerationResponse> {
     try {
+      console.log("🚀 Iniciando geração de copy...");
+      console.log("Briefing:", request.briefing?.substring(0, 100) + "...");
+      console.log("Plataforma:", request.platform);
+      console.log("Tipo:", request.copyType);
+      
       // Carregar configurações de IA dinamicamente
+      console.log("🔄 Carregando configurações de IA...");
       const aiSettings = await this.loadAISettings();
 
       console.log(
@@ -111,9 +148,13 @@ export class CopyGenerationService {
       );
 
       // Construir prompt estruturado para geração de copy
+      console.log("📝 Construindo prompt...");
       const prompt = this.buildPrompt(request);
+      
+      console.log("Prompt construído (primeiros 200 chars):", prompt.substring(0, 200) + "...");
 
       // Fazer requisição usando o serviço de contingência de IA
+      console.log("🔄 Executando requisição de IA...");
       const response = await aiContingencyService.executeRequest(
         {
           prompt,

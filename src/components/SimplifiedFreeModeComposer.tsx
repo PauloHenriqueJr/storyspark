@@ -9,12 +9,17 @@ import { notifications } from "@/lib/notifications";
 import { QuickConfigSelector } from "./QuickConfigSelector";
 import { BrazilianToneSelector } from "./BrazilianToneSelector";
 import { storage, aiProvider } from "@/lib/adapters";
+import { copiesService } from "@/services/copiesService";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { supabase } from "@/lib/supabase";
 import { BRAZILIAN_TEMPLATES, BRAZILIAN_TONES, getCategoryColor, getDifficultyColor, type BrazilianTemplate, type BrazilianTone } from "@/lib/brazilianTemplates";
 import { CopyResultActions } from "./CopyResultActions";
-import { Sparkles, RefreshCw, ArrowLeft, CheckCircle2, ChevronRight, Brain, Wand2, AlertCircle, CreditCard, TrendingUp, Target, Zap } from "lucide-react";
+import { RefreshCw, ArrowLeft, ChevronRight, Brain, AlertCircle, CreditCard, TrendingUp, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Hook } from "@/data/hooks";
 import { HookQuickPicker } from "@/components/HookQuickPicker";
+import { useNotifications } from '@/hooks/useNotifications';
+import { aiContingencyService } from '@/services/aiContingencyService';
 
 interface SimplifiedFreeModeComposerProps {
   credits: number;
@@ -38,6 +43,8 @@ interface StepProgress {
 
 export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUpdate, initialTemplateId, onInitialTemplateConsumed, initialHook, onStepChange }: SimplifiedFreeModeComposerProps) => {
   const { toast } = useToast();
+  const { workspace, user } = useWorkspace();
+  const { addNotification } = useNotifications();
   const [progress, setProgress] = useState<StepProgress>({ step: 1, selectedTemplate: null, selectedTone: null, quickConfig: { produto: '', publico: '', objetivo: '', canal: '' }, customInputs: {} });
   const [generatedCopy, setGeneratedCopy] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -87,8 +94,25 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
   }, [progress.selectedTemplate, progress.selectedTone, progress.customInputs]);
 
   const handleGenerate = useCallback(async () => {
-    if (!canProceedToGeneration || !progress.selectedTemplate || !progress.selectedTone) { notifications.error.requiredFields(); return; }
-    if (credits < 1) { toast({ title: "Créditos insuficientes", description: "Você precisa de pelo menos 1 crédito para gerar conteúdo.", variant: "destructive" }); return; }
+    if (!canProceedToGeneration || !progress.selectedTemplate || !progress.selectedTone) {
+      notifications.error.requiredFields();
+      return;
+    }
+
+    // Verificar créditos localmente (simulação para desenvolvimento)
+    if (credits < 1) {
+      addNotification({
+        title: '⚡ Créditos Insuficientes',
+        message: 'Você precisa de pelo menos 1 crédito para gerar uma copy.',
+        type: 'error',
+        action: {
+          label: 'Fazer Upgrade',
+          onClick: () => window.location.href = '/billing'
+        }
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       let processedPrompt = progress.selectedTemplate.promptBase;
@@ -105,11 +129,72 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
         const hookCtx = `Baseado neste hook validado: "${selectedHook.text}"\n\nExemplo de aplicação: "${selectedHook.example}"\nCategoria do hook: ${selectedHook.category}\n\n`;
         processedPrompt = hookCtx + processedPrompt;
       }
-      const generatedContent = await aiProvider.generateContent({ templateId: progress.selectedTemplate.id, inputText: processedPrompt, tone: progress.selectedTone.value });
-      await storage.saveGeneration({ templateId: progress.selectedTemplate.id, inputText: processedPrompt, tone: progress.selectedTone.value, outputText: generatedContent, tokensIn: Math.ceil(processedPrompt.length / 4), tokensOut: Math.ceil(generatedContent.length / 4), costCents: 80 });
-      const stats = await storage.getStats();
-      onCreditsUpdate(stats.creditsRemaining);
+      // Usar o sistema real de IA com contingência
+      const aiRequest = {
+        prompt: processedPrompt,
+        maxTokens: 1000,
+        temperature: 0.7,
+        userId: user?.id || 'anonymous',
+        context: 'composer_simplified_mode'
+      };
+
+      const aiResult = await aiContingencyService.executeRequest(aiRequest);
+      if (!aiResult || !aiResult.success) {
+        throw new Error('Falha na geração de conteúdo via IA');
+      }
+
+      const generatedContent = aiResult.content;
+      console.log(`✨ Copy gerada via ${aiResult.provider} (${aiResult.model}) - ${aiResult.tokensUsed} tokens`);
+      const tokensIn = Math.ceil(processedPrompt.length / 4);
+      const tokensOut = Math.ceil(generatedContent.length / 4);
+      await storage.saveGeneration({ templateId: progress.selectedTemplate.id, inputText: processedPrompt, tone: progress.selectedTone.value, outputText: generatedContent, tokensIn, tokensOut, costCents: 80 });
+      // Persistir no banco (tabela copies) se possível
+      try {
+        if (user && workspace) {
+          const metadata: Record<string, any> = {
+            mode: 'simplified_brazilian',
+            template_id: progress.selectedTemplate.id,
+            tone: progress.selectedTone.value,
+            quickConfig: progress.quickConfig,
+            customInputs: progress.customInputs,
+            hook: initialHook ? { id: initialHook.id, category: initialHook.category } : null,
+          };
+          await copiesService.create(user.id, workspace.id, {
+            content: generatedContent,
+            platform: progress.quickConfig.canal || progress.selectedTemplate.platform || undefined,
+            copy_type: progress.selectedTemplate.category,
+            persona_id: null,
+            brand_voice_id: null,
+            campaign_id: null,
+            model: 'mock',
+            temperature: undefined,
+            tokens_input: tokensIn,
+            tokens_output: tokensOut,
+            cost_usd: 0.8,
+            metadata,
+          });
+        }
+      } catch (e) {
+        console.warn('Falha ao salvar copy no banco (simplified):', e);
+      }
       setGeneratedCopy(generatedContent);
+      
+      // Atualizar créditos a partir do backend (tempo real)
+      try {
+        if (user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('credits')
+            .eq('id', user.id)
+            .single();
+          if (typeof profile?.credits === 'number') {
+            onCreditsUpdate(profile.credits);
+          }
+        }
+      } catch (e) {
+        console.warn('Falha ao buscar créditos atualizados:', e);
+      }
+      
       notifications.success.copyGenerated();
       onStatsUpdate?.();
     } catch (e) {
@@ -133,7 +218,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
                     1
                   </div>
                   <div>
-                    <CardTitle className="text-xl">Escolha o Template Brasileiro</CardTitle>
+                    <CardTitle className="text-xl">Escolha o Template</CardTitle>
                     <CardDescription>Templates otimizados para o mercado e cultura brasileira</CardDescription>
                   </div>
                 </div>
@@ -203,7 +288,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
                       2
                     </div>
                     <div>
-                      <CardTitle className="text-xl">Tom Brasileiro da Sua Marca</CardTitle>
+                      <CardTitle className="text-xl">Tom da Sua Marca</CardTitle>
                       <CardDescription>
                         Template: <span className="font-medium text-foreground">{progress.selectedTemplate.name}</span>
                       </CardDescription>
@@ -306,6 +391,17 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
         </div>
 
         <div className="space-y-6">
+          {/* Card de resultado da copy gerada - aparece no topo da coluna direita */}
+          {generatedCopy && (
+            <CopyResultActions
+              generatedCopy={generatedCopy}
+              onRegenerate={regenerate}
+              onSave={() => { toast({ title: "Copy salva!", description: "Adicionada à sua biblioteca pessoal." }); }}
+              canRegenerate={credits >= 1}
+              isRegenerating={isGenerating}
+            />
+          )}
+
           {(progress.selectedTemplate || progress.selectedTone) && (
             <Card>
               <CardHeader><CardTitle className="text-lg"><Target className="h-5 w-5 inline mr-2" />Configuração Atual</CardTitle></CardHeader>
@@ -342,9 +438,6 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
                 </div>
               </CardContent>
             </Card>
-          )}
-          {generatedCopy && (
-            <CopyResultActions generatedCopy={generatedCopy} onRegenerate={regenerate} onSave={() => { toast({ title: "Copy salva!", description: "Adicionada à sua biblioteca pessoal." }); }} canRegenerate={credits >= 1} isRegenerating={isGenerating} />
           )}
           <Card>
             <CardContent className="pt-6">
