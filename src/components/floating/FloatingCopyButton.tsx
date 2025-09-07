@@ -46,6 +46,8 @@ import { usePersonas } from '@/hooks/usePersonas';
 import { useTemplates } from '@/hooks/useTemplates';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useCredits } from '@/context/CreditsProvider';
+import { useRole } from '@/hooks/useRole';
 import { Separator } from '@/components/ui/separator';
 import DocumentUploadModal from '@/components/upload/DocumentUploadModal';
 
@@ -189,7 +191,7 @@ interface PageData {
   getContext: (item: BrandVoice | Persona | Template | Campaign | any) => string;
 }
 
- // Merge all configs
+// Merge all configs
 const contextConfigs: Record<string, any> = {
   ...socialAndMarketingConfigs,
   ...personasAndVoicesConfigs,
@@ -200,7 +202,7 @@ const contextConfigs: Record<string, any> = {
 
 const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotifications, systemToastNotifications, onOpenScheduleModal }) => {
   const location = useLocation();
-  
+
   // Move all hooks before any conditional logic
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -216,6 +218,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const [customizationMode, setCustomizationMode] = useState(false);
   const [customBriefing, setCustomBriefing] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -225,6 +228,11 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const { templates } = useTemplates();
   const { campaigns } = useCampaigns();
   const analyticsData = useAnalytics();
+  const { plan } = useCredits();
+  const { hasAdminAccess } = useRole();
+
+  // Verificar se o usuário tem acesso liberado (Admin/Super Admin OU plano Pro/Business)
+  const hasFullAccess = hasAdminAccess() || (plan && ['pro', 'business', 'enterprise', 'premium'].includes(plan.toLowerCase()));
 
   // Lista de paths permitidos
   const allowedPaths = [
@@ -954,6 +962,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+
+              // Se não tem acesso liberado (não admin e não plano premium), mostrar modal de upgrade
+              if (!hasFullAccess) {
+                setShowUpgradeModal(true);
+                return;
+              }
+
               setIsModalOpen(true);
             }}
             className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${currentContext.color} border-4 border-white/30 dark:border-gray-800/30 relative z-10 backdrop-blur-sm`}
@@ -961,6 +976,18 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
           >
             <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
           </Button>
+
+          {/* Premium Badge - Só mostra se não tem acesso liberado */}
+          {!hasFullAccess && (
+            <div className="absolute -top-2 -right-2 z-20">
+              <Badge
+                variant="destructive"
+                className="bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse"
+              >
+                ✨ PRO
+              </Badge>
+            </div>
+          )}
 
           {/* Pulse effect */}
           <div className={`absolute inset-0 rounded-full ${currentContext.color} opacity-40 animate-ping pointer-events-none`} />

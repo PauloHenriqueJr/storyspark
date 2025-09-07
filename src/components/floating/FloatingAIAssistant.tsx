@@ -6,6 +6,10 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
+import { Badge } from '@/components/ui/badge';
+import { Crown, Lock, Zap } from 'lucide-react';
+import { useCredits } from '@/context/CreditsProvider';
+import { useRole } from '@/hooks/useRole';
 
 // Utils
 import { getPageContext } from './utils/contextDetector';
@@ -29,10 +33,16 @@ interface FloatingAIAssistantProps {
 
 const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = () => {
   const location = useLocation();
+  const { plan } = useCredits();
+  const { hasAdminAccess } = useRole();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentContext, setCurrentContext] = useState<any>(null);
   const [availableActions, setAvailableActions] = useState<any[]>([]);
   const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Verificar se usuário tem acesso liberado (Admin/Super Admin OU plano Premium)
+  const hasFullAccess = hasAdminAccess() || plan === 'pro' || plan === 'enterprise' || plan === 'premium';
 
   // Detectar contexto da página atual
   useEffect(() => {
@@ -150,29 +160,53 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = () => {
           whileTap={{ scale: 0.95 }}
           className="relative group"
         >
-          {/* Glow effect */}
-          <div className={`absolute inset-0 rounded-full bg-blue-500 opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300`} />
+          {/* Premium Badge - sempre visível para criar curiosidade (só para usuários sem acesso) */}
+          {!hasFullAccess && (
+            <Badge
+              className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full shadow-lg z-20 animate-pulse"
+            >
+              <Crown className="w-3 h-3 mr-1" />
+              Premium
+            </Badge>
+          )}
 
-          {/* Main button */}
+          {/* Glow effect */}
+          <div className={`absolute inset-0 rounded-full ${hasFullAccess ? 'bg-blue-500' : 'bg-gradient-to-r from-amber-500 to-yellow-500'} opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300`} />          {/* Main button */}
           <Button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setIsModalOpen(true);
+
+              if (!hasFullAccess) {
+                // Usuário sem acesso (não admin e não premium) - mostrar modal de upgrade
+                setShowUpgradeModal(true);
+              } else {
+                // Usuário com acesso liberado (admin ou premium) - abrir normalmente
+                setIsModalOpen(true);
+              }
             }}
-            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 border-4 border-white/30 dark:border-gray-800/30 relative z-10 backdrop-blur-sm`}
+            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${hasFullAccess
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+              : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600'
+              } border-4 border-white/30 dark:border-gray-800/30 relative z-10 backdrop-blur-sm`}
             size="lg"
           >
-            <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
+            {hasFullAccess ? (
+              <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
+            ) : (
+              <div className="flex items-center justify-center">
+                <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-black drop-shadow-lg" />
+              </div>
+            )}
           </Button>
 
           {/* Pulse effect */}
-          <div className={`absolute inset-0 rounded-full bg-blue-500 opacity-40 animate-ping pointer-events-none`} />
+          <div className={`absolute inset-0 rounded-full ${hasFullAccess ? 'bg-blue-500' : 'bg-gradient-to-r from-amber-500 to-yellow-500'} opacity-40 animate-ping pointer-events-none`} />
 
           {/* Tooltip */}
           <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block">
             <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
-              {currentContext.title}
+              {hasFullAccess ? currentContext.title : 'Upgrade para Premium'}
               <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
             </div>
           </div>
@@ -246,6 +280,66 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = () => {
               </CardContent>
             </Card>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Upgrade Premium */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full flex items-center justify-center">
+              <Crown className="w-8 h-8 text-black" />
+            </div>
+
+            <DialogTitle className="text-xl font-bold">
+              🚀 Funcionalidade Premium
+            </DialogTitle>
+
+            <DialogDescription className="text-center">
+              O Assistente IA é uma funcionalidade exclusiva para usuários Premium.
+              Upgrade agora e tenha acesso a:
+            </DialogDescription>
+
+            <div className="space-y-2 text-sm text-left w-full">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>Assistente IA contextual em todas as páginas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>Geração de copies personalizadas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>Upload e análise de documentos</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>Sugestões inteligentes por contexto</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setShowUpgradeModal(false)}
+                className="flex-1"
+              >
+                Talvez depois
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowUpgradeModal(false);
+                  // Redirecionar para página de billing/upgrade
+                  window.location.href = '/billing';
+                }}
+                className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-bold"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Fazer Upgrade
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>
