@@ -23,6 +23,40 @@ const payloadSchema = z.object({
 
 export type WaitlistPayload = z.infer<typeof payloadSchema>;
 
+async function sendWaitlistConfirmationEmail(toEmail: string, selectedIdeas?: string[]) {
+  try {
+    const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (typeof process !== 'undefined' ? (process as any).env?.VITE_SUPABASE_URL : undefined);
+    if (!supabaseUrl) return;
+
+    const fromName = 'StorySpark';
+    const fromDomain = (import.meta as any).env?.VITE_RESEND_FROM_DOMAIN;
+    const defaultFrom = (import.meta as any).env?.VITE_DEFAULT_FROM_EMAIL || (fromDomain ? `suporte@${fromDomain}` : undefined);
+
+    const body = {
+      ...(defaultFrom ? { from: { email: defaultFrom, name: fromName } } : {}),
+      to: [{ email: toEmail }],
+      subject: 'Você entrou na lista de espera! 🚀',
+      html: `
+        <div style="font-family: Inter, Arial, sans-serif; line-height:1.6; color:#0A0A0A">
+          <h2>Bem-vindo(a) à StorySpark!</h2>
+          <p>Seu e‑mail <strong>${toEmail}</strong> foi confirmado na nossa lista de espera.</p>
+          ${selectedIdeas && selectedIdeas.length ? `<p>Preferências marcadas:</p><ul>${selectedIdeas.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
+          <p>Em breve enviaremos novidades e acesso antecipado. Obrigado por se juntar! 💛</p>
+          <p style="margin-top:24px; font-size:12px; color:#6B7280">Se você não se inscreveu, ignore este e‑mail.</p>
+        </div>
+      `,
+    };
+
+    await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    console.warn('Falha ao enviar e-mail de confirmação da waitlist:', e);
+  }
+}
+
 export async function addToWaitlist(payload: WaitlistPayload) {
   const parsed = payloadSchema.safeParse(payload);
   if (!parsed.success) {
@@ -54,11 +88,13 @@ export async function addToWaitlist(payload: WaitlistPayload) {
 
     if (error) return { ok: false, error: error.message };
 
-    // Processar fila de emails após adicionar à waitlist
+    // Processar fila de emails após adicionar à waitlist (desativado por ora no cliente)
     // Fazer isso de forma assíncrona para não bloquear a resposta
-    setTimeout(() => {
-      emailQueueService.processQueue().catch(console.error);
-    }, 1000);
+    try {
+      setTimeout(() => {
+        emailQueueService.processQueue().catch(() => {});
+      }, 1000);
+    } catch {}
 
     // A função retorna boolean: true se inseriu, false se já existia
     const inserted = Array.isArray(data) ? data[0] : data;
@@ -85,18 +121,26 @@ export async function addToWaitlist(payload: WaitlistPayload) {
           } catch {}
         }
       } catch {}
-      // If there is a referral code, attempt to claim it atomically after successful signup
+
+      // Se houver referral, tentar creditar atomicamente após o signup
       try {
         if (referralCode) {
-          // call claim RPC - SECURITY DEFINER function on the DB will validate
           await supabase.rpc("claim_referral_for_signup", {
             p_code: referralCode,
             p_referred_email: email,
           });
         }
       } catch {}
+
+      // Disparar e-mail de confirmação (best-effort, não bloqueante)
+      try {
+        sendWaitlistConfirmationEmail(email, ideas).catch(() => {});
+      } catch {}
+
       return { ok: true };
     }
+
+    // Já existia: ainda podemos retornar ok com info
     return { ok: true, info: "already_exists" };
   } catch (err: any) {
     return { ok: false, error: err.message ?? String(err) };

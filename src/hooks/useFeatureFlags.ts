@@ -13,7 +13,11 @@ export const useFeatureFlags = () => {
   const recomputeByPath = (flags: Record<string, boolean>) => {
     const byPath: Record<string, boolean> = {};
     for (const key of Object.keys(flags)) {
-      const [, path] = key.split("-");
+      // key format: `${group_name}-${page_path}`
+      // page_path itself may contain hyphens, so we must NOT split blindly.
+      const sepIndex = key.indexOf("-");
+      if (sepIndex === -1) continue;
+      const path = key.slice(sepIndex + 1);
       if (!path) continue;
       if (flags[key] === false) byPath[path] = true;
     }

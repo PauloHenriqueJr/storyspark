@@ -12,6 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { analytics } from "@/services/analytics";
 import { Sparkles, Users, Star, ArrowRight, CheckCircle } from "lucide-react";
+import { addToWaitlist } from "@/services/waitlistService";
+import { useUTM } from "@/hooks/useUTM";
 
 const waitlistSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -25,6 +27,7 @@ export default function WaitlistAB() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const utm = useUTM();
 
   const form = useForm<WaitlistForm>({
     resolver: zodResolver(waitlistSchema),
@@ -38,25 +41,27 @@ export default function WaitlistAB() {
   const onSubmit = async (data: WaitlistForm) => {
     setIsSubmitting(true);
     try {
-      const waitlistData = { ...data, timestamp: new Date().toISOString(), id: crypto.randomUUID() };
-      const existingData = JSON.parse(localStorage.getItem('storyspark_waitlist') || '[]');
-      existingData.push(waitlistData);
-      localStorage.setItem('storyspark_waitlist', JSON.stringify(existingData));
-
-      const webhookUrl = (import.meta as any).env?.VITE_WEBHOOK_URL as string | undefined;
-      if (webhookUrl) {
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-      }
+      const res = await addToWaitlist({
+        email: data.email,
+        consent: true,
+        utm,
+        variant: 'ab',
+        ideas: [`role:${data.role}`, `channel:${data.channel}`]
+      });
 
       analytics.track('waitlist_submitted', { role: data.role, channel: data.channel, variant: 'ab' });
 
-      toast({ title: "Você entrou na lista!", description: "Em breve você receberá novidades sobre a StorySpark." });
-
-      navigate('/success');
+      if (res.ok) {
+        const already = (res as any).info === 'already_exists';
+        if (already) {
+          toast({ title: "Você já está na lista", description: "Recebemos seu e‑mail anteriormente." });
+        } else {
+          toast({ title: "Você entrou na lista!", description: "Em breve você receberá novidades sobre a StorySpark." });
+        }
+        navigate('/success');
+      } else {
+        throw new Error(res.error || 'Falha ao inscrever');
+      }
     } catch (error) {
       console.error('Erro ao enviar para waitlist:', error);
       toast({ title: "Ops! Algo deu errado", description: "Tente novamente em alguns segundos.", variant: "destructive" });

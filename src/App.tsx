@@ -421,7 +421,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/blog" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminBlog />
@@ -430,7 +430,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/campaigns" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminCampaigns />
@@ -439,7 +439,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/templates" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminTemplates />
@@ -448,7 +448,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/analytics" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminAnalytics />
@@ -466,7 +466,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/integrations" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminIntegrations />
@@ -475,7 +475,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/billing" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminBillingGlobal />
@@ -502,7 +502,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/backup" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminBackup />
@@ -529,7 +529,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/email-templates" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminEmailTemplates />
@@ -558,7 +558,7 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/seed-inserter" element={
-        <ProtectedRoute>
+        <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
               <AdminSeedInserter />
