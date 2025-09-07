@@ -111,7 +111,7 @@ export const ModernComposerWrapper = ({
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
                 composerMode === 'simplified'
                   ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-gray-100 hover:bg-gray-200 text-muted-foreground hover:text-foreground'
+                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
               }`}
             >
               <Palette className="h-4 w-4" />
@@ -125,7 +125,7 @@ export const ModernComposerWrapper = ({
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
                 composerMode === 'advanced'
                   ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-gray-100 hover:bg-gray-200 text-muted-foreground hover:text-foreground'
+                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
               }`}
             >
               <Settings2 className="h-4 w-4" />
