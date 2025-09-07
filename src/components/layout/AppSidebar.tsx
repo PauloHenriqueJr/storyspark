@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Bot,
@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Upload, History } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
 
 // Define the navigation item interface
@@ -83,6 +84,7 @@ const navSections: NavSection[] = [
       { title: 'Voices IA', url: '/voices', icon: Mic, badge: 'Novo' },
       { title: 'Personas', url: '/personas', icon: Users },
       { title: 'Brand Voices', url: '/brand-voices', icon: Sparkles },
+      { title: 'Importar dados (IA)', url: '/import-data', icon: Upload, badge: 'IA' },
     ]
   },
   {
@@ -113,6 +115,7 @@ const navSections: NavSection[] = [
     items: [
       { title: 'Templates', url: '/templates', icon: FileText },
       { title: 'Biblioteca', url: '/content-library', icon: Library },
+      { title: 'Histórico de Copies', url: '/copies-history', icon: History },
       { title: 'Ideias IA', url: '/ai-ideas', icon: Lightbulb, badge: 'IA' },
       { title: 'Trending Hooks', url: '/trending-hooks', icon: TrendingUp },
       { title: 'Hooks', url: '/hooks', icon: Zap },
@@ -248,6 +251,7 @@ export const AppSidebar = () => {
   }: {
     section: typeof navSections[0];
   }) => {
+    const navigate = useNavigate();
     const filteredItems = filterNavItems(section.items, section.id);
     if (!isSectionVisible(section.items, section.id)) {
       return null;
@@ -262,12 +266,26 @@ export const AppSidebar = () => {
         onOpenChange={() => toggleSection(section.id)}
         className="space-y-1"
       >
-        <CollapsibleTrigger className={`
+        <CollapsibleTrigger
+          onClick={(e) => {
+            // Quando colapsado (ícones), clicar no ícone deve navegar para o primeiro item da seção
+            if (collapsed) {
+              e.preventDefault();
+              e.stopPropagation();
+              const firstItem = filteredItems[0];
+              if (firstItem) {
+                navigate(firstItem.url);
+              }
+              return;
+            }
+          }}
+          className={`
           flex items-center gap-3 w-full px-3 py-2 text-left rounded-lg
           transition-all duration-200 group hover:bg-sidebar-accent/50
           ${hasActiveItem ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/80'}
           ${collapsed ? 'justify-center px-2' : ''}
-        `}>
+        `}
+        >
           <section.icon className="h-5 w-5 flex-shrink-0" />
           {!collapsed && (
             <>

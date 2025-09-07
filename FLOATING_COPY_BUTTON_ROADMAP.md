@@ -1,440 +1,72 @@
-# 🚀 Roadmap do Botão Flutuante - Próximas Ações
+# Roadmap para o FloatingAIAssistant (antigo FloatingCopyButton)
 
-## ✅ **IMPLEMENTAÇÃO ATUAL - CONCLUÍDA**
+## Visão Geral
+O FloatingAIAssistant é um botão flutuante versátil que aparece em páginas específicas do StorySpark para auxiliar na geração de copies contextuais com IA, upload de documentos para análise automática e outras funcionalidades inteligentes. Ele foi renomeado de FloatingCopyButton para refletir sua funcionalidade expandida além de apenas gerar copies.
 
-### **🎯 Funcionalidades Implementadas**
+## Páginas onde o Botão Aparece
+Baseado na revisão, o botão aparece nas seguintes páginas para fornecer suporte contextual:
+- `/composer` (Composer.tsx): Criação de copy principal.
+- `/campaigns` (Campaigns.tsx): Copies para campanhas.
+- `/email-marketing` (EmailMarketing.tsx): Copies para emails.
+- `/social-scheduler` (SocialScheduler.tsx): Posts agendados.
+- `/templates` (Templates.tsx): Baseado em templates.
+- `/landing-pages` (LandingPages.tsx): Copies para landing pages.
+- `/funnels` (Funnels.tsx): Copies para funis.
+- `/ai-ideas` (AIIdeas.tsx): Desenvolver ideias em copies.
+- `/trending-hooks` (TrendingHooks.tsx): Usar hooks virais.
+- `/hooks` (Hooks.tsx): Gerar com hooks.
+- `/personas` (Personas.tsx): Copies direcionadas a personas.
+- `/brand-voices` (BrandVoices.tsx): Usando brand voice.
+- `/voices` (Voices.tsx): Com voice personalizada.
+- `/calendar` (Calendar.tsx): Copies para eventos.
+- `/call-scripts` (CallScripts.tsx): Scripts de ligação.
+- `/push-whatsapp` (PushWhatsApp.tsx): Mensagens WhatsApp.
+- `/crm` (CRM.tsx): Copies para relacionamento com clientes.
+- `/feedback` (Feedback.tsx): Solicitar/responder feedback.
+- `/content-library` (ContentLibrary.tsx): Organizar/promover conteúdo.
+- `/blog` (Blog.tsx) e `/blog-post` (BlogPost.tsx): Copies para blog.
+- `/dashboard` (Dashboard.tsx): Copies rápidas.
+- `/analytics` (Analytics.tsx): Baseado em dados.
+- `/modern-composer-wrapper` (ModernComposerWrapper.tsx): Composição moderna.
 
-#### **1. Sistema Inteligente de Detecção**
-- ✅ **Detecção automática** de dados em todas as páginas
-- ✅ **Integração real** com hooks: `useBrandVoices`, `usePersonas`, `useTemplates`, `useCampaigns`, `useAnalytics`
-- ✅ **Contexto específico** para cada página (25 páginas integradas)
-- ✅ **Funcionalidades adaptativas** baseadas em dados disponíveis
+**Páginas Excluídas:** Admin, auth, billing, settings, team, integrations, not-found, landing-waitlist, test pages.
 
-#### **2. Modo Dark Completo**
-- ✅ **Interface adaptativa** para modo claro/escuro
-- ✅ **Cores otimizadas** para ambos os temas
-- ✅ **Contraste adequado** em todos os elementos
-- ✅ **Transições suaves** entre temas
+A lógica de rendering condicional usa `useLocation().pathname` com listas `allowedPaths` e `excludedPaths` no componente [`FloatingAIAssistant.tsx`](src/components/floating/FloatingAIAssistant.tsx:208-258).
 
-#### **3. Responsividade Total**
-- ✅ **Mobile-first** design
-- ✅ **Breakpoints otimizados** (sm, md, lg, xl)
-- ✅ **Gestos touch** suportados
-- ✅ **Layout adaptativo** para todas as telas
+## Funcionalidades Principais
+1. **Geração de Copy Contextual:** Abre modal com briefing auto-configurado baseado na página, seleciona plataforma/tipo, gera copy com IA e copia para clipboard. Redireciona para composer ou página relevante.
+2. **Upload de Documentos com IA:** Botão dedicado no modal para upload de PDFs/DOCX/TXT. A IA (via Gemini) extrai brand voices, personas, company info e marketing data, salvando automaticamente no Supabase via Edge Function `document-analyzer`.
+3. **Seletores Contextuais:** Para páginas como calendar (selecionar eventos), personas/brand-voices (selecionar itens), aplica contexto ao briefing.
+4. **Design e Efeitos:** Botão animado com hover effects, tooltip, glow, pulse. Mantém o visual moderno e responsivo.
 
-#### **4. Integração Contextual Avançada**
-- ✅ **Brand Voices**: Detecção automática + contexto específico
-- ✅ **Personas**: Detecção automática + contexto específico
-- ✅ **Templates**: Detecção automática + contexto específico
-- ✅ **Campaigns**: Detecção automática + contexto específico
-- ✅ **Analytics**: Detecção automática + contexto específico
-- ✅ **Calendário**: Integração com modal de agendamento
+## Implementação Técnica
+- **Componente Principal:** [`FloatingAIAssistant.tsx`](src/components/floating/FloatingAIAssistant.tsx) - Lógica de rendering, modal, handlers.
+- **Upload Modal:** [`DocumentUploadModal.tsx`](src/components/upload/DocumentUploadModal.tsx) - Dropzone para arquivos, progresso simulado/atual, preview de dados extraídos.
+- **Service:** [`documentProcessingService.ts`](src/services/documentProcessingService.ts) - Upload para storage ('document-uploads'), chama Edge Function, parseia e valida dados, fallback para mock se falhar.
+- **Edge Function:** `document-analyzer` (supabase/functions) - Baixa arquivo do storage, chama Gemini API para extração JSON, insere em tables (brand_voices, personas, user_profiles), retorna dados.
+- **Configs Modulares:** Arquivos em `./configs/` para contextos por página (social, personas, etc.).
+- **Integração IA:** Usa Gemini para análise estruturada; env vars: GEMINI_API_KEY, SUPABASE_URL/SERVICE_ROLE_KEY.
 
----
+## Fluxo de Upload e Processamento
+1. Usuário clica "Upload com IA" no modal do FloatingAIAssistant.
+2. Abre DocumentUploadModal com dropzone.
+3. Arquivo(s) selecionado(s), valida tipo/tamanho (PDF/TXT/DOCX ≤10MB).
+4. Chama `documentProcessingService.processDocument`: Upload para storage, cria job em 'ai_processing_jobs', extrai texto, chama Edge Function.
+5. Edge Function: Download, prompt Gemini, parse JSON, insere no DB (workspaces/user_id), retorna dados.
+6. Modal mostra preview (brand voice, personas, etc.), botão "Aplicar" chama onDataExtracted para integrar (ex: toast success, atualizar hooks).
+7. Histórico em 'ai_processing_jobs', opção para deletar.
 
-## 🔄 **PRÓXIMAS AÇÕES - IMPLEMENTAÇÃO**
+## Melhorias Futuras
+- Suporte a múltiplos arquivos simultâneos.
+- Progresso real via Supabase Realtime (subscriptions no job status).
+- Integração com mais tables (campaigns, templates auto-gerados de extracted data).
+- UI para editar dados extraídos antes de salvar.
+- Análise de imagens (OCR para PDFs escaneados).
+- Métricas de qualidade da extração (confiança da IA).
 
-### **📋 Fase 1: Integração de Dados Reais (Prioridade Alta)**
+## Testes e Verificação
+- Local: `npm run dev`, navegue para `/composer`, abra botão, upload arquivo de teste, verifique DB (brand_voices, personas).
+- Edge Function: Logs no Supabase dashboard; teste com curl ou Postman para invoke.
+- Erros: Fallback mock se Gemini falhar; validações em service.
 
-#### **1.1 Hooks Faltantes**
-```typescript
-// Implementar hooks que ainda não existem
-- useAIIdeas.tsx (criar)
-- useTrendingHooks.tsx (criar)
-- useVoices.tsx (criar)
-- useLandingPages.tsx (criar)
-- useFunnels.tsx (criar)
-- useSocialScheduler.tsx (criar)
-- useEmailMarketing.tsx (criar)
-- usePushWhatsApp.tsx (criar)
-- useCallScripts.tsx (criar)
-- useCRM.tsx (criar)
-- useContentLibrary.tsx (criar)
-- useABTests.tsx (criar)
-- useFeedback.tsx (criar)
-- useTeam.tsx (criar)
-- useIntegrations.tsx (criar)
-- useBilling.tsx (criar)
-- useSettings.tsx (criar)
-```
-
-#### **1.2 Estrutura dos Hooks**
-```typescript
-// Exemplo de estrutura para novos hooks
-export const useAIIdeas = () => {
-  const [ideas, setIdeas] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Fetch data
-  const fetchIdeas = async () => {
-    // Implementar busca de dados
-  };
-  
-  // CRUD operations
-  const createIdea = async (idea) => {
-    // Implementar criação
-  };
-  
-  return { ideas, loading, createIdea };
-};
-```
-
-### **📋 Fase 2: Funcionalidades Específicas por Página**
-
-#### **2.1 Brand Voices - Melhorias**
-```typescript
-// Implementar funcionalidades específicas
-- Aplicar copy diretamente na brand voice selecionada
-- Criar nova brand voice com IA usando contexto
-- Editar brand voice existente com IA
-- Duplicar brand voice com variações
-```
-
-#### **2.2 Templates - Integração Avançada**
-```typescript
-// Funcionalidades específicas para templates
-- Aplicar copy em template selecionado
-- Criar novo template baseado em copy gerada
-- Duplicar template com variações
-- Preview do template com copy aplicada
-```
-
-#### **2.3 Analytics - Integração Inteligente**
-```typescript
-// Usar dados reais de analytics
-- Copy baseada em métricas reais
-- Otimização baseada em performance
-- A/B testing automático
-- Insights para melhorar copy
-```
-
-### **📋 Fase 3: Funcionalidades Avançadas**
-
-#### **3.1 Sistema de Aplicação Direta**
-```typescript
-// Implementar aplicação direta em páginas
-const handleApplyToPage = async (copyContent, pageContext) => {
-  switch (pageContext.type) {
-    case 'brand-voice':
-      await updateBrandVoice(pageContext.id, { description: copyContent });
-      break;
-    case 'persona':
-      await updatePersona(pageContext.id, { description: copyContent });
-      break;
-    case 'template':
-      await updateTemplate(pageContext.id, { content: copyContent });
-      break;
-    // ... outros casos
-  }
-};
-```
-
-#### **3.2 Sistema de Histórico**
-```typescript
-// Implementar histórico de copies geradas
-const useCopyHistory = () => {
-  const [history, setHistory] = useState([]);
-  
-  const addToHistory = (copy) => {
-    setHistory(prev => [copy, ...prev.slice(0, 49)]);
-  };
-  
-  const getHistory = () => history;
-  
-  return { history, addToHistory, getHistory };
-};
-```
-
-#### **3.3 Sistema de Templates de Briefing**
-```typescript
-// Templates inteligentes de briefing
-const briefingTemplates = {
-  'brand-voice': {
-    basic: 'Criar brand voice para {industry}',
-    detailed: 'Criar brand voice completa: nome, descrição, tom de voz, características, público-alvo, exemplos de uso para {industry}',
-    professional: 'Desenvolver brand voice profissional para empresa de {industry} com foco em {target}'
-  },
-  'persona': {
-    basic: 'Criar persona para {product}',
-    detailed: 'Criar persona detalhada: nome, idade, profissão, interesses, dores, objetivos para {product}',
-    marketing: 'Desenvolver persona de marketing para campanha de {product}'
-  }
-};
-```
-
-### **📋 Fase 4: Otimizações de Performance**
-
-#### **4.1 Lazy Loading de Dados**
-```typescript
-// Implementar carregamento sob demanda
-const useLazyData = (fetchFunction, dependencies) => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    const result = await fetchFunction();
-    setData(result);
-    setLoading(false);
-  }, dependencies);
-  
-  return { data, loading, loadData };
-};
-```
-
-#### **4.2 Cache Inteligente**
-```typescript
-// Sistema de cache para dados
-const useCachedData = (key, fetchFunction, ttl = 5 * 60 * 1000) => {
-  const [data, setData] = useState(null);
-  
-  useEffect(() => {
-    const cached = localStorage.getItem(key);
-    const cachedData = cached ? JSON.parse(cached) : null;
-    
-    if (cachedData && Date.now() - cachedData.timestamp < ttl) {
-      setData(cachedData.data);
-    } else {
-      fetchFunction().then(result => {
-        setData(result);
-        localStorage.setItem(key, JSON.stringify({
-          data: result,
-          timestamp: Date.now()
-        }));
-      });
-    }
-  }, [key, fetchFunction, ttl]);
-  
-  return data;
-};
-```
-
-### **📋 Fase 5: Funcionalidades de IA Avançadas**
-
-#### **5.1 Sugestões Inteligentes**
-```typescript
-// Sistema de sugestões baseado em contexto
-const useSmartSuggestions = (pageContext, userHistory) => {
-  const [suggestions, setSuggestions] = useState([]);
-  
-  useEffect(() => {
-    const generateSuggestions = async () => {
-      const contextSuggestions = await aiService.generateSuggestions({
-        page: pageContext.path,
-        userHistory,
-        availableData: pageContext.data
-      });
-      setSuggestions(contextSuggestions);
-    };
-    
-    generateSuggestions();
-  }, [pageContext, userHistory]);
-  
-  return suggestions;
-};
-```
-
-#### **5.2 Otimização Automática**
-```typescript
-// Otimização automática de copy
-const useAutoOptimization = (copyContent, platform, metrics) => {
-  const [optimizedCopy, setOptimizedCopy] = useState(copyContent);
-  
-  const optimize = async () => {
-    const optimization = await aiService.optimizeCopy({
-      content: copyContent,
-      platform,
-      metrics,
-      target: 'engagement'
-    });
-    setOptimizedCopy(optimization);
-  };
-  
-  return { optimizedCopy, optimize };
-};
-```
-
----
-
-## 🎯 **TAREFAS DETALHADAS**
-
-### **🔥 Prioridade Crítica (Sprint 1)**
-
-#### **Tarefa 1.1: Criar Hook useAIIdeas**
-- **Arquivo**: `src/hooks/useAIIdeas.tsx`
-- **Funcionalidades**:
-  - Fetch de ideias existentes
-  - Criação de novas ideias
-  - Edição de ideias
-  - Deletar ideias
-- **Tempo estimado**: 4 horas
-- **Dependências**: Nenhuma
-
-#### **Tarefa 1.2: Criar Hook useTrendingHooks**
-- **Arquivo**: `src/hooks/useTrendingHooks.tsx`
-- **Funcionalidades**:
-  - Fetch de hooks virais
-  - Criação de novos hooks
-  - Categorização por tipo
-  - Métricas de performance
-- **Tempo estimado**: 4 horas
-- **Dependências**: Nenhuma
-
-#### **Tarefa 1.3: Implementar Aplicação Direta**
-- **Arquivo**: `src/components/floating/FloatingCopyButton.tsx`
-- **Funcionalidades**:
-  - Função `handleApplyToPage`
-  - Integração com APIs existentes
-  - Feedback visual de sucesso/erro
-- **Tempo estimado**: 6 horas
-- **Dependências**: Tarefas 1.1 e 1.2
-
-### **⚡ Prioridade Alta (Sprint 2)**
-
-#### **Tarefa 2.1: Sistema de Histórico**
-- **Arquivo**: `src/hooks/useCopyHistory.tsx`
-- **Funcionalidades**:
-  - Armazenamento local
-  - Busca e filtros
-  - Exportação de histórico
-- **Tempo estimado**: 3 horas
-- **Dependências**: Nenhuma
-
-#### **Tarefa 2.2: Templates de Briefing**
-- **Arquivo**: `src/utils/briefingTemplates.ts`
-- **Funcionalidades**:
-  - Templates por página
-  - Templates por contexto
-  - Personalização dinâmica
-- **Tempo estimado**: 2 horas
-- **Dependências**: Nenhuma
-
-#### **Tarefa 2.3: Cache Inteligente**
-- **Arquivo**: `src/hooks/useCachedData.tsx`
-- **Funcionalidades**:
-  - Cache com TTL
-  - Invalidação automática
-  - Sincronização
-- **Tempo estimado**: 4 horas
-- **Dependências**: Nenhuma
-
-### **📈 Prioridade Média (Sprint 3)**
-
-#### **Tarefa 3.1: Sugestões Inteligentes**
-- **Arquivo**: `src/hooks/useSmartSuggestions.tsx`
-- **Funcionalidades**:
-  - IA para sugestões
-  - Aprendizado de preferências
-  - Contexto dinâmico
-- **Tempo estimado**: 8 horas
-- **Dependências**: Tarefas 2.1 e 2.2
-
-#### **Tarefa 3.2: Otimização Automática**
-- **Arquivo**: `src/hooks/useAutoOptimization.tsx`
-- **Funcionalidades**:
-  - Otimização baseada em métricas
-  - A/B testing automático
-  - Recomendações
-- **Tempo estimado**: 10 horas
-- **Dependências**: Tarefa 3.1
-
-#### **Tarefa 3.3: Analytics Avançado**
-- **Arquivo**: `src/hooks/useCopyAnalytics.tsx`
-- **Funcionalidades**:
-  - Métricas de performance
-  - Insights automáticos
-  - Relatórios
-- **Tempo estimado**: 6 horas
-- **Dependências**: Tarefa 3.2
-
-### **🎨 Prioridade Baixa (Sprint 4)**
-
-#### **Tarefa 4.1: Animações Avançadas**
-- **Arquivo**: `src/components/floating/FloatingCopyButton.tsx`
-- **Funcionalidades**:
-  - Micro-interações
-  - Feedback visual avançado
-  - Transições suaves
-- **Tempo estimado**: 4 horas
-- **Dependências**: Nenhuma
-
-#### **Tarefa 4.2: Acessibilidade**
-- **Arquivo**: Múltiplos
-- **Funcionalidades**:
-  - Screen reader support
-  - Keyboard navigation
-  - High contrast mode
-- **Tempo estimado**: 6 horas
-- **Dependências**: Nenhuma
-
-#### **Tarefa 4.3: Internacionalização**
-- **Arquivo**: `src/locales/`
-- **Funcionalidades**:
-  - Múltiplos idiomas
-  - Formatação local
-  - RTL support
-- **Tempo estimado**: 8 horas
-- **Dependências**: Nenhuma
-
----
-
-## 🚀 **CRITÉRIOS DE SUCESSO**
-
-### **✅ Funcionalidade**
-- [ ] Todas as 25 páginas com dados reais
-- [ ] Aplicação direta funcionando
-- [ ] Sistema de histórico implementado
-- [ ] Cache inteligente ativo
-
-### **✅ Performance**
-- [ ] Carregamento < 2s em mobile
-- [ ] Cache hit rate > 80%
-- [ ] Bundle size < 1MB
-- [ ] Lighthouse score > 90
-
-### **✅ UX/UI**
-- [ ] Responsividade 100%
-- [ ] Modo dark perfeito
-- [ ] Animações suaves
-- [ ] Feedback visual claro
-
-### **✅ Integração**
-- [ ] Contexto específico por página
-- [ ] Dados reais carregados
-- [ ] Funcionalidades específicas
-- **Aplicação direta funcionando
-
----
-
-## 📊 **MÉTRICAS DE SUCESSO**
-
-### **📈 Engajamento**
-- Taxa de uso do botão: > 60%
-- Tempo médio de geração: < 30s
-- Taxa de aplicação: > 40%
-
-### **🎯 Produtividade**
-- Redução de tempo para criar copy: 70%
-- Aumento de qualidade: 50%
-- Satisfação do usuário: > 4.5/5
-
-### **🔧 Técnico**
-- Uptime: > 99.9%
-- Performance: > 90%
-- Bugs críticos: 0
-
----
-
-## 🎉 **RESULTADO FINAL ESPERADO**
-
-O botão flutuante será um **assistente IA contextual completo** que:
-
-- **🔍 Detecta automaticamente** dados em todas as páginas
-- **🤖 Gera copy inteligente** baseada no contexto
-- **📱 Funciona perfeitamente** em qualquer dispositivo
-- **🌙 Suporta modo dark** com excelência
-- **⚡ Aplica diretamente** nas páginas quando relevante
-- **📊 Aprende e otimiza** com o uso
-- **🎯 Aumenta produtividade** em 70%
-
-**O usuário terá uma experiência fluida e produtiva em todas as páginas do sistema!** 🚀
+Implementado com sucesso, mantendo efeitos visuais e expandindo para diferencial competitivo.

@@ -5,7 +5,7 @@ import { AppWrapper } from "@/components/layout/AppWrapper";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 
 // Lazy load pages for better performance
-import React, { Suspense } from 'react';
+import React from 'react';
 import { LazyLoadWrapper } from "@/components/performance/LazyLoadWrapper";
 
 // Landing and Public Pages
@@ -35,6 +35,8 @@ const Integrations = React.lazy(() => import('./pages/Integrations'));
 const Team = React.lazy(() => import('./pages/Team'));
 const Billing = React.lazy(() => import('./pages/Billing'));
 const Voices = React.lazy(() => import('./pages/Voices'));
+const ImportData = React.lazy(() => import('./pages/ImportData'));
+const CopiesHistory = React.lazy(() => import('./pages/CopiesHistory'));
 
 // Lazy load specialized pages
 const AdminSeedInserter = React.lazy(() => import('./components/AdminSeedInserter'));
@@ -68,7 +70,6 @@ const AdminIntegrations = React.lazy(() => import('./pages/admin/AdminIntegratio
 const AdminBillingGlobal = React.lazy(() => import('./pages/admin/AdminBillingGlobal'));
 const AdminSecurity = React.lazy(() => import('./pages/admin/AdminSecurity'));
 const AdminPermissions = React.lazy(() => import('@/pages/admin/AdminPermissions'));
-const AdminTest = React.lazy(() => import('@/pages/admin/AdminTest'));
 const AdminBackup = React.lazy(() => import('./pages/admin/AdminBackup'));
 const AdminWaitlist = React.lazy(() => import('./pages/admin/AdminWaitlist'));
 const AdminJobs = React.lazy(() => import('./pages/admin/AdminJobs'));
@@ -235,6 +236,28 @@ const App = () => (
           <AppLayout>
             <LazyLoadWrapper>
               <Voices />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+
+      {/* Import Data (IA) */}
+      <Route path="/import-data" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <ImportData />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+
+      {/* Copies History */}
+      <Route path="/copies-history" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <CopiesHistory />
             </LazyLoadWrapper>
           </AppLayout>
         </ProtectedRoute>

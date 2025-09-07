@@ -8,7 +8,7 @@ import { SystemToastNotifications } from '@/components/ui/system-toast-notificat
 import { useSystemNotifications } from '@/hooks/useSystemNotifications';
 import { useToastNotifications } from '@/hooks/useToastNotifications';
 import { useSystemToastNotifications } from '@/hooks/useSystemToastNotifications';
-import FloatingCopyButton from '@/components/floating/FloatingCopyButton';
+import FloatingCopyButton from '@/components/floating/FloatingAIAssistant';
 
 interface AppLayoutProps {
   children: React.ReactNode;

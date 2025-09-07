@@ -283,37 +283,32 @@ Se alguma informação não estiver disponível no documento, retorne null para 
       });
       const prompt = this.generateExtractionPrompt(documentText);
 
-      const aiResponse = await this.aiService.executeRequest({
-        prompt,
-        maxTokens: 2000,
-        temperature: 0.3,
+      // Chamar Edge Function para análise
+      onProgress?.({
+        step: "Analisando com IA via Edge Function...",
+        progress: 50,
+        currentFile: file.name,
       });
-
-      if (!aiResponse.success || !aiResponse.content) {
-        throw new Error(
-          `Erro na análise com IA: ${aiResponse.error || "Resposta vazia"}`
-        );
+    
+      const { data: functionResponse, error: functionError } = await supabase.functions.invoke('document-analyzer', {
+        body: { filePath }
+      });
+    
+      if (functionError || !functionResponse.success) {
+        throw new Error(`Erro na análise com IA: ${functionError?.message || functionResponse?.error || "Falha na Edge Function"}`);
       }
-
-      // 5. Parsear resposta da IA
+    
+      let extractedData: ExtractedData = functionResponse.data;
+    
+      // 5. Parsear resposta da IA se necessário (mas já é JSON)
       onProgress?.({
         step: "Processando dados extraídos...",
         progress: 80,
         currentFile: file.name,
       });
-
-      let extractedData: ExtractedData;
-      try {
-        // Tentar extrair JSON da resposta
-        const jsonMatch = aiResponse.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          extractedData = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error("Resposta da IA não contém JSON válido");
-        }
-      } catch (parseError) {
-        console.error("Erro ao parsear resposta da IA:", parseError);
-        // Fallback: usar dados mockados se a IA falhar
+    
+      // Fallback se necessário
+      if (!extractedData) {
         extractedData = this.getFallbackData(file.name);
       }
 
