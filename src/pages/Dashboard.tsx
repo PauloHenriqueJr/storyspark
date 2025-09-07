@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,7 +10,6 @@ import {
   Calendar,
   BarChart3,
   Bot,
-  Sparkles,
   Loader2,
   AlertCircle
 } from 'lucide-react';
@@ -20,11 +18,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateCampaignModal from '@/components/modals/CreateCampaignModal';
-import SimpleTest from '@/components/upload/SimpleTest';
+// import SimpleTest from '@/components/upload/SimpleTest';
 
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 const quickActions = [
   {
@@ -82,6 +81,7 @@ const Dashboard = () => {
   } = useDashboardStats();
   const { workspace, loading: workspaceLoading } = useWorkspace();
   const { addNotification } = useNotifications();
+  const { isFlagEnabled } = useFeatureFlags();
 
   const handleQuickAction = async (href: string) => {
     if (href === '/campaigns') {
@@ -246,29 +246,36 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {quickActions.map((action, index) => (
-                  <motion.div
-                    key={index}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Button
-                      variant="ghost"
-                      className={`h-auto w-full p-6 ${action.color} hover:opacity-90 transition-all duration-200`}
-                      onClick={() => handleQuickAction(action.href)}
+                {quickActions
+                  .filter((action) => isFlagEnabled('principal', action.href))
+                  .map((action, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <div className="flex items-center gap-4">
-                        <action.icon className="h-8 w-8" />
-                        <div className="text-left">
-                          <div className="font-semibold">{action.title}</div>
-                          <div className="text-sm opacity-90">
-                            {action.description}
+                      <Button
+                        variant="ghost"
+                        className={`h-auto w-full p-6 ${action.color} hover:opacity-90 transition-all duration-200`}
+                        onClick={() => handleQuickAction(action.href)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <action.icon className="h-8 w-8" />
+                          <div className="text-left">
+                            <div className="font-semibold">{action.title}</div>
+                            <div className="text-sm opacity-90">
+                              {action.description}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Button>
-                  </motion.div>
-                ))}
+                      </Button>
+                    </motion.div>
+                  ))}
+                {quickActions.filter((a) => isFlagEnabled('principal', a.href)).length === 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Nenhuma ação disponível no momento.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -293,7 +300,7 @@ const Dashboard = () => {
               ) : recentActivities.length === 0 ? (
                 <div className="text-sm text-muted-foreground">Nenhuma atividade recente</div>
               ) : (
-                recentActivities.map((activity, index) => (
+                recentActivities.map((activity) => (
                   <div key={activity.id} className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-primary/10 text-primary">
                       <span className="text-lg">{activity.icon}</span>
