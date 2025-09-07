@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
@@ -146,6 +147,7 @@ const adminSection: NavSection = {
   icon: Shield,
   items: [
     { title: 'Admin Dashboard', url: '/admin', icon: Shield },
+    { title: 'Feature Flags', url: '/admin/feature-flags', icon: Settings },
     { title: 'Clientes', url: '/admin/users', icon: UserCog },
     { title: 'Gerentes', url: '/admin/managers', icon: Crown },
     { title: 'Email Marketing', url: '/admin/email-templates', icon: Mail },
@@ -163,6 +165,7 @@ export const AppSidebar = () => {
   const { state } = useSidebar();
   const location = useLocation();
   const { hasAdminAccess } = useRole();
+  const { isFlagEnabled } = useFeatureFlags();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
 
@@ -172,6 +175,15 @@ export const AppSidebar = () => {
   });
 
   const isActive = (path: string) => currentPath === path;
+
+  const filterNavItems = (items: NavItem[], groupId: string): NavItem[] => {
+    return items.filter(item => isFlagEnabled(groupId, item.url));
+  };
+
+  const isSectionVisible = (items: NavItem[], groupId: string) => {
+    const filtered = filterNavItems(items, groupId);
+    return filtered.length > 0;
+  };
 
   // Check if any item in a section is active to keep section open
   const isSectionActive = (items: NavItem[]) => {
@@ -236,8 +248,13 @@ export const AppSidebar = () => {
   }: {
     section: typeof navSections[0];
   }) => {
+    const filteredItems = filterNavItems(section.items, section.id);
+    if (!isSectionVisible(section.items, section.id)) {
+      return null;
+    }
+
     const isOpen = openSections[section.id] || false;
-    const hasActiveItem = isSectionActive(section.items);
+    const hasActiveItem = isSectionActive(filteredItems);
 
     return (
       <Collapsible
@@ -267,12 +284,12 @@ export const AppSidebar = () => {
         {!collapsed && (
           <CollapsibleContent className="space-y-1 pl-3">
             <div className="space-y-1">
-              {section.items.map((item) => (
+              {filteredItems.map((item) => (
                 <NavLink
                   key={item.title}
                   to={item.url}
                   className={`
-                    flex items-center gap-3 px-3 py-2 ml-5 rounded-lg 
+                    flex items-center gap-3 px-3 py-2 ml-5 rounded-lg
                     transition-all duration-200 text-sm
                     ${getNavClass(item.url)}
                   `}
@@ -336,7 +353,7 @@ export const AppSidebar = () => {
           ))}
 
           {/* Admin Section - Separated for security */}
-          {hasAdminAccess() && (
+          {hasAdminAccess() && isSectionVisible(adminSection.items, adminSection.id) && (
             <>
               <div className="my-4 border-t border-sidebar-border/40" />
               <CollapsibleNavSection section={adminSection} />

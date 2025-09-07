@@ -105,8 +105,10 @@
         "MAILTRAP_ACCOUNT_ID": "2428199"
       },
       "type": "stdio",
-      "disabled": false,
-      "alwaysAllow": ["send-email"]
+      "disabled": true,
+      "alwaysAllow": [
+        "send-email"
+      ]
     }
   }
 }

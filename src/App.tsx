@@ -73,6 +73,7 @@ const AdminBackup = React.lazy(() => import('./pages/admin/AdminBackup'));
 const AdminWaitlist = React.lazy(() => import('./pages/admin/AdminWaitlist'));
 const AdminJobs = React.lazy(() => import('./pages/admin/AdminJobs'));
 const AdminEmailTemplates = React.lazy(() => import('./pages/admin/AdminEmailTemplates'));
+import { AdminFeatureFlags } from './pages/admin/AdminFeatureFlags';
 
 // Calendar Wrapper Component
 const CalendarWrapper = () => {
@@ -96,18 +97,18 @@ const CalendarWrapper = () => {
 const App = () => (
   <AppWrapper>
     <OnboardingModal />
-    
+
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Index />} />
       <Route path="/waitlist" element={<LandingWaitlist />} />
       <Route path="/waitlist-ab" element={<WaitlistAB />} />
       <Route path="/success" element={<Success />} />
-      
+
       {/* Blog Routes */}
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPost />} />
-      
+
       {/* Test Routes */}
       <Route path="/test-calendar" element={<TestCalendar />} />
       <Route path="/test-upload" element={
@@ -119,11 +120,11 @@ const App = () => (
           </AppLayout>
         </ProtectedRoute>
       } />
-      
-  {/* Auth Routes - Apenas /auth */}
-  <Route path="/auth" element={<Auth />} />
-  <Route path="/auth/callback" element={<AuthCallback />} />
-      
+
+      {/* Auth Routes - Apenas /auth */}
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+
       {/* Protected App Routes */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
@@ -238,7 +239,7 @@ const App = () => (
           </AppLayout>
         </ProtectedRoute>
       } />
-      
+
       {/* Specialized Pages Routes - continue with lazy loading */}
       <Route path="/email-marketing" element={
         <ProtectedRoute>
@@ -486,15 +487,15 @@ const App = () => (
         </ProtectedRoute>
       } />
       <Route path="/admin/waitlist" element={
-                <ProtectedRoute adminOnly={true}>
-                  <AppLayout>
-                    <LazyLoadWrapper>
-                      <AdminWaitlist />
-                    </LazyLoadWrapper>
-                  </AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/jobs" element={
+        <ProtectedRoute adminOnly={true}>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminWaitlist />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/jobs" element={
         <ProtectedRoute adminOnly={true}>
           <AppLayout>
             <LazyLoadWrapper>
@@ -512,8 +513,17 @@ const App = () => (
           </AppLayout>
         </ProtectedRoute>
       } />
-      
+
       {/* Temporary route for seed insertion */}
+      <Route path="/admin/feature-flags" element={
+        <ProtectedRoute adminOnly={true}>
+          <AppLayout>
+            <LazyLoadWrapper>
+              <AdminFeatureFlags />
+            </LazyLoadWrapper>
+          </AppLayout>
+        </ProtectedRoute>
+      } />
       <Route path="/admin/seed-inserter" element={
         <ProtectedRoute>
           <AppLayout>
@@ -523,7 +533,7 @@ const App = () => (
           </AppLayout>
         </ProtectedRoute>
       } />
-      
+
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>

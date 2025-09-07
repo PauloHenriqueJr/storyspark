@@ -80,13 +80,9 @@ const UsageCalculatorModal: React.FC<UsageCalculatorModalProps> = ({
     }
   ];
 
-  useEffect(() => {
-    calculatePlans();
-  }, [inputs, calculatePlans]);
-
   const calculatePlans = () => {
     const calculated = plans.map(plan => {
-      const suitable = 
+      const suitable =
         inputs.copies <= plan.limits.copies &&
         inputs.integrations <= plan.limits.integrations &&
         inputs.users <= plan.limits.users;
@@ -107,6 +103,10 @@ const UsageCalculatorModal: React.FC<UsageCalculatorModalProps> = ({
 
     setResults(calculated);
   };
+
+  useEffect(() => {
+    calculatePlans();
+  }, [inputs]);
 
   const calculateROI = () => {
     const copiesPerMonth = inputs.copies;

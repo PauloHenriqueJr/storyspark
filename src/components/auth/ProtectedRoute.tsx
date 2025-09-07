@@ -5,6 +5,7 @@ import { useRole } from '@/hooks/useRole';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { secureLog } from '@/utils/secureLog';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,16 +14,17 @@ interface ProtectedRouteProps {
   superAdminOnly?: boolean; // Apenas super_admin
 }
 
-export const ProtectedRoute = ({ 
-  children, 
+export const ProtectedRoute = ({
+  children,
   requiredRole,
   adminOnly = false,
   superAdminOnly = false
 }: ProtectedRouteProps) => {
   const { isAuthenticated, loading, user, logout } = useAuth();
-  const { hasRole, hasAnyRole, hasAdminAccess, hasSuperAdminAccess, currentRole } = useRole();
+  const { hasAnyRole, hasAdminAccess, hasSuperAdminAccess, currentRole } = useRole();
   const location = useLocation();
   const [serverValidation, setServerValidation] = useState<'pending' | 'valid' | 'invalid'>('pending');
+  const [flagValidation, setFlagValidation] = useState<'pending' | 'valid' | 'invalid'>('pending');
 
   // Função para validar role no servidor
   const validateRoleServerSide = async (userId: string, requiredRoles: string[]): Promise<boolean> => {
@@ -32,46 +34,32 @@ export const ProtectedRoute = ({
         .select('role')
         .eq('id', userId)
         .single();
-      
+
       if (error) {
-        console.error('🔒 PROTECTED_ROUTE: Server validation failed', error);
+        secureLog.dev.error('🔒 PROTECTED_ROUTE: Server validation failed', error);
         return false;
       }
-      
+
       const serverRole = profile?.role || 'user';
       const hasPermission = requiredRoles.includes(serverRole);
-      
-      // Log de segurança para tentativas de acesso
-      console.log('🔒 PROTECTED_ROUTE: Server validation', {
-        userId,
-        serverRole,
-        clientRole: currentRole,
-        requiredRoles,
-        hasPermission,
-        route: location.pathname
-      });
-      
+
       // Verificar inconsistência entre cliente e servidor
       if (serverRole !== currentRole) {
-        console.warn('⚠️ SECURITY: Role mismatch detected', {
-          clientRole: currentRole,
-          serverRole,
-          userId
-        });
-        
+        // Em caso de inconsistência, forçar logout (silencioso)
+
         toast({
           title: "Erro de Segurança",
           description: "Inconsistência detectada. Faça login novamente.",
           variant: "destructive",
         });
-        
+
         logout();
         return false;
       }
-      
+
       return hasPermission;
     } catch (error) {
-      console.error('🔒 PROTECTED_ROUTE: Validation exception', error);
+      secureLog.dev.error('🔒 PROTECTED_ROUTE: Validation exception', error);
       return false;
     }
   };
@@ -86,7 +74,7 @@ export const ProtectedRoute = ({
 
       // Definir roles necessários
       let requiredRoles: string[] = [];
-      
+
       if (superAdminOnly) {
         requiredRoles = ['super_admin'];
       } else if (adminOnly) {
@@ -104,9 +92,52 @@ export const ProtectedRoute = ({
     };
 
     performServerValidation();
-  }, [user, isAuthenticated, requiredRole, adminOnly, superAdminOnly, location.pathname, validateRoleServerSide]);
+  }, [user, isAuthenticated, requiredRole, adminOnly, superAdminOnly, validateRoleServerSide]);
 
-  if (loading || serverValidation === 'pending') {
+  // Validate feature flag for current page
+  useEffect(() => {
+    const validateFeatureFlag = async () => {
+      if (!user || !isAuthenticated || serverValidation !== 'valid') {
+        setFlagValidation('pending');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('feature_flags')
+          .select('enabled')
+          .eq('page_path', location.pathname)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 is no rows found
+          secureLog.dev.error('Feature flag validation error:', error);
+          setFlagValidation('valid'); // Default to enabled if error
+          return;
+        }
+
+        const enabled = data?.enabled ?? true; // Default to true if not found
+        setFlagValidation(enabled ? 'valid' : 'invalid');
+      } catch (error) {
+        secureLog.dev.error('Feature flag validation exception:', error);
+        setFlagValidation('valid'); // Default to enabled on error
+      }
+    };
+
+    validateFeatureFlag();
+  }, [user, isAuthenticated, serverValidation, location.pathname]);
+
+  // useEffect para mostrar toast quando página for desabilitada
+  useEffect(() => {
+    if (flagValidation === 'invalid') {
+      toast({
+        title: "Página Desabilitada",
+        description: "Esta funcionalidade está temporariamente desabilitada.",
+        variant: "destructive",
+      });
+    }
+  }, [flagValidation]);
+
+  if (loading || serverValidation === 'pending' || flagValidation === 'pending') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
         <div className="space-y-4 max-w-md w-full mx-auto p-6">
@@ -130,12 +161,11 @@ export const ProtectedRoute = ({
 
   // Verificar resultado da validação server-side
   if (serverValidation === 'invalid') {
-    console.warn('⚠️ SECURITY: Access denied to protected route', {
-      route: location.pathname,
-      userRole: currentRole,
-      userId: user?.id
-    });
-    
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Verificar feature flag
+  if (flagValidation === 'invalid') {
     return <Navigate to="/dashboard" replace />;
   }
 

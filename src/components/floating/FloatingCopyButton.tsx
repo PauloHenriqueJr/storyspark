@@ -41,6 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { copyGenerationService } from '@/services/copyGenerationService';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useCalendar } from '@/hooks/useCalendar';
+import { useShouldRenderFloatingButton } from '@/hooks/useShouldRenderFloatingButton';
 import { useBrandVoices } from '@/hooks/useBrandVoices';
 import { usePersonas } from '@/hooks/usePersonas';
 import { useTemplates } from '@/hooks/useTemplates';
@@ -319,7 +320,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/calendar'
   },
-  
+
   // Páginas de Landing Pages e Funnels
   '/landing-pages': {
     title: 'Copy para Landing Pages',
@@ -349,7 +350,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Funnel',
     targetPage: '/funnels'
   },
-  
+
   // Páginas de Comunicação
   '/push-whatsapp': {
     title: 'Copy para Push/WhatsApp',
@@ -379,7 +380,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Script',
     targetPage: '/call-scripts'
   },
-  
+
   // Páginas de Personas e Brand Voices
   '/personas': {
     title: 'Copy para Personas',
@@ -423,7 +424,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/voices'
   },
-  
+
   // Páginas de Analytics e CRM
   '/analytics': {
     title: 'Copy para Analytics',
@@ -453,7 +454,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Follow-up',
     targetPage: '/crm'
   },
-  
+
   // Páginas de Conteúdo e Templates
   '/content-library': {
     title: 'Copy para Content Library',
@@ -497,7 +498,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Post Orgânico',
     targetPage: '/trending-hooks'
   },
-  
+
   // Páginas de Testes e Otimização
   '/ab-tests': {
     title: 'Copy para A/B Tests',
@@ -527,7 +528,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Feedback',
     targetPage: '/feedback'
   },
-  
+
   // Páginas de Configuração (redirecionam para composer)
   '/settings': {
     title: 'Copy Personalizada',
@@ -585,7 +586,7 @@ const contextConfigs: Record<string, ContextConfig> = {
     defaultType: 'Billing',
     targetPage: '/composer'
   },
-  
+
   // Página padrão
   'default': {
     title: 'Criar Copy com IA',
@@ -602,6 +603,15 @@ const contextConfigs: Record<string, ContextConfig> = {
 };
 
 const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotifications, systemToastNotifications, onOpenScheduleModal }) => {
+  const shouldRender = useShouldRenderFloatingButton();
+
+  const location = useLocation();
+
+  if (location.pathname === '/billing') {
+    return null;
+  }
+
+  // Todos os outros hooks vêm depois da verificação
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [briefing, setBriefing] = useState('');
@@ -617,8 +627,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   const [customBriefing, setCustomBriefing] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  
-  const location = useLocation();
+
   const navigate = useNavigate();
   const { user } = useAuth();
   const { events } = useCalendar();
@@ -635,21 +644,23 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
   useEffect(() => {
     if (currentContext.defaultPlatform) setPlatform(currentContext.defaultPlatform);
     if (currentContext.defaultType) setCopyType(currentContext.defaultType);
-    
-    // Se estiver na página de calendário, mostrar seletor de eventos
-    if (location.pathname === '/calendar' && events.length > 0) {
-      setShowEventSelector(true);
-    }
-    
+
     // Se estiver em páginas com dados contextuais ou funcionalidades especiais, mostrar seletor
     if (['/personas', '/brand-voices', '/voices', '/ai-ideas', '/trending-hooks', '/landing-pages', '/funnels', '/analytics', '/templates', '/campaigns', '/social-scheduler', '/email-marketing', '/push-whatsapp', '/call-scripts', '/crm', '/content-library', '/ab-tests', '/feedback', '/team', '/integrations', '/billing', '/settings'].includes(location.pathname)) {
       setShowItemSelector(true);
     }
   }, [location.pathname, currentContext, events, voices, personas]);
 
+  // Mostrar seletor de eventos quando modal abre na página de calendário
+  useEffect(() => {
+    if (isModalOpen && location.pathname === '/calendar' && events.length > 0) {
+      setShowEventSelector(true);
+    }
+  }, [isModalOpen, location.pathname, events.length]);
+
   const handleGenerate = async () => {
     const currentBriefing = customizationMode ? customBriefing : briefing;
-    
+
     if (!currentBriefing.trim()) {
       toastNotifications.showError(
         "Briefing necessário",
@@ -670,7 +681,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
       if (response.success && response.content) {
         setGeneratedCopy(response.content);
-        
+
         // Copiar automaticamente para clipboard
         try {
           await navigator.clipboard.writeText(response.content);
@@ -701,8 +712,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
             setTimeout(() => {
               // Se for para o composer, passar o briefing como state
               if (targetPage === '/composer') {
-                navigate(targetPage, { 
-                  state: { 
+                navigate(targetPage, {
+                  state: {
                     briefing: briefing,
                     platform: platform,
                     copyType: copyType,
@@ -718,7 +729,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
               } else {
                 navigate(targetPage);
               }
-              
+
               const pageName = targetPage === '/composer' ? 'Composer' : targetPage.replace('/', '').replace('-', ' ');
               toastNotifications.showInfo(
                 `Redirecionando para ${pageName}`,
@@ -774,7 +785,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
     // Aqui você implementaria a lógica para aplicar os dados extraídos
     // Por exemplo, criar brand voices, personas, etc.
     console.log('Dados extraídos:', data);
-    
+
     // Exemplo de aplicação automática
     if (data.brandVoice) {
       // Criar brand voice automaticamente
@@ -783,7 +794,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
         `Brand voice "${(data.brandVoice as BrandVoice).name}" foi criada automaticamente.`
       );
     }
-    
+
     if (data.personas && Array.isArray(data.personas)) {
       // Criar personas automaticamente
       toastNotifications.showSuccess(
@@ -791,7 +802,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
         `${data.personas.length} personas foram criadas automaticamente.`
       );
     }
-    
+
     if (data.companyInfo) {
       // Atualizar informações da empresa
       toastNotifications.showSuccess(
@@ -816,7 +827,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
         `A copy foi aplicada ao evento "${selectedEvent.title}"`
       );
     }
-    
+
     if (selectedItem && generatedCopy) {
       // Aqui você pode implementar a lógica para aplicar a copy ao item selecionado
       toastNotifications.showSuccess(
@@ -828,7 +839,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
   const handleItemSelect = (item: BrandVoice | Persona | Template | Campaign) => {
     setSelectedItem(item);
-    
+
     // Usar contexto específico da página se disponível
     let baseContext = '';
     if (pageData?.getContext) {
@@ -861,7 +872,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
           baseContext = `Gerar copy para: ${item.name || (item as any).title}`;
       }
     }
-    
+
     // Definir briefing base e entrar em modo de personalização
     setBriefing(baseContext);
     setCustomBriefing(baseContext);
@@ -1277,6 +1288,10 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
 
   const IconComponent = currentContext.icon;
 
+  if (!shouldRender) {
+    return null;
+  }
+
   return (
     <>
       {/* Floating Button - Design Moderno */}
@@ -1295,7 +1310,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
         >
           {/* Glow effect */}
           <div className={`absolute inset-0 rounded-full ${currentContext.color} opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300`} />
-          
+
           {/* Main button */}
           <Button
             onClick={(e) => {
@@ -1308,10 +1323,10 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
           >
             <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
           </Button>
-          
+
           {/* Pulse effect */}
           <div className={`absolute inset-0 rounded-full ${currentContext.color} opacity-40 animate-ping pointer-events-none`} />
-          
+
           {/* Tooltip */}
           <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block">
             <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
@@ -1450,7 +1465,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                           )}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3">
-                          <Button 
+                          <Button
                             onClick={() => {
                               setBriefing(pageData.createMessage);
                               setShowItemSelector(false);
@@ -1461,7 +1476,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                             {pageData.createMessage}
                           </Button>
                           {pageData.type === 'brand-voice' && (
-                            <Button 
+                            <Button
                               variant="outline"
                               onClick={() => {
                                 setBriefing('Criar brand voice completa com IA: definir nome, descrição, tom de voz, características, público-alvo e exemplos de uso');
@@ -1496,7 +1511,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   Novo
                 </Badge>
               </div>
-              
+
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-600 rounded-xl p-4">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
@@ -1507,10 +1522,10 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                       IA Analisa seus Documentos
                     </h3>
                     <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                      Faça upload de PDFs, DOCX ou TXT com informações da sua empresa. 
+                      Faça upload de PDFs, DOCX ou TXT com informações da sua empresa.
                       A IA extrairá automaticamente brand voice, personas, dados de marketing e muito mais!
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => setShowUploadModal(true)}
                       className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                     >
@@ -1570,13 +1585,13 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                     Opcional
                   </Badge>
                 </div>
-                
+
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-600 rounded-xl p-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                                              <div className={`w-8 h-8 rounded-full ${pageData?.color || currentContext.color} flex items-center justify-center`}>
-                          {React.createElement(pageData?.icon || IconComponent, { className: "w-4 h-4 text-white" })}
-                        </div>
+                      <div className={`w-8 h-8 rounded-full ${pageData?.color || currentContext.color} flex items-center justify-center`}>
+                        {React.createElement(pageData?.icon || IconComponent, { className: "w-4 h-4 text-white" })}
+                      </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
                           {selectedItem.name || selectedItem.title}
@@ -1586,7 +1601,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
                         Briefing Base (gerado automaticamente):
@@ -1595,7 +1610,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                         {briefing}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
                         Personalizar briefing (adicione detalhes específicos):
@@ -1607,7 +1622,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                         className="min-h-[100px] resize-none border-gray-200 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500 dark:focus:border-purple-400 dark:focus:ring-purple-400 rounded-lg text-sm leading-relaxed bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       />
                     </div>
-                    
+
                     <div className="flex gap-2">
                       <Button
                         onClick={() => {
@@ -1732,7 +1747,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                   </>
                 )}
               </Button>
-              
+
               {!briefing.trim() && (
                 <div className="text-center">
                   <p className="text-xs text-gray-500">
@@ -1795,7 +1810,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Conteúdo da Copy */}
                   <div className="p-6">
                     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-600 p-4">
@@ -1812,8 +1827,8 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                 <div className="space-y-3">
                   {/* Botões Principais */}
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      onClick={handleCopyToClipboard} 
+                    <Button
+                      onClick={handleCopyToClipboard}
                       className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                       size="lg"
                     >
@@ -1821,9 +1836,9 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                       Copiar Copy
                     </Button>
                     {(location.pathname === '/calendar' && selectedEvent) || selectedItem ? (
-                      <Button 
-                        onClick={handleUseGeneratedCopy} 
-                        variant="secondary" 
+                      <Button
+                        onClick={handleUseGeneratedCopy}
+                        variant="secondary"
                         className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                         size="lg"
                       >
@@ -1832,10 +1847,10 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                       </Button>
                     ) : null}
                   </div>
-                  
+
                   {/* Botão Secundário */}
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={resetModal}
                     className="w-full border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     size="lg"
@@ -1854,7 +1869,7 @@ const FloatingCopyButton: React.FC<FloatingCopyButtonProps> = ({ toastNotificati
                     <div className="text-sm">
                       <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">Dica Pro</p>
                       <p className="text-blue-700 dark:text-blue-300">
-                        {location.pathname === '/calendar' 
+                        {location.pathname === '/calendar'
                           ? 'A copy foi otimizada para agendamento. Clique em "Agendar Post" para continuar.'
                           : 'A copy foi gerada com base no contexto da página atual. Use no Composer para editar.'
                         }

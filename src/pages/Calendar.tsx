@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Calendar as CalendarIcon, 
-  Plus, 
-  ChevronLeft, 
+import {
+  Calendar as CalendarIcon,
+  Plus,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Instagram,
@@ -103,7 +103,7 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
     content: string;
     platform: string;
     contentType: string;
-  } | null>(null);
+  } | undefined>(undefined);
 
   const { events, loading, error, stats, createEvent, deleteEvent, updateEventStatus, refetch } = useCalendar();
   const { toast } = useToast();
@@ -117,7 +117,7 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
       });
       setShowCreateModal(false);
       // Limpar conteúdo pré-preenchido após criar evento
-      setPreFilledContent(null);
+      setPreFilledContent(undefined);
     } catch (error) {
       toast({
         title: 'Erro',
@@ -128,12 +128,15 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
   };
 
   const handleOpenScheduleModal = (copyContent: string, platform: string, copyType: string) => {
-    setPreFilledContent({
-      content: copyContent,
-      platform: platform,
-      contentType: copyType
-    });
-    setShowCreateModal(true);
+    // Só abrir modal se realmente tem conteúdo válido
+    if (copyContent && platform && copyType) {
+      setPreFilledContent({
+        content: copyContent,
+        platform: platform,
+        contentType: copyType
+      });
+      setShowCreateModal(true);
+    }
   };
 
   // Expor a função para o FloatingCopyButton
@@ -141,9 +144,7 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
     if (onScheduleModalReady) {
       onScheduleModalReady(handleOpenScheduleModal);
     }
-  }, [onScheduleModalReady]);
-
-  const handleDeleteEvent = async (eventId: string) => {
+  }, [onScheduleModalReady]); const handleDeleteEvent = async (eventId: string) => {
     try {
       await deleteEvent(eventId);
       toast({
@@ -208,11 +209,11 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -310,7 +311,7 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
+          <Button
             className="bg-gradient-primary"
             onClick={() => setShowCreateModal(true)}
           >
@@ -404,7 +405,7 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
             <CardContent className="space-y-3">
               {events.slice(0, 5).map((event) => {
                 const eventDate = new Date(`${event.event_date}T${event.event_time}`);
-                
+
                 return (
                   <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
                     <div className={`w-6 h-6 rounded p-1`} style={{ backgroundColor: event.color || '#8B5CF6' }}>
@@ -438,32 +439,32 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
               <CardTitle>Ações Rápidas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start hover:bg-pink-500/10 hover:border-pink-500/20"
                 onClick={() => setShowCreateModal(true)}
               >
                 <Instagram className="mr-2 h-4 w-4" />
                 Agendar Post Instagram
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start hover:bg-blue-600/10 hover:border-blue-600/20"
                 onClick={() => setShowCreateModal(true)}
               >
                 <Linkedin className="mr-2 h-4 w-4" />
                 Agendar Post LinkedIn
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start hover:bg-blue-400/10 hover:border-blue-400/20"
                 onClick={() => setShowCreateModal(true)}
               >
                 <Twitter className="mr-2 h-4 w-4" />
                 Agendar Post Twitter
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start hover:bg-red-500/10 hover:border-red-500/20"
                 onClick={() => setShowCreateModal(true)}
               >
@@ -509,7 +510,7 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
       </div>
 
       {/* Create Event Modal */}
-      <CreateEventModal 
+      <CreateEventModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
         selectedDate={selectedDate}
