@@ -11,6 +11,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "waitlist:insert": "node ./scripts/waitlist_insert.mjs",
+    "db:apply:stats": "node ./scripts/apply_sql_file.js ./sql/create_stats_tables.sql",
+    "db:apply:copies": "node ./scripts/apply_sql_file.js ./sql/2025-09-07_create_copies_table.sql",
     "test": "vitest",
     "test:run": "vitest run",
     "e2e": "playwright test",

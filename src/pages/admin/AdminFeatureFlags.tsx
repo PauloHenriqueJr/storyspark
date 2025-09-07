@@ -4,19 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Settings, Shield, Users, Target, Send, TrendingUp, FileText, Calendar, Bot, Mic, MessageSquare, Phone, Lightbulb, Zap, Crown, Activity, Database, Key, Home, BarChart3, Sparkles, Share2, Globe, TestTube, Library, CreditCard, Puzzle, UserCog, Mail } from 'lucide-react';
+import { Loader2, Settings, Shield, Users, Target, Send, TrendingUp, FileText, Calendar, Bot, Mic, MessageSquare, Phone, Lightbulb, Zap, Crown, Activity, Database, Key, Home, BarChart3, Sparkles, Share2, Globe, TestTube, Library, CreditCard, Puzzle, UserCog, Mail, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
 import { cn } from '@/lib/utils';
 
-interface FeatureFlag {
-  id: string;
-  group_name: string;
-  page_path: string;
-  enabled: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// Tipagem opcional removida (não utilizada)
 
 const GROUPS = [
   {
@@ -41,6 +34,7 @@ const GROUPS = [
       { path: '/voices', title: 'Voices IA', icon: Mic },
       { path: '/personas', title: 'Personas', icon: Users },
       { path: '/brand-voices', title: 'Brand Voices', icon: Sparkles },
+      { path: '/import-data', title: 'Importar dados (IA)', icon: Upload },
     ],
   },
   {

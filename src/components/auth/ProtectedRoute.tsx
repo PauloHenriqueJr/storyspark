@@ -106,17 +106,19 @@ export const ProtectedRoute = ({
         const { data, error } = await supabase
           .from('feature_flags')
           .select('enabled')
-          .eq('page_path', location.pathname)
-          .single();
+          .eq('page_path', location.pathname);
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is no rows found
+        if (error) {
           secureLog.dev.error('Feature flag validation error:', error);
           setFlagValidation('valid'); // Default to enabled if error
           return;
         }
 
-        const enabled = data?.enabled ?? true; // Default to true if not found
-        setFlagValidation(enabled ? 'valid' : 'invalid');
+        // Se não houver registros, a página é considerada habilitada por padrão
+        const rows = Array.isArray(data) ? data : (data ? [data] : []);
+        // Se QUALQUER registro estiver desabilitado, considere desabilitado (fail-safe)
+        const anyDisabled = rows.some(row => row.enabled === false);
+        setFlagValidation(anyDisabled ? 'invalid' : 'valid');
       } catch (error) {
         secureLog.dev.error('Feature flag validation exception:', error);
         setFlagValidation('valid'); // Default to enabled on error

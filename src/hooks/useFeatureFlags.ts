@@ -4,7 +4,21 @@ import { supabase } from "@/lib/supabase";
 
 export const useFeatureFlags = () => {
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
+  // Mapa por path para lidar com mudanças de grupo e entradas antigas no banco
+  const [disabledByPath, setDisabledByPath] = useState<Record<string, boolean>>(
+    {}
+  );
   const [loading, setLoading] = useState(true);
+
+  const recomputeByPath = (flags: Record<string, boolean>) => {
+    const byPath: Record<string, boolean> = {};
+    for (const key of Object.keys(flags)) {
+      const [, path] = key.split("-");
+      if (!path) continue;
+      if (flags[key] === false) byPath[path] = true;
+    }
+    return byPath;
+  };
 
   useEffect(() => {
     // Buscar flags iniciais
@@ -22,6 +36,7 @@ export const useFeatureFlags = () => {
         }, {} as Record<string, boolean>);
 
         setFeatureFlags(flagsMap);
+        setDisabledByPath(recomputeByPath(flagsMap));
       } catch (error) {
         console.error("Erro ao buscar feature flags:", error);
         setFeatureFlags({});
@@ -51,17 +66,19 @@ export const useFeatureFlags = () => {
           ) {
             const flag = payload.new as any;
             const key = `${flag.group_name}-${flag.page_path}`;
-            setFeatureFlags((prev) => ({
-              ...prev,
-              [key]: flag.enabled,
-            }));
+            setFeatureFlags((prev) => {
+              const updated = { ...prev, [key]: flag.enabled };
+              setDisabledByPath(recomputeByPath(updated));
+              return updated;
+            });
           } else if (payload.eventType === "DELETE") {
             const flag = payload.old as any;
             const key = `${flag.group_name}-${flag.page_path}`;
             setFeatureFlags((prev) => {
-              const newFlags = { ...prev };
-              delete newFlags[key];
-              return newFlags;
+              const updated = { ...prev };
+              delete updated[key];
+              setDisabledByPath(recomputeByPath(updated));
+              return updated;
             });
           }
         }
@@ -75,12 +92,15 @@ export const useFeatureFlags = () => {
   }, []);
 
   const isFlagEnabled = (groupId: string, path: string) => {
+    // Se qualquer entrada no banco marcou esse path como desabilitado, respeitar
+    if (disabledByPath[path] === true) return false;
     const key = `${groupId}-${path}`;
-    return featureFlags[key] !== false; // Default to true se não carregado
+    return featureFlags[key] !== false; // Default para true
   };
 
   return {
     featureFlags,
+    disabledByPath,
     loading,
     isFlagEnabled,
   };

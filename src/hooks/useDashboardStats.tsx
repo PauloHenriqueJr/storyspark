@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useWorkspace } from './useWorkspace';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 export interface DashboardStats {
   activeCampaigns: number;
@@ -31,8 +32,9 @@ export const useDashboardStats = () => {
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const { workspace } = useWorkspace();
+  const { isFlagEnabled } = useFeatureFlags();
 
   const fetchDashboardData = async () => {
     if (!workspace?.id) return;
@@ -41,103 +43,170 @@ export const useDashboardStats = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch campanhas ativas
-      const { data: campaignsData, error: campaignsError } = await supabase
-        .from('campaigns')
-        .select('id, status, created_at, name')
-        .eq('workspace_id', workspace.id);
+      // Respeitar feature flags
+      const campaignsEnabled = isFlagEnabled('principal', '/campaigns');
+      const voicesEnabled = isFlagEnabled('voices', '/brand-voices');
+      const personasEnabled = isFlagEnabled('voices', '/personas');
 
-      if (campaignsError) throw campaignsError;
+      // Base: dados mestre necessários (apenas quando habilitados)
+      const campaignsData = campaignsEnabled
+        ? (await supabase
+          .from('campaigns')
+          .select('id, status, created_at, name')
+          .eq('workspace_id', workspace.id)).data || []
+        : [];
 
-      // Fetch brand voices
-      const { data: voicesData, error: voicesError } = await supabase
-        .from('brand_voices')
-        .select('id, usage_count, is_active, created_at, name')
-        .eq('workspace_id', workspace.id);
+      const voicesData = voicesEnabled
+        ? (await supabase
+          .from('brand_voices')
+          .select('id, usage_count, is_active, created_at, name')
+          .eq('workspace_id', workspace.id)).data || []
+        : [];
 
-      if (voicesError) throw voicesError;
+      const personasData = personasEnabled
+        ? (await supabase
+          .from('target_personas')
+          .select('id, created_at, name')
+          .eq('workspace_id', workspace.id)).data || []
+        : [];
 
-      // Fetch personas
-      const { data: personasData, error: personasError } = await supabase
-        .from('target_personas')
-        .select('id, created_at, name')
-        .eq('workspace_id', workspace.id);
-
-      if (personasError) throw personasError;
-
-      // Fetch templates/copies
-      const { data: templatesData, error: templatesError } = await supabase
-        .from('templates')
-        .select('id, usage_count, created_at, name, type')
-        .eq('workspace_id', workspace.id);
-
-      if (templatesError) throw templatesError;
-
-      // Calcular estatísticas
-      const activeCampaigns = campaignsData?.filter(c => c.status === 'ACTIVE').length || 0;
-      const totalBrandVoices = voicesData?.filter(v => v.is_active).length || 0;
-      const totalPersonas = personasData?.length || 0;
-      const totalCopies = templatesData?.reduce((acc, t) => acc + (t.usage_count || 0), 0) || 0;
-
-      // Calcular engagement baseado no uso das brand voices
-      const totalVoiceUsage = voicesData?.reduce((acc, v) => acc + (v.usage_count || 0), 0) || 0;
-      const averageEngagement = totalVoiceUsage > 0 
-        ? Math.min(95, Math.max(15, (totalVoiceUsage / Math.max(totalBrandVoices, 1)) * 1.2))
-        : 0;
-
-      // Calcular conversão baseada em campanhas ativas vs total
-      const totalCampaigns = campaignsData?.length || 0;
-      const conversionRate = totalCampaigns > 0 
-        ? Math.min(85, (activeCampaigns / totalCampaigns) * 100)
-        : 0;
-
-      // Calcular crescimento mensal (comparar últimos 30 dias vs anteriores)
+      // Copias geradas (tabela copies). Fallback para templates se tabela não existir
+      let totalCopies = 0;
+      let copiesRecent = 0;
+      let copiesPrev = 0;
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      try {
+        const { count: copiesCount, error: copiesCountError } = await supabase
+          .from('copies')
+          .select('id', { count: 'exact', head: true })
+          .eq('workspace_id', workspace.id);
+        if (copiesCountError) throw copiesCountError;
+        totalCopies = copiesCount || 0;
 
-      const recentCampaigns = campaignsData?.filter(c => 
-        new Date(c.created_at || '') > thirtyDaysAgo
-      ).length || 0;
-      
-      const previousCampaigns = campaignsData?.filter(c => {
-        const createdAt = new Date(c.created_at || '');
-        return createdAt > sixtyDaysAgo && createdAt <= thirtyDaysAgo;
-      }).length || 0;
+        const { count: copiesRecentCount } = await supabase
+          .from('copies')
+          .select('id', { count: 'exact', head: true })
+          .eq('workspace_id', workspace.id)
+          .gte('created_at', thirtyDaysAgo.toISOString());
+        copiesRecent = copiesRecentCount || 0;
 
-      const recentTemplates = templatesData?.filter(t => 
-        new Date(t.created_at || '') > thirtyDaysAgo
-      ).length || 0;
+        const { count: copiesPrevCount } = await supabase
+          .from('copies')
+          .select('id', { count: 'exact', head: true })
+          .eq('workspace_id', workspace.id)
+          .lt('created_at', thirtyDaysAgo.toISOString())
+          .gte('created_at', sixtyDaysAgo.toISOString());
+        copiesPrev = copiesPrevCount || 0;
+      } catch (e) {
+        // Fallback para templates (ambiente sem tabela copies)
+        const { data: templatesData } = await supabase
+          .from('templates')
+          .select('id, usage_count, created_at')
+          .eq('workspace_id', workspace.id);
+        totalCopies = templatesData?.reduce((acc, t) => acc + (t.usage_count || 0), 0) || 0;
+        copiesRecent = templatesData?.filter(t => new Date(t.created_at || '') > thirtyDaysAgo).length || 0;
+        copiesPrev = templatesData?.filter(t => {
+          const c = new Date(t.created_at || '');
+          return c > sixtyDaysAgo && c <= thirtyDaysAgo;
+        }).length || 0;
+      }
 
-      // Calcular porcentagens de crescimento
-      const campaignGrowth = previousCampaigns > 0 
-        ? Math.round(((recentCampaigns - previousCampaigns) / previousCampaigns) * 100)
-        : recentCampaigns > 0 ? 100 : 0;
+      // Analytics do workspace (métricas reais)
+      let averageEngagement = 0;
+      let conversionRate = 0;
+      let activeCampaigns = 0;
+      try {
+        const { data: latestAnalytics } = await supabase
+          .from('workspace_analytics')
+          .select('date, engagement_rate, conversion_rate, active_campaigns')
+          .eq('workspace_id', workspace.id)
+          .order('date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      const engagementGrowth = Math.round(Math.random() * 10 + 5);
-      const conversionGrowth = Math.round(Math.random() * 15 + 5);
-      const copiesGrowth = recentTemplates > 0 ? Math.round(recentTemplates * 10) : 0;
+        if (latestAnalytics) {
+          averageEngagement = Number(latestAnalytics.engagement_rate || 0);
+          conversionRate = Number(latestAnalytics.conversion_rate || 0);
+          activeCampaigns = campaignsEnabled ? Number(latestAnalytics.active_campaigns || 0) : 0;
+        } else {
+          // Fallback para dados básicos das tabelas mestres
+          activeCampaigns = campaignsEnabled ? (campaignsData?.filter(c => c.status === 'ACTIVE').length || 0) : 0;
+        }
+      } catch (e) {
+        // Fallback caso tabela não exista
+        activeCampaigns = campaignsEnabled ? (campaignsData?.filter(c => c.status === 'ACTIVE').length || 0) : 0;
+      }
+
+      // Crescimento últimos 30 vs 30 anteriores usando workspace_analytics quando possível
+      let campaignGrowth = 0;
+      let engagementGrowth = 0;
+      let conversionGrowth = 0;
+      let copiesGrowth = 0;
+      try {
+        const { data: recentAnalytics } = await supabase
+          .from('workspace_analytics')
+          .select('engagement_rate, conversion_rate, active_campaigns, date')
+          .eq('workspace_id', workspace.id)
+          .gte('date', thirtyDaysAgo.toISOString().slice(0, 10));
+        const { data: prevAnalytics } = await supabase
+          .from('workspace_analytics')
+          .select('engagement_rate, conversion_rate, active_campaigns, date')
+          .eq('workspace_id', workspace.id)
+          .lt('date', thirtyDaysAgo.toISOString().slice(0, 10))
+          .gte('date', sixtyDaysAgo.toISOString().slice(0, 10));
+
+        const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+        const pct = (cur: number, prev: number) => {
+          if (prev === 0) return cur > 0 ? 100 : 0;
+          return Math.round(((cur - prev) / prev) * 100);
+        };
+
+        const recentEngAvg = avg((recentAnalytics || []).map(a => Number(a.engagement_rate || 0)));
+        const prevEngAvg = avg((prevAnalytics || []).map(a => Number(a.engagement_rate || 0)));
+        engagementGrowth = pct(recentEngAvg, prevEngAvg);
+
+        const recentConvAvg = avg((recentAnalytics || []).map(a => Number(a.conversion_rate || 0)));
+        const prevConvAvg = avg((prevAnalytics || []).map(a => Number(a.conversion_rate || 0)));
+        conversionGrowth = pct(recentConvAvg, prevConvAvg);
+
+        const recentActAvg = avg((recentAnalytics || []).map(a => Number(a.active_campaigns || 0)));
+        const prevActAvg = avg((prevAnalytics || []).map(a => Number(a.active_campaigns || 0)));
+        campaignGrowth = campaignsEnabled ? pct(recentActAvg, prevActAvg) : 0;
+      } catch (e) {
+        // Fallback simples baseado em criação de campanhas
+        const recentCampaigns = campaignsEnabled ? (campaignsData?.filter(c => new Date(c.created_at || '') > thirtyDaysAgo).length || 0) : 0;
+        const previousCampaigns = campaignsEnabled ? (campaignsData?.filter(c => {
+          const createdAt = new Date(c.created_at || '');
+          return createdAt > sixtyDaysAgo && createdAt <= thirtyDaysAgo;
+        }).length || 0) : 0;
+        campaignGrowth = campaignsEnabled && previousCampaigns > 0
+          ? Math.round(((recentCampaigns - previousCampaigns) / previousCampaigns) * 100)
+          : (campaignsEnabled && recentCampaigns > 0 ? 100 : 0);
+      }
+
+      // Crescimento de copies usando contagem (já calculado acima)
+      copiesGrowth = copiesPrev > 0 ? Math.round(((copiesRecent - copiesPrev) / copiesPrev) * 100) : (copiesRecent > 0 ? 100 : 0);
 
       setStats({
         activeCampaigns,
-        totalBrandVoices,
-        totalPersonas,
+        totalBrandVoices: voicesEnabled ? (voicesData?.filter(v => v.is_active).length || 0) : 0,
+        totalPersonas: personasEnabled ? (personasData?.length || 0) : 0,
         totalCopies,
         averageEngagement: Number(averageEngagement.toFixed(1)),
         conversionRate: Number(conversionRate.toFixed(1)),
         monthlyGrowth: {
-          campaigns: `${campaignGrowth >= 0 ? '+' : ''}${campaignGrowth}%`,
-          engagement: `+${engagementGrowth}%`,
-          conversion: `+${conversionGrowth}%`,
-          copies: `+${copiesGrowth}%`
+          campaigns: `${campaignsEnabled && campaignGrowth >= 0 ? '+' : ''}${campaignsEnabled ? campaignGrowth : 0}%`,
+          engagement: `${engagementGrowth >= 0 ? '+' : ''}${engagementGrowth}%`,
+          conversion: `${conversionGrowth >= 0 ? '+' : ''}${conversionGrowth}%`,
+          copies: `${copiesGrowth >= 0 ? '+' : ''}${copiesGrowth}%`
         }
       });
 
-      // Gerar atividades recentes
+      // Atividades recentes (campanhas e voices)
       const activities: RecentActivity[] = [];
-
-      // Adicionar campanhas recentes
-      campaignsData
+      campaignsEnabled && campaignsData
         ?.filter(c => new Date(c.created_at || '') > thirtyDaysAgo)
         .slice(0, 2)
         .forEach(c => {
@@ -150,9 +219,7 @@ export const useDashboardStats = () => {
             icon: '🎯'
           });
         });
-
-      // Adicionar brand voices recentes
-      voicesData
+      voicesEnabled && voicesData
         ?.filter(v => new Date(v.created_at || '') > thirtyDaysAgo)
         .slice(0, 2)
         .forEach(v => {
@@ -165,8 +232,6 @@ export const useDashboardStats = () => {
             icon: '🎤'
           });
         });
-
-      // Ordenar por data e limitar
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       setRecentActivities(activities.slice(0, 5));
 
