@@ -1,10 +1,8 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Search, User, LogOut, Clock, X, CheckCheck, Settings } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -35,7 +33,7 @@ export const AppHeader = () => {
   const formatTimeAgo = (timestamp: Date) => {
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Agora';
     if (diffInMinutes < 60) return `${diffInMinutes} min atrás`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} h atrás`;
@@ -51,24 +49,24 @@ export const AppHeader = () => {
       default: return 'text-muted-foreground';
     }
   };
-  
+
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-smooth border-b border-border/40">
-      <div className="flex h-16 items-center justify-between px-6">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Left side - Sidebar trigger and Search */}
         <div className="flex items-center gap-4">
           <SidebarTrigger className="md:hidden" />
-          
+
           <div className="hidden md:flex items-center max-w-md w-full">
             <GlobalSearch />
           </div>
         </div>
 
         {/* Right side - Actions and Profile */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {/* Mobile search */}
           <div className="md:hidden">
-            <GlobalSearch 
+            <GlobalSearch
               trigger={
                 <Button variant="ghost" size="sm">
                   <Search className="h-4 w-4" />
@@ -93,9 +91,9 @@ export const AppHeader = () => {
               <DropdownMenuLabel className="flex items-center justify-between">
                 <span>Notificações</span>
                 {unreadCount > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={markAllAsRead}
                     className="h-6 px-2 text-xs"
                   >
@@ -105,18 +103,17 @@ export const AppHeader = () => {
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              
+
               {notifications.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   Nenhuma notificação
                 </div>
               ) : (
                 notifications.map((notification) => (
-                  <DropdownMenuItem 
-                    key={notification.id} 
-                    className={`flex flex-col items-start gap-2 p-4 cursor-pointer ${
-                      !notification.read ? 'bg-muted/50' : ''
-                    }`}
+                  <DropdownMenuItem
+                    key={notification.id}
+                    className={`flex flex-col items-start gap-2 p-4 cursor-pointer ${!notification.read ? 'bg-muted/50' : ''
+                      }`}
                     onClick={() => {
                       if (!notification.read) {
                         markAsRead(notification.id);
@@ -126,9 +123,8 @@ export const AppHeader = () => {
                   >
                     <div className="w-full flex items-start justify-between">
                       <div className="flex-1">
-                        <div className={`font-medium text-sm ${
-                          !notification.read ? 'font-semibold' : ''
-                        }`}>
+                        <div className={`font-medium text-sm ${!notification.read ? 'font-semibold' : ''
+                          }`}>
                           {notification.title}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
@@ -165,9 +161,9 @@ export const AppHeader = () => {
                       </span>
                     </div>
                     {notification.action && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="mt-1 h-7 text-xs"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -189,10 +185,10 @@ export const AppHeader = () => {
           {/* Profile Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0 sm:h-9 sm:w-9 lg:h-10 lg:w-10 mr-1 sm:mr-2">
+                <Avatar className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10">
                   <AvatarImage src={user?.avatar_url || '/placeholder.svg'} alt={user?.name || 'Usuario'} />
-                  <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                  <AvatarFallback className="text-xs sm:text-sm">{user?.name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

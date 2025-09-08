@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { FreeModeComposer } from "../components/FreeModeComposer";
 import { storage } from "../lib/adapters";
 import { getMappingInfo } from "../lib/templateMapping";
-import { AlertCircle, CheckCircle2, Sparkles, SlidersHorizontal, Palette, Settings2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Palette, Settings2 } from "lucide-react";
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useCredits } from '@/context/CreditsProvider';
 
@@ -13,17 +13,15 @@ interface ModernComposerWrapperProps {
   selectedHook?: any;
   preSelectedTemplateId?: string | null;
   onTemplateChange?: () => void;
-  onHookChange?: () => void;
 }
 
 export const ModernComposerWrapper = ({
   onStatsUpdate,
   selectedHook,
   preSelectedTemplateId,
-  onTemplateChange,
-  onHookChange
+  onTemplateChange
 }: ModernComposerWrapperProps) => {
-  const { workspace, loading: workspaceLoading } = useWorkspace();
+  const { workspace } = useWorkspace();
   const { remainingCredits, refresh } = useCredits();
   const [credits, setCredits] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -104,47 +102,47 @@ export const ModernComposerWrapper = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto bg-gray-50/50 dark:bg-gray-900/20 rounded-lg p-6">
+    <div className="max-w-7xl mx-auto bg-gray-50/50 dark:bg-gray-900/20 rounded-lg p-4 sm:p-6">
       {/* Header Section */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-6 sm:mb-8">
         <div className="flex justify-center mb-4">
           <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
             Composição de Copies
           </Badge>
         </div>
-        <h1 className="text-4xl font-bold mb-4">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
           Crie <span className="text-orange-500">Copies Incríveis</span>
         </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
           Escolha um template, descreva sua ideia e deixe nossa IA criar copies que convertem.
         </p>
 
         {/* Toggle de modo */}
-        <div className="mt-6 flex justify-center">
-          <div className="flex items-center gap-2 rounded-xl border bg-background/60 backdrop-blur-sm p-1 shadow-sm">
+        <div className="mt-6 flex justify-center px-4">
+          <div className="flex items-center gap-1 sm:gap-2 rounded-xl border bg-background/60 backdrop-blur-sm p-1 shadow-sm w-full max-w-xs sm:max-w-sm lg:max-w-md">
             <button
               onClick={() => handleModeChange('simplified')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${composerMode === 'simplified'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
+              className={`px-3 sm:px-3 lg:px-3 py-2 sm:py-1.5 lg:py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1 sm:gap-1.5 text-xs sm:text-sm lg:text-sm flex-1 min-w-0 ${composerMode === 'simplified'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
                 }`}
             >
-              <Palette className="h-4 w-4" />
-              Mãos Livres
-              <Badge variant="secondary" className="text-xs bg-success/20 text-success-foreground">
+              <Palette className="h-4 w-4 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Mãos Livres</span>
+              <Badge variant="secondary" className="text-xs bg-success/20 text-success-foreground flex-shrink-0">
                 Fácil
               </Badge>
             </button>
             <button
               onClick={() => handleModeChange('advanced')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${composerMode === 'advanced'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
+              className={`px-3 sm:px-3 lg:px-3 py-2 sm:py-1.5 lg:py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1 sm:gap-1.5 text-xs sm:text-sm lg:text-sm flex-1 min-w-0 ${composerMode === 'advanced'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
                 }`}
             >
-              <Settings2 className="h-4 w-4" />
-              Mãos na Massa
-              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary-foreground">
+              <Settings2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Mãos na Massa</span>
+              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary-foreground flex-shrink-0">
                 Avançado
               </Badge>
             </button>
@@ -190,8 +188,8 @@ export const ModernComposerWrapper = ({
             {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${currentStep >= step
-                    ? 'bg-gradient-primary text-primary-foreground shadow-glow'
-                    : 'bg-muted text-muted-foreground'
+                  ? 'bg-gradient-primary text-primary-foreground shadow-glow'
+                  : 'bg-muted text-muted-foreground'
                   }`}>
                   {step}
                 </div>

@@ -207,51 +207,51 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
   const regenerate = useCallback(() => { handleGenerate(); }, [handleGenerate]);
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Step container: mostra apenas um card por vez */}
           {progress.step === 1 && (
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
                     1
                   </div>
-                  <div>
-                    <CardTitle className="text-xl">Escolha o Template</CardTitle>
-                    <CardDescription>Templates otimizados para o mercado e cultura brasileira</CardDescription>
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-lg sm:text-xl">Escolha o Template</CardTitle>
+                    <CardDescription className="text-sm">Templates otimizados para o mercado e cultura brasileira</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4">
+                <div className="grid gap-3 sm:gap-4">
                   {TEMPLATES.map((template) => {
                     const IconComponent = template.icon;
                     return (
                       <button
                         key={template.id}
                         onClick={() => handleTemplateSelect(template)}
-                        className="w-full p-4 text-left rounded-lg border-2 border-border hover:border-primary/50 transition-all hover:shadow-md group"
+                        className="w-full p-3 sm:p-4 text-left rounded-lg border-2 border-border hover:border-primary/50 transition-all hover:shadow-md group"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                            <IconComponent className="w-5 h-5 text-primary" />
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
+                            <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm sm:text-base">
                                 {template.name}
                               </h3>
                               <Badge className={getDifficultyColor(template.difficultyLevel)}>
                                 {template.difficultyLevel}
                               </Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-3 leading-relaxed">
                               {template.description}
                             </p>
-                            <div className="flex flex-wrap gap-2 mb-3">
+                            <div className="flex flex-wrap gap-1 sm:gap-2 mb-3">
                               <Badge variant="outline" className={getCategoryColor(template.category)}>
                                 {template.category}
                               </Badge>
@@ -271,7 +271,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
                               </div>
                             )}
                           </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
                         </div>
                       </button>
                     );
@@ -285,26 +285,26 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
                       2
                     </div>
-                    <div>
-                      <CardTitle className="text-xl">Tom da Sua Marca</CardTitle>
-                      <CardDescription>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-lg sm:text-xl">Tom da Sua Marca</CardTitle>
+                      <CardDescription className="text-sm">
                         Template: <span className="font-medium text-foreground">{progress.selectedTemplate.name}</span>
                       </CardDescription>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => goToStep(1)}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
+                  <Button variant="outline" size="sm" onClick={() => goToStep(1)} className="flex-shrink-0">
+                    <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Voltar</span>
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 <ToneSelector tones={TONES} selectedTone={progress.selectedTone} onToneSelect={handleToneSelect} />
-                <div className="mt-6">
+                <div className="mt-4 sm:mt-6">
                   <HookQuickPicker selectedHook={selectedHook} onSelect={setSelectedHook} />
                 </div>
               </CardContent>
@@ -315,18 +315,18 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
                       3
                     </div>
-                    <div>
-                      <CardTitle className="text-xl">Configuração Rápida</CardTitle>
-                      <CardDescription>Clique nos chips para configurar rapidamente</CardDescription>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-lg sm:text-xl">Configuração Rápida</CardTitle>
+                      <CardDescription className="text-sm">Clique nos chips para configurar rapidamente</CardDescription>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => goToStep(2)}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
+                  <Button variant="outline" size="sm" onClick={() => goToStep(2)} className="flex-shrink-0">
+                    <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Voltar</span>
                   </Button>
                 </div>
               </CardHeader>
@@ -340,22 +340,22 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
                       4
                     </div>
-                    <div>
-                      <CardTitle className="text-xl">Informações Específicas</CardTitle>
-                      <CardDescription>Preencha apenas os campos essenciais</CardDescription>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-lg sm:text-xl">Informações Específicas</CardTitle>
+                      <CardDescription className="text-sm">Preencha apenas os campos essenciais</CardDescription>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => goToStep(3)}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
+                  <Button variant="outline" size="sm" onClick={() => goToStep(3)} className="flex-shrink-0">
+                    <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Voltar</span>
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4">
                 {progress.selectedTemplate.requiredFields.map((field) => (
                   <div key={field.id} className="space-y-2">
                     <label className="text-sm font-medium text-foreground">{field.label}{field.required && <span className="text-destructive ml-1">*</span>}</label>
@@ -376,13 +376,15 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
                     <Button
                       onClick={handleGenerate}
                       disabled={!canProceedToGeneration || isGenerating || credits < 1}
-                      className="flex-1 bg-gradient-primary text-primary-foreground py-6 text-lg font-bold shadow-lg hover:shadow-xl disabled:bg-gradient-primary disabled:text-primary-foreground disabled:opacity-100 disabled:cursor-not-allowed"
+                      className="flex-1 bg-gradient-primary text-primary-foreground py-4 sm:py-6 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl disabled:bg-gradient-primary disabled:text-primary-foreground disabled:opacity-100 disabled:cursor-not-allowed"
                     >
-                      {isGenerating ? (<><RefreshCw className="w-5 h-5 mr-2 animate-spin" />IA trabalhando...</>) : (<><Brain className="w-5 h-5 mr-2" />Gerar Copy</>)}
+                      {isGenerating ? (<><RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />IA trabalhando...</>) : (<><Brain className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />Gerar Copy</>)}
                     </Button>
                     {credits < 1 && (
-                      <Button variant="outline" onClick={() => { toast({ title: "Comprar Créditos", description: "Redirecionando para a página de créditos..." }); }}>
-                        <CreditCard className="h-4 w-4 mr-2" />Comprar Créditos
+                      <Button variant="outline" onClick={() => { toast({ title: "Comprar Créditos", description: "Redirecionando para a página de créditos..." }); }} className="flex-1 sm:flex-none">
+                        <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Comprar Créditos</span>
+                        <span className="sm:hidden">Créditos</span>
                       </Button>
                     )}
                   </div>
@@ -392,7 +394,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Card de resultado da copy gerada - aparece no topo da coluna direita */}
           {generatedCopy && (
             <CopyResultActions

@@ -148,7 +148,7 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = () => {
     <>
       {/* Floating Button - Design Original */}
       <motion.div
-        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[9999]"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 z-[9999]"
         initial={{ scale: 0, x: 100, y: 100 }}
         animate={{ scale: 1, x: 0, y: 0 }}
         transition={{ delay: 0.5, type: "spring", stiffness: 200, damping: 20 }}
@@ -163,10 +163,11 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = () => {
           {/* Premium Badge - sempre visível para criar curiosidade (só para usuários sem acesso) */}
           {!hasFullAccess && (
             <Badge
-              className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full shadow-lg z-20 animate-pulse"
+              className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg z-20 animate-pulse"
             >
-              <Crown className="w-3 h-3 mr-1" />
-              Premium
+              <Crown className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+              <span className="hidden sm:inline">Premium</span>
+              <span className="sm:hidden">Pro</span>
             </Badge>
           )}
 
@@ -185,17 +186,17 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = () => {
                 setIsModalOpen(true);
               }
             }}
-            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${hasFullAccess
+            className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 ${hasFullAccess
               ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
               : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600'
               } border-4 border-white/30 dark:border-gray-800/30 relative z-10 backdrop-blur-sm`}
             size="lg"
           >
             {hasFullAccess ? (
-              <IconComponent className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
+              <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white drop-shadow-lg" />
             ) : (
               <div className="flex items-center justify-center">
-                <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-black drop-shadow-lg" />
+                <Lock className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-black drop-shadow-lg" />
               </div>
             )}
           </Button>

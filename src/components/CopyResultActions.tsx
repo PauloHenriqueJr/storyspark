@@ -14,12 +14,12 @@ interface CopyResultActionsProps {
   isRegenerating?: boolean;
 }
 
-export const CopyResultActions = ({ 
-  generatedCopy, 
-  onRegenerate, 
-  onSave, 
+export const CopyResultActions = ({
+  generatedCopy,
+  onRegenerate,
+  onSave,
   canRegenerate = true,
-  isRegenerating = false 
+  isRegenerating = false
 }: CopyResultActionsProps) => {
   // Render copy with minimal Markdown support (**bold**) safely
   const renderContent = (content: string) => {
@@ -35,12 +35,11 @@ export const CopyResultActions = ({
     html = html.replace(/\n/g, '<br/>');
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap text-sm leading-relaxed font-medium"
-           dangerouslySetInnerHTML={{ __html: html }} />
+        dangerouslySetInnerHTML={{ __html: html }} />
     );
   };
   const { toast } = useToast();
   const [isCopied, setIsCopied] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showFull, setShowFull] = useState(false);
 
   const copyToClipboard = async () => {
@@ -103,18 +102,18 @@ export const CopyResultActions = ({
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="relative">
-          <div className={`bg-background border border-success/20 rounded-lg p-4 transition-all ${isExpanded ? 'max-h-[70vh] overflow-auto' : 'max-h-64 overflow-hidden'}`}>
+          <div className="bg-background border border-success/20 rounded-lg p-4 max-h-64 overflow-hidden">
             {renderContent(generatedCopy)}
-            {!isExpanded && generatedCopy.length > 500 && (
+            {generatedCopy.length > 500 && (
               <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none" />
             )}
           </div>
           <div className="flex gap-2 mt-2">
-            <Button 
+            <Button
               type="button"
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowFull(true)} 
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowFull(true)}
               className="w-full text-xs"
             >
               <Eye className="h-3 w-3 mr-1" />
@@ -123,32 +122,33 @@ export const CopyResultActions = ({
           </div>
         </div>
 
-        {/* Modal de visualização em tela cheia */}
         <Dialog open={showFull} onOpenChange={setShowFull}>
-          <DialogContent className="max-w-4xl w-[95vw] max-h-[85vh] p-0 overflow-hidden">
-            <DialogHeader className="px-6 pt-6">
+          <DialogContent className="max-w-4xl w-[95vw] max-h-[85vh] p-4 sm:p-6 overflow-hidden">
+            <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
               <DialogTitle>Copy completa</DialogTitle>
             </DialogHeader>
-            <div className="px-6 pb-6 overflow-auto" style={{ maxHeight: '70vh' }}>
-              <div className="bg-background border rounded-lg p-4">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 overflow-auto" style={{ maxHeight: '70vh' }}>
+              <div className="bg-background border rounded-lg p-3 sm:p-4">
                 {renderContent(generatedCopy)}
               </div>
-              <div className="mt-4 flex gap-2">
-                <Button type="button" onClick={copyToClipboard} variant={isCopied ? "default" : "outline"} size="sm">
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <Button type="button" onClick={copyToClipboard} variant={isCopied ? "default" : "outline"} size="sm" className="flex-1">
                   {isCopied ? 'Copiado!' : 'Copiar'}
                 </Button>
-                <Button type="button" onClick={() => setShowFull(false)} variant="secondary" size="sm">Fechar</Button>
+                <Button type="button" onClick={() => setShowFull(false)} variant="secondary" size="sm" className="flex-1 sm:flex-none">
+                  Fechar
+                </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Button type="button" onClick={copyToClipboard} variant={isCopied ? "default" : "outline"} size="lg" className="h-12">
-            {isCopied ? (<><Heart className="h-4 w-4 mr-2 text-red-500" />Copiado!</>) : (<><Copy className="h-4 w-4 mr-2" />Copiar Copy</>)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Button type="button" onClick={copyToClipboard} variant={isCopied ? "default" : "outline"} size="lg" className="h-10 sm:h-12 text-sm sm:text-base">
+            {isCopied ? (<><Heart className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-red-500" />Copiado!</>) : (<><Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />Copiar Copy</>)}
           </Button>
-          <Button type="button" onClick={onRegenerate} variant="outline" size="lg" className="h-12" disabled={!canRegenerate || isRegenerating}>
-            {isRegenerating ? (<><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Gerando...</>) : (<><RefreshCw className="h-4 w-4 mr-2" />Regenerar</>)}
+          <Button type="button" onClick={onRegenerate} variant="outline" size="lg" className="h-10 sm:h-12 text-sm sm:text-base" disabled={!canRegenerate || isRegenerating}>
+            {isRegenerating ? (<><RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />Gerando...</>) : (<><RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />Regenerar</>)}
           </Button>
         </div>
 
@@ -160,16 +160,16 @@ export const CopyResultActions = ({
             <span className="text-sm font-medium">Publicar Direto</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => shareTo('Instagram')} className="flex flex-col gap-1 h-auto py-3">
-              <Instagram className="h-4 w-4" />
+            <Button type="button" variant="outline" size="sm" onClick={() => shareTo('Instagram')} className="flex flex-col gap-1 h-auto py-2 sm:py-3">
+              <Instagram className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="text-xs">Instagram</span>
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => shareTo('Facebook')} className="flex flex-col gap-1 h-auto py-3">
-              <Facebook className="h-4 w-4" />
+            <Button type="button" variant="outline" size="sm" onClick={() => shareTo('Facebook')} className="flex flex-col gap-1 h-auto py-2 sm:py-3">
+              <Facebook className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="text-xs">Facebook</span>
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => shareTo('LinkedIn')} className="flex flex-col gap-1 h-auto py-3">
-              <Linkedin className="h-4 w-4" />
+            <Button type="button" variant="outline" size="sm" onClick={() => shareTo('LinkedIn')} className="flex flex-col gap-1 h-auto py-2 sm:py-3">
+              <Linkedin className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="text-xs">LinkedIn</span>
             </Button>
           </div>
@@ -182,18 +182,30 @@ export const CopyResultActions = ({
             <TrendingUp className="h-4 w-4" />
             <span className="text-sm font-medium">Ações Avançadas</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={schedulePost} className="justify-start"><Calendar className="h-4 w-4 mr-2" />Agendar Post</Button>
-            <Button type="button" variant="outline" size="sm" onClick={createEmailCampaign} className="justify-start"><Mail className="h-4 w-4 mr-2" />Email Campaign</Button>
-            <Button type="button" variant="outline" size="sm" onClick={shareViaWhatsApp} className="justify-start"><MessageCircle className="h-4 w-4 mr-2" />WhatsApp</Button>
-            <Button type="button" variant="outline" size="sm" onClick={saveToLibrary} className="justify-start"><Save className="h-4 w-4 mr-2" />Salvar</Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={schedulePost} className="justify-start h-10 sm:h-12">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="text-sm">Agendar Post</span>
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={createEmailCampaign} className="justify-start h-10 sm:h-12">
+              <Mail className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="text-sm">Email Campaign</span>
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={shareViaWhatsApp} className="justify-start h-10 sm:h-12">
+              <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="text-sm">WhatsApp</span>
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={saveToLibrary} className="justify-start h-10 sm:h-12">
+              <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="text-sm">Salvar</span>
+            </Button>
           </div>
         </div>
 
         <div className="pt-2 border-t">
-          <Button type="button" variant="ghost" size="sm" onClick={exportToPDF} className="w-full justify-start text-muted-foreground">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar como PDF
+          <Button type="button" variant="ghost" size="sm" onClick={exportToPDF} className="w-full justify-start text-muted-foreground h-10 sm:h-12">
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+            <span className="text-sm">Exportar como PDF</span>
           </Button>
         </div>
       </CardContent>

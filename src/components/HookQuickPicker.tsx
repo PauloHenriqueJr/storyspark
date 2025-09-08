@@ -32,13 +32,13 @@ export const HookQuickPicker = ({ selectedHook, onSelect }: HookQuickPickerProps
           <div className="text-muted-foreground">“{selectedHook.text}”</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {topHooks.map((h) => (
-            <button key={h.id} onClick={() => onSelect(h)} className="text-left p-3 rounded border hover:border-primary/50 hover:bg-primary/5 transition">
+            <button key={h.id} onClick={() => onSelect(h)} className="text-left p-2 sm:p-3 rounded border hover:border-primary/50 hover:bg-primary/5 transition text-xs sm:text-sm">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="outline" className="text-xs">{h.category}</Badge>
               </div>
-              <div className="text-xs text-muted-foreground line-clamp-2">{h.text}</div>
+              <div className="text-muted-foreground line-clamp-2 leading-tight">{h.text}</div>
             </button>
           ))}
         </div>
