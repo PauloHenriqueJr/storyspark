@@ -1,38 +1,42 @@
-import { type BrazilianTone } from "@/lib/brazilianTemplates";
+export interface Tone {
+  value: string;
+  label: string;
+  description: string;
+  example: string;
+  personality: string;
+}
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Sparkles } from "lucide-react";
 
-interface BrazilianToneSelectorProps {
-  tones: BrazilianTone[];
-  selectedTone: BrazilianTone | null;
-  onToneSelect: (tone: BrazilianTone) => void;
+interface ToneSelectorProps {
+  tones: Tone[];
+  selectedTone: Tone | null;
+  onToneSelect: (tone: Tone) => void;
 }
 
-export const BrazilianToneSelector = ({ tones, selectedTone, onToneSelect }: BrazilianToneSelectorProps) => {
+export const ToneSelector = ({ tones, selectedTone, onToneSelect }: ToneSelectorProps) => {
   return (
     <div className="space-y-4">
       <div className="text-sm text-muted-foreground mb-4">
-        Escolha o tom que melhor representa sua marca no mercado brasileiro:
+        Escolha o tom que melhor representa sua marca:
       </div>
       <div className="grid gap-4">
         {tones.map((tone) => (
           <button
             key={tone.value}
             onClick={() => onToneSelect(tone)}
-            className={`w-full p-4 text-left rounded-lg border-2 transition-all hover:shadow-md group ${
-              selectedTone?.value === tone.value
-                ? 'border-primary bg-primary/5'
-                : 'border-border hover:border-primary/50'
-            }`}
+            className={`w-full p-4 text-left rounded-lg border-2 transition-all hover:shadow-md group ${selectedTone?.value === tone.value
+              ? 'border-primary bg-primary/5'
+              : 'border-border hover:border-primary/50'
+              }`}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className={`font-semibold transition-colors ${
-                    selectedTone?.value === tone.value
-                      ? 'text-primary'
-                      : 'text-foreground group-hover:text-primary'
-                  }`}>
+                  <h3 className={`font-semibold transition-colors ${selectedTone?.value === tone.value
+                    ? 'text-primary'
+                    : 'text-foreground group-hover:text-primary'
+                    }`}>
                     {tone.label}
                   </h3>
                   {selectedTone?.value === tone.value && (

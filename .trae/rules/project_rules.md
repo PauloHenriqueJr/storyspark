@@ -146,7 +146,7 @@ const Button = ({ className, ...props }) => (
 ### Componentes Específicos do StorySpark
 - **AIControls**: Controles de IA para geração de conteúdo
 - **ActiveIndicators**: Indicadores de status ativo
-- **BrazilianToneSelector**: Seletor de tom brasileiro
+- **ToneSelector**: Seletor de tom
 - **CopyResultActions**: Ações para resultados de copy
 - **FloatingActiveIndicator**: Indicador flutuante de atividade
 - **FreeModeComposer**: Compositor em modo livre

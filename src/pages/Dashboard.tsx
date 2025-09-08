@@ -175,7 +175,7 @@ const Dashboard = () => {
     <div className="space-y-8">
       {/* Credit Alert */}
       <CreditAlert className="mb-6" />
-      
+
       {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -340,7 +340,7 @@ const Dashboard = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Performance Overview</CardTitle>
+                <CardTitle>Visão geral do desempenho</CardTitle>
                 <CardDescription>
                   {workspaceLoading ? 'Carregando...' : `Métricas do ${workspace?.name || 'workspace'}`}
                 </CardDescription>

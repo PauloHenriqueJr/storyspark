@@ -18,7 +18,7 @@
 Democratizar a criação de conteúdo de alta qualidade, permitindo que empresas de todos os tamanhos tenham acesso a copies profissionais e otimizadas através da inteligência artificial.
 
 ### 🌟 Visão
-Ser a principal plataforma de IA para criação de conteúdo no mercado brasileiro, revolucionando como as empresas se comunicam com seu público nas redes sociais.
+Ser a principal plataforma de IA para criação de conteúdo no mercado, revolucionando como as empresas se comunicam com seu público nas redes sociais.
 
 ---
 

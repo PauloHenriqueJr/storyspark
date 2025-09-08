@@ -7,12 +7,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { notifications } from "@/lib/notifications";
 import { QuickConfigSelector } from "./QuickConfigSelector";
-import { BrazilianToneSelector } from "./BrazilianToneSelector";
+import { ToneSelector } from "./ToneSelector";
 import { storage, aiProvider } from "@/lib/adapters";
 import { copiesService } from "@/services/copiesService";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/lib/supabase";
-import { BRAZILIAN_TEMPLATES, BRAZILIAN_TONES, getCategoryColor, getDifficultyColor, type BrazilianTemplate, type BrazilianTone } from "@/lib/brazilianTemplates";
+import { TEMPLATES, TONES, getCategoryColor, getDifficultyColor, type Template, type Tone } from "@/lib/templates";
 import { CopyResultActions } from "./CopyResultActions";
 import { RefreshCw, ArrowLeft, ChevronRight, Brain, AlertCircle, CreditCard, TrendingUp, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -35,8 +35,8 @@ interface QuickConfig { produto: string; publico: string; objetivo: string; cana
 
 interface StepProgress {
   step: 1 | 2 | 3 | 4;
-  selectedTemplate: BrazilianTemplate | null;
-  selectedTone: BrazilianTone | null;
+  selectedTemplate: Template | null;
+  selectedTone: Tone | null;
   quickConfig: QuickConfig;
   customInputs: Record<string, string>;
 }
@@ -52,7 +52,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
 
   useEffect(() => {
     if (initialTemplateId) {
-      const template = BRAZILIAN_TEMPLATES.find(t => t.id === initialTemplateId);
+      const template = TEMPLATES.find(t => t.id === initialTemplateId);
       if (template) {
         setProgress(prev => ({ ...prev, step: 2, selectedTemplate: template, customInputs: {} }));
         setGeneratedCopy("");
@@ -62,13 +62,13 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
     }
   }, [initialTemplateId, onInitialTemplateConsumed]);
 
-  const handleTemplateSelect = useCallback((template: BrazilianTemplate) => {
+  const handleTemplateSelect = useCallback((template: Template) => {
     setProgress(prev => ({ ...prev, step: 2, selectedTemplate: template, customInputs: {} }));
     setGeneratedCopy("");
     onStepChange?.(2);
   }, [onStepChange]);
 
-  const handleToneSelect = useCallback((tone: BrazilianTone) => { setProgress(prev => ({ ...prev, step: 3, selectedTone: tone })); onStepChange?.(3); }, [onStepChange]);
+  const handleToneSelect = useCallback((tone: Tone) => { setProgress(prev => ({ ...prev, step: 3, selectedTone: tone })); onStepChange?.(3); }, [onStepChange]);
   const handleQuickConfigChange = useCallback((config: Partial<QuickConfig>) => { setProgress(prev => ({ ...prev, quickConfig: { ...prev.quickConfig, ...config } })); }, []);
   const handleQuickConfigComplete = useCallback(() => { setProgress(prev => ({ ...prev, step: 4 })); onStepChange?.(4); }, [onStepChange]);
   const handleCustomInputChange = useCallback((fieldId: string, value: string) => {
@@ -117,7 +117,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
     try {
       let processedPrompt = progress.selectedTemplate.promptBase;
       processedPrompt = processedPrompt
-        .replace(/\{publico\}/g, progress.quickConfig.publico || 'público brasileiro')
+        .replace(/\{publico\}/g, progress.quickConfig.publico || 'público')
         .replace(/\{objetivo\}/g, progress.quickConfig.objetivo || 'engajar')
         .replace(/\{canal\}/g, progress.quickConfig.canal || 'redes sociais')
         .replace(/\{tom\}/g, progress.selectedTone.value);
@@ -141,12 +141,12 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
         context: 'composer_simplified_mode'
       };
 
-      const systemRules = "Você é um copywriter sênior brasileiro. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
+      const systemRules = "Você é um copywriter sênior. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
       const aiResult = await aiContingencyService.executeRequest({ ...aiRequest, systemPrompt: systemRules });
       if (!aiResult || !aiResult.success) {
         throw new Error('Falha na geração de conteúdo via IA');
       }
-      
+
       const sanitizeAIOutput = (txt: string) => {
         let s = (txt || '').trim();
         s = s.replace(/```[\s\S]*?```/g, '');
@@ -167,7 +167,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
       try {
         if (user && workspace) {
           const metadata: Record<string, any> = {
-            mode: 'simplified_brazilian',
+            mode: 'simplified',
             template_id: progress.selectedTemplate.id,
             tone: progress.selectedTone.value,
             quickConfig: progress.quickConfig,
@@ -196,7 +196,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
 
       // Solicitar atualização global (CreditsProvider) e evitar sobrescrever localmente
       onCreditsUpdate(0);
-      
+
       notifications.success.copyGenerated();
       onStatsUpdate?.();
     } catch (e) {
@@ -227,7 +227,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
-                  {BRAZILIAN_TEMPLATES.map((template) => {
+                  {TEMPLATES.map((template) => {
                     const IconComponent = template.icon;
                     return (
                       <button
@@ -303,7 +303,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
                 </div>
               </CardHeader>
               <CardContent>
-                <BrazilianToneSelector tones={BRAZILIAN_TONES} selectedTone={progress.selectedTone} onToneSelect={handleToneSelect} />
+                <ToneSelector tones={TONES} selectedTone={progress.selectedTone} onToneSelect={handleToneSelect} />
                 <div className="mt-6">
                   <HookQuickPicker selectedHook={selectedHook} onSelect={setSelectedHook} />
                 </div>

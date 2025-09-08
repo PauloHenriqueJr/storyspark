@@ -16,12 +16,12 @@ interface ModernComposerWrapperProps {
   onHookChange?: () => void;
 }
 
-export const ModernComposerWrapper = ({ 
-  onStatsUpdate, 
-  selectedHook, 
-  preSelectedTemplateId, 
+export const ModernComposerWrapper = ({
+  onStatsUpdate,
+  selectedHook,
+  preSelectedTemplateId,
   onTemplateChange,
-  onHookChange 
+  onHookChange
 }: ModernComposerWrapperProps) => {
   const { workspace, loading: workspaceLoading } = useWorkspace();
   const { remainingCredits, refresh } = useCredits();
@@ -34,7 +34,7 @@ export const ModernComposerWrapper = ({
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [templateMapping, setTemplateMapping] = useState<{
     found: boolean;
-    brazilianId: string | null;
+    templateId: string | null;
     message: string;
   } | null>(null);
 
@@ -60,7 +60,7 @@ export const ModernComposerWrapper = ({
         if (preSelectedTemplateId) {
           const mappingInfo = getMappingInfo(preSelectedTemplateId);
           setTemplateMapping(mappingInfo);
-          
+
           // Clear the pre-selection after processing (notify parent)
           if (onTemplateChange) {
             onTemplateChange();
@@ -118,37 +118,35 @@ export const ModernComposerWrapper = ({
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Escolha um template, descreva sua ideia e deixe nossa IA criar copies que convertem.
         </p>
-        
+
         {/* Toggle de modo */}
         <div className="mt-6 flex justify-center">
           <div className="flex items-center gap-2 rounded-xl border bg-background/60 backdrop-blur-sm p-1 shadow-sm">
             <button
               onClick={() => handleModeChange('simplified')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                composerMode === 'simplified'
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${composerMode === 'simplified'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
-              }`}
+                }`}
             >
               <Palette className="h-4 w-4" />
-                Mãos Livres
-                <Badge variant="secondary" className="text-xs bg-success/20 text-success-foreground">
-                  Fácil
-                </Badge>
+              Mãos Livres
+              <Badge variant="secondary" className="text-xs bg-success/20 text-success-foreground">
+                Fácil
+              </Badge>
             </button>
             <button
               onClick={() => handleModeChange('advanced')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                composerMode === 'advanced'
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${composerMode === 'advanced'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-muted-foreground hover:text-foreground dark:text-gray-200 dark:hover:text-gray-100'
-              }`}
+                }`}
             >
               <Settings2 className="h-4 w-4" />
-                Mãos na Massa
-                <Badge variant="secondary" className="text-xs bg-primary/20 text-primary-foreground">
-                  Avançado
-                </Badge>
+              Mãos na Massa
+              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary-foreground">
+                Avançado
+              </Badge>
             </button>
           </div>
         </div>
@@ -185,23 +183,21 @@ export const ModernComposerWrapper = ({
         <div className="mb-8">
           <div className="text-center mb-6">
             <p className="text-sm text-muted-foreground">
-              🎨 Interface simples e intuitiva com templates brasileiros otimizados. Ideal para começar rapidamente com apenas alguns cliques.
+              🎨 Interface simples e intuitiva com templates otimizados. Ideal para começar rapidamente com apenas alguns cliques.
             </p>
           </div>
           <div className="flex items-center justify-center space-x-2 mb-4">
             {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                  currentStep >= step 
-                    ? 'bg-gradient-primary text-primary-foreground shadow-glow' 
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${currentStep >= step
+                    ? 'bg-gradient-primary text-primary-foreground shadow-glow'
                     : 'bg-muted text-muted-foreground'
-                }`}>
+                  }`}>
                   {step}
                 </div>
                 {step < 4 && (
-                  <div className={`w-12 h-0.5 mx-2 transition-all ${
-                    currentStep > step ? 'bg-gradient-primary' : 'bg-muted'
-                  }`} />
+                  <div className={`w-12 h-0.5 mx-2 transition-all ${currentStep > step ? 'bg-gradient-primary' : 'bg-muted'
+                    }`} />
                 )}
               </div>
             ))}
@@ -231,7 +227,7 @@ export const ModernComposerWrapper = ({
         credits={credits}
         onCreditsUpdate={handleCreditsUpdate}
         onStatsUpdate={handleStatsUpdate}
-        initialTemplateId={templateMapping?.brazilianId || preSelectedTemplateId}
+        initialTemplateId={templateMapping?.templateId || preSelectedTemplateId || undefined}
         initialHook={selectedHook}
         onStepChange={setCurrentStep}
         mode={composerMode}

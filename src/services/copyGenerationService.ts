@@ -155,7 +155,7 @@ export class CopyGenerationService {
 
       // Fazer requisição usando o serviço de contingência de IA
       console.log("🔄 Executando requisição de IA...");
-      const systemRules = "Você é um copywriter sênior brasileiro. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
+      const systemRules = "Você é um copywriter sênior. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
       const response = await aiContingencyService.executeRequest(
         {
           prompt,

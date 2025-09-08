@@ -150,7 +150,7 @@ ${processedPrompt}
         context: 'composer_advanced_mode'
       };
       
-      const systemRules = "Você é um copywriter sênior brasileiro. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
+      const systemRules = "Você é um copywriter sênior. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
       const aiResult = await aiContingencyService.executeRequest({ ...aiRequest, systemPrompt: systemRules });
       if (!aiResult || !aiResult.success) {
         throw new Error('Falha na geração de conteúdo via IA');
