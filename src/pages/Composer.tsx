@@ -34,3 +34,4 @@ const Composer: React.FC = () => {
 };
 
 export default Composer;
+export { Composer as Component };

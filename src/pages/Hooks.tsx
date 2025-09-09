@@ -18,4 +18,4 @@ const Hooks = () => {
   return <HooksLibrary />;
 };
 
-export default Hooks;
+export { Hooks as Component };

@@ -391,4 +391,4 @@ const PushWhatsApp = () => {
   );
 };
 
-export default PushWhatsApp;
+export { PushWhatsApp as Component };

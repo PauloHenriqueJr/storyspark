@@ -521,4 +521,4 @@ const Calendar: React.FC<CalendarProps> = ({ onScheduleModalReady }) => {
   );
 };
 
-export default Calendar;
+export { Calendar as Component };

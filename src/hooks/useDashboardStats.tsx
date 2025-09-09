@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useWorkspace } from './useWorkspace';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 export interface DashboardStats {
   activeCampaigns: number;
@@ -34,10 +35,15 @@ export const useDashboardStats = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { workspace } = useWorkspace();
+  const { isAuthenticated } = useAuth();
   const { isFlagEnabled } = useFeatureFlags();
 
   const fetchDashboardData = async () => {
-    if (!workspace?.id) return;
+    // Verificar se usuário está autenticado antes de fazer requisições
+    if (!isAuthenticated || !workspace?.id) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);

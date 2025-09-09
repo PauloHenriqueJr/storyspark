@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Ignore spark-copy-fast-79 folder
-spark-copy-fast-79/
+# spark-copy-fast-79/

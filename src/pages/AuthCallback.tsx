@@ -16,7 +16,7 @@ const AuthCallback = () => {
         // Processar parâmetros de callback do OAuth
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const urlParams = new URLSearchParams(window.location.search);
-        
+
         // Verificar se há erro nos parâmetros
         const error = urlParams.get('error') || hashParams.get('error');
         const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
@@ -27,33 +27,33 @@ const AuthCallback = () => {
 
         // Deixar o Supabase lidar com o callback automaticamente
         const { data, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError) {
           // Se der erro ao obter sessão, tentar processar hash fragment
           const { data: hashData, error: hashError } = await supabase.auth.getSessionFromUrl();
-          
+
           if (hashError) {
             throw hashError;
           }
-          
+
           if (hashData.session) {
             setStatus('success');
-            
+
             // Buscar perfil do usuário para mostrar nome correto
             const { data: profile } = await supabase
               .from('profiles')
               .select('full_name')
               .eq('id', hashData.session.user.id)
               .single();
-            
+
             toast({
               title: "Login realizado com sucesso!",
               description: `Bem-vindo ${profile?.full_name || 'ao StorySpark'}!`,
             });
-            
+
             // Limpar URL para evitar reprocessamento
             window.history.replaceState({}, document.title, window.location.pathname);
-            
+
             // Redirect to dashboard after a brief success display
             setTimeout(() => {
               navigate('/dashboard', { replace: true });
@@ -61,25 +61,25 @@ const AuthCallback = () => {
             return;
           }
         }
-        
+
         if (data.session) {
           setStatus('success');
-          
+
           // Buscar perfil do usuário para mostrar nome correto
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', data.session.user.id)
             .single();
-          
+
           toast({
             title: "Login realizado com sucesso!",
             description: `Bem-vindo ${profile?.full_name || 'ao StorySpark'}!`,
           });
-          
+
           // Limpar URL para evitar reprocessamento  
           window.history.replaceState({}, document.title, window.location.pathname);
-          
+
           // Redirect to dashboard after a brief success display
           setTimeout(() => {
             navigate('/dashboard', { replace: true });
@@ -98,7 +98,7 @@ const AuthCallback = () => {
           description: error instanceof Error ? error.message : "Erro ao processar login. Tente novamente.",
           variant: "destructive",
         });
-        
+
         // Limpar URL e redirecionar para auth page after error
         window.history.replaceState({}, document.title, window.location.pathname);
         setTimeout(() => {
@@ -147,5 +147,4 @@ const AuthCallback = () => {
     </div>
   );
 };
-
-export default AuthCallback;
+export { AuthCallback as Component };

@@ -239,4 +239,4 @@ export const CopiesHistory: React.FC = () => {
     );
 };
 
-export default CopiesHistory;
+export { CopiesHistory as Component };

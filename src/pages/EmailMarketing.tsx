@@ -352,4 +352,4 @@ const EmailMarketing = () => {
   );
 };
 
-export default EmailMarketing;
+export { EmailMarketing as Component };

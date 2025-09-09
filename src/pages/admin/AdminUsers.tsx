@@ -427,4 +427,4 @@ const AdminUsers = () => {
   );
 };
 
-export default AdminUsers;
+export { AdminUsers as Component };

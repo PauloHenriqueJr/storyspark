@@ -306,3 +306,4 @@ export default function Blog() {
     </>
   );
 }
+export { Blog as Component };

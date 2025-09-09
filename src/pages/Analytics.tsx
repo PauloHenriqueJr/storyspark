@@ -429,4 +429,4 @@ const Analytics = () => {
   );
 };
 
-export default Analytics;
+export { Analytics as Component };

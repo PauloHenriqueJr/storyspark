@@ -163,27 +163,27 @@ export const ProtectedRoute = ({
 
   // Verificar resultado da validação server-side
   if (serverValidation === 'invalid') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Verificar feature flag
   if (flagValidation === 'invalid') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Fallback: Verificar permissões no cliente também (dupla proteção)
   if (superAdminOnly && !hasSuperAdminAccess()) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   if (adminOnly && !hasAdminAccess()) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     if (!hasAnyRole(roles)) {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/auth" replace />;
     }
   }
 

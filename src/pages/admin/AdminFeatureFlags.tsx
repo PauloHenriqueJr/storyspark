@@ -371,4 +371,4 @@ export const AdminFeatureFlags = () => {
       })}
     </div>
   );
-};
+};export { AdminFeatureFlags as Component };

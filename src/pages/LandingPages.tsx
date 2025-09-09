@@ -334,4 +334,4 @@ const LandingPages = () => {
   );
 };
 
-export default LandingPages;
+export { LandingPages as Component };

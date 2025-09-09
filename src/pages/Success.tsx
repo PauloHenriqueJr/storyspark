@@ -94,3 +94,4 @@ export default function Success() {
   );
 }
 
+export { Success as Component };

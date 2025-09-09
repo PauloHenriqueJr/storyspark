@@ -386,4 +386,4 @@ const AdminAnalytics = () => {
   );
 };
 
-export default AdminAnalytics;
+export default AdminAnalytics;export { AdminAnalytics as Component };

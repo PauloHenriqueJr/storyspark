@@ -564,4 +564,4 @@ const BrandVoices = () => {
   );
 };
 
-export default BrandVoices;
+export { BrandVoices as Component };

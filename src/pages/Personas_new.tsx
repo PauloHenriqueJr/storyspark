@@ -669,4 +669,4 @@ const Personas = () => {
   );
 };
 
-export default Personas;
+export { Personas as Component };

@@ -14,13 +14,14 @@ interface Workspace {
 }
 
 export const useWorkspace = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchWorkspace = async () => {
-      if (!user) {
+      if (!isAuthenticated || !user) {
+        setWorkspace(null);
         setLoading(false);
         return;
       }

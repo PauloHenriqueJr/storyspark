@@ -1318,4 +1318,4 @@ const AdminSettings = () => {
   );
 };
 
-export default AdminSettings;
+export default AdminSettings;export { AdminSettings as Component };

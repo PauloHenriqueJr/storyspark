@@ -305,4 +305,4 @@ const AdminManagers = () => {
   );
 };
 
-export default AdminManagers;
+export default AdminManagers;export { AdminManagers as Component };

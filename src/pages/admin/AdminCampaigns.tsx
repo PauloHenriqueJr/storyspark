@@ -313,4 +313,4 @@ const AdminCampaigns = () => {
   );
 };
 
-export default AdminCampaigns;
+export default AdminCampaigns;export { AdminCampaigns as Component };

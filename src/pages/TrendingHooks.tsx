@@ -479,4 +479,4 @@ const TrendingHooks = () => {
   );
 };
 
-export default TrendingHooks;
+export { TrendingHooks as Component };

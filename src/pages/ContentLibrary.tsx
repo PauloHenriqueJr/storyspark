@@ -397,4 +397,4 @@ const ContentLibrary = () => {
   );
 };
 
-export default ContentLibrary;
+export default ContentLibrary;export { ContentLibrary as Component };

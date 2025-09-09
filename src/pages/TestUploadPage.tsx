@@ -318,4 +318,4 @@ export const TestUploadPage: React.FC = () => {
   );
 };
 
-export default TestUploadPage;
+export { TestUploadPage as Component };

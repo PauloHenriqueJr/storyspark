@@ -94,4 +94,4 @@ const AdminTest = () => {
   );
 };
 
-export default AdminTest;
+export default AdminTest;export { AdminTest as Component };

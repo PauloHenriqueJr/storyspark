@@ -689,4 +689,4 @@ const AdminPlans = () => {
   );
 };
 
-export default AdminPlans;
+export { AdminPlans as Component };

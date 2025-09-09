@@ -392,4 +392,4 @@ const AdminTemplates = () => {
   );
 };
 
-export default AdminTemplates;
+export default AdminTemplates;export { AdminTemplates as Component };

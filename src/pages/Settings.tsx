@@ -463,4 +463,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export { Settings as Component };

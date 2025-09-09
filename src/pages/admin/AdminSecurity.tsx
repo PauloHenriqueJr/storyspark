@@ -466,4 +466,4 @@ const AdminSecurity = () => {
   );
 };
 
-export default AdminSecurity;
+export default AdminSecurity;export { AdminSecurity as Component };

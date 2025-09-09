@@ -459,4 +459,4 @@ const AdminIntegrations = () => {
   );
 };
 
-export default AdminIntegrations;
+export default AdminIntegrations;export { AdminIntegrations as Component };

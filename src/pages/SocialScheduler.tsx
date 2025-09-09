@@ -334,4 +334,4 @@ const SocialScheduler = () => {
   );
 };
 
-export default SocialScheduler;
+export { SocialScheduler as Component };

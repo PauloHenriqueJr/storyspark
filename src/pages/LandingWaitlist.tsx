@@ -36,5 +36,4 @@ const LandingWaitlist = () => {
   );
 };
 
-export default LandingWaitlist;
-
+export { LandingWaitlist as Component };

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface CreditsContextValue {
   loading: boolean;
@@ -15,6 +16,7 @@ const CreditsContext = createContext<CreditsContextValue | undefined>(undefined)
 
 export const CreditsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { workspace, user, loading } = useWorkspace();
+  const { isAuthenticated } = useAuth();
 
   const credits = useMemo(() => {
     if (!workspace) return 0;
@@ -34,6 +36,8 @@ export const CreditsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refresh = useCallback(async () => {
     try {
+      if (!isAuthenticated) return;
+
       if (user?.id) {
         // Trigger a fetch for credits (profiles) — useWorkspace realtime deve refletir
         await supabase

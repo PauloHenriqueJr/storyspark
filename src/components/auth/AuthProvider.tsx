@@ -151,8 +151,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [trackAuthEvent]);
 
   const logout = useCallback(async () => {
-    setLoading(true);
     try {
+      // Limpar estado local imediatamente para responsividade
+      setUser(null);
+      setSupabaseUser(null);
+
       await authHelpers.signOut();
       if (systemNotifications) {
         systemNotifications.showSuccess(
@@ -167,8 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error instanceof Error ? error.message : "Erro ao desconectar."
         );
       }
-    } finally {
-      setLoading(false);
     }
   }, [systemNotifications]);
 
@@ -398,8 +399,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } else if (event === 'SIGNED_OUT') {
           if (mounted) {
-            setUser(null);
-            setSupabaseUser(null);
+            // Só limpar se ainda não estiver limpo (evitar conflitos com logout manual)
+            if (user || supabaseUser) {
+              setUser(null);
+              setSupabaseUser(null);
+            }
+
             // Limpar validação periódica
             if (roleValidationInterval) {
               clearInterval(roleValidationInterval);

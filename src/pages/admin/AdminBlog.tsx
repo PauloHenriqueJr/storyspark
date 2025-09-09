@@ -716,4 +716,4 @@ export default function AdminBlog() {
       </Tabs>
     </div>
   );
-}
+}export { AdminBlog as Component };

@@ -352,4 +352,4 @@ const ContingencyDemo = () => {
   );
 };
 
-export default ContingencyDemo;
+export default ContingencyDemo;export { ContingencyDemo as Component };

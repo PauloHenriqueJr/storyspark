@@ -2238,4 +2238,4 @@ const AdminWaitlist = () => {
    );
 };
 
-export default AdminWaitlist;
+export default AdminWaitlist;export { AdminWaitlist as Component };

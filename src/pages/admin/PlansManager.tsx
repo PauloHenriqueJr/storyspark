@@ -325,4 +325,6 @@ export default function AdminPlansManager() {
             </Tabs>
         </div>
     );
-}
+};
+
+export { AdminPlansManager as Component };

@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  CreditCard, 
-  Download, 
+import {
+  CreditCard,
+  Download,
   Calendar,
   Zap,
   Crown,
@@ -34,7 +34,7 @@ const Billing = () => {
   const [changePlanModal, setChangePlanModal] = useState(false);
   const [calculatorModal, setCalculatorModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
-  
+
   const { workspace } = useWorkspace();
   const { credits, creditsUsed, remainingCredits, plan, refresh } = useCredits();
   const { activePlans, getPlanBySlug, formatPrice, formatCredits } = useAdminPlansCache();
@@ -119,7 +119,7 @@ const Billing = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
+          <Button
             variant="outline"
             onClick={() => setCalculatorModal(true)}
             className="gap-2"
@@ -127,7 +127,7 @@ const Billing = () => {
             <Calculator className="w-4 h-4" />
             Calculadora
           </Button>
-          <Button 
+          <Button
             className="bg-gradient-primary hover:opacity-90 gap-2"
             onClick={() => setPaymentModal(true)}
           >
@@ -161,7 +161,7 @@ const Billing = () => {
                 {currentPlan.period}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               {currentPlan.features.map((feature, index) => (
                 <div key={index} className="flex items-center gap-2">
@@ -172,16 +172,16 @@ const Billing = () => {
             </div>
 
             <div className="pt-4 border-t space-y-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => setChangePlanModal(true)}
               >
                 <Settings className="w-4 h-4 mr-2" />
                 Gerenciar Plano
               </Button>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 className="w-full text-xs"
                 onClick={() => setCalculatorModal(true)}
@@ -206,24 +206,24 @@ const Billing = () => {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Copies IA</span>
                 <span className="text-sm text-muted-foreground">
-                  {credits === 99999 
+                  {credits === 99999
                     ? `${creditsUsed.toLocaleString()} usado · Ilimitado`
                     : `${creditsUsed.toLocaleString()} / ${credits.toLocaleString()}`}
                 </span>
               </div>
               <div className="text-xs text-muted-foreground mb-1">
-                {!currentPlanData || currentPlanData.monthly_credits === null 
+                {!currentPlanData || currentPlanData.monthly_credits === null
                   ? 'Cota mensal planejada: Ilimitado'
                   : `Cota mensal planejada: ${formatCredits(currentPlanData.monthly_credits)}/mês`}
               </div>
-              <Progress 
-                value={credits === 99999 ? 0 : getUsagePercentage(creditsUsed, Math.max(1, credits))} 
+              <Progress
+                value={credits === 99999 ? 0 : getUsagePercentage(creditsUsed, Math.max(1, credits))}
                 className="h-2"
               />
               <div className="flex items-center gap-1 mt-1">
                 {credits !== 99999 && getUsagePercentage(creditsUsed, Math.max(1, credits)) >= 75 && (
-                  <AlertTriangle 
-                    className="w-3 h-3 text-warning cursor-pointer" 
+                  <AlertTriangle
+                    className="w-3 h-3 text-warning cursor-pointer"
                     onClick={() => showUsageLimitAlert('Copies IA', getUsagePercentage(creditsUsed, Math.max(1, credits)))}
                   />
                 )}
@@ -231,9 +231,9 @@ const Billing = () => {
                   {credits === 99999 ? 'Ilimitado' : `${getUsagePercentage(creditsUsed, Math.max(1, credits))}% usado · ${remainingCredits} restantes`}
                 </span>
                 {credits !== 99999 && getUsagePercentage(creditsUsed, Math.max(1, credits)) >= 85 && (
-                  <Button 
-                    variant="link" 
-                    size="sm" 
+                  <Button
+                    variant="link"
+                    size="sm"
                     className="h-auto p-0 text-xs text-primary"
                     onClick={() => setChangePlanModal(true)}
                   >
@@ -251,8 +251,8 @@ const Billing = () => {
                   {currentPlan.usage.integrations.used} / {currentPlan.usage.integrations.total}
                 </span>
               </div>
-              <Progress 
-                value={getUsagePercentage(currentPlan.usage.integrations.used, currentPlan.usage.integrations.total)} 
+              <Progress
+                value={getUsagePercentage(currentPlan.usage.integrations.used, currentPlan.usage.integrations.total)}
                 className="h-2"
               />
             </div>
@@ -265,8 +265,8 @@ const Billing = () => {
                   {currentPlan.usage.team.used} / {currentPlan.usage.team.total}
                 </span>
               </div>
-              <Progress 
-                value={getUsagePercentage(currentPlan.usage.team.used, currentPlan.usage.team.total)} 
+              <Progress
+                value={getUsagePercentage(currentPlan.usage.team.used, currentPlan.usage.team.total)}
                 className="h-2"
               />
             </div>
@@ -283,9 +283,8 @@ const Billing = () => {
         </TabsList>
 
         <TabsContent value="plans" className="mt-6">
-          <div className={`grid gap-6 ${
-            activePlans.length <= 3 ? `grid-cols-1 md:grid-cols-${activePlans.length}` : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-          }`}>
+          <div className={`grid gap-6 ${activePlans.length <= 3 ? `grid-cols-1 md:grid-cols-${activePlans.length}` : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            }`}>
             {activePlans.map((p) => (
               <Card key={p.id} className={`relative ${p.is_popular ? 'border-primary shadow-lg' : ''}`}>
                 {p.is_popular && (
@@ -296,7 +295,7 @@ const Billing = () => {
                     </Badge>
                   </div>
                 )}
-                
+
                 <CardHeader className="text-center">
                   <CardTitle>{p.name}</CardTitle>
                   <CardDescription>{p.description}</CardDescription>
@@ -320,10 +319,9 @@ const Billing = () => {
                     ))}
                   </div>
 
-                  <Button 
-                    className={`w-full ${
-                      (plan && plan.toLowerCase() === p.slug) ? 'bg-gradient-primary hover:opacity-90' : ''
-                    }`}
+                  <Button
+                    className={`w-full ${(plan && plan.toLowerCase() === p.slug) ? 'bg-gradient-primary hover:opacity-90' : ''
+                      }`}
                     variant={(plan && plan.toLowerCase() === p.slug) ? 'default' : 'outline'}
                     onClick={() => (!plan || plan.toLowerCase() !== p.slug) && setChangePlanModal(true)}
                     disabled={!!plan && plan.toLowerCase() === p.slug}
@@ -346,13 +344,13 @@ const Billing = () => {
                       <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                         <FileText className="w-6 h-6 text-primary" />
                       </div>
-                      
+
                       <div>
                         <div className="flex items-center gap-3 mb-1">
                           <h3 className="font-semibold text-foreground">{invoice.id}</h3>
                           <Badge variant="secondary">{invoice.status}</Badge>
                         </div>
-                        
+
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span>{invoice.plan}</span>
                           <span>•</span>
@@ -370,7 +368,7 @@ const Billing = () => {
                       <div className="text-right">
                         <p className="font-semibold text-foreground">{invoice.amount}</p>
                       </div>
-                      
+
                       <Button variant="outline" size="sm">
                         <Download className="w-4 h-4 mr-2" />
                         Download
@@ -473,4 +471,4 @@ const Billing = () => {
   );
 };
 
-export default Billing;
+export { Billing as Component };

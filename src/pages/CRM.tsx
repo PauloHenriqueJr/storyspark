@@ -524,4 +524,4 @@ const CRM = () => {
   );
 };
 
-export default CRM;
+export { CRM as Component };

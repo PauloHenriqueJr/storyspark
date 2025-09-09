@@ -601,4 +601,4 @@ const AIIdeas = () => {
   );
 };
 
-export default AIIdeas;
+export { AIIdeas as Component };

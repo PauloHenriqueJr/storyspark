@@ -375,3 +375,4 @@ export default function BlogPost() {
     </>
   );
 }
+export { BlogPost as Component };

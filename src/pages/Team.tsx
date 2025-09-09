@@ -420,4 +420,4 @@ const Team = () => {
   );
 };
 
-export default Team;
+export { Team as Component };

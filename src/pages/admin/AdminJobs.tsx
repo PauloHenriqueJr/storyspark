@@ -563,4 +563,4 @@ const AdminJobs = () => {
   );
 };
 
-export default AdminJobs;
+export default AdminJobs;export { AdminJobs as Component };

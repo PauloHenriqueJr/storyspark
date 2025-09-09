@@ -377,4 +377,4 @@ const Integrations = () => {
   );
 };
 
-export default Integrations;
+export { Integrations as Component };

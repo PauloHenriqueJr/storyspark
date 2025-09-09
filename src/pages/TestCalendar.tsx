@@ -253,4 +253,4 @@ const TestCalendar = () => {
   );
 };
 
-export default TestCalendar;
+export { TestCalendar as Component };

@@ -3508,3 +3508,4 @@ Equipe StorySpark
 };
 
 export default AdminEmailTemplates;
+export { AdminEmailTemplates as Component };

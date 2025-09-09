@@ -411,4 +411,4 @@ const AdminLogs = () => {
   );
 };
 
-export default AdminLogs;
+export default AdminLogs;export { AdminLogs as Component };

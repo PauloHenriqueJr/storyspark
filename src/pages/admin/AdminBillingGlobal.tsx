@@ -518,4 +518,4 @@ const AdminBillingGlobal = () => {
   );
 };
 
-export default AdminBillingGlobal;
+export default AdminBillingGlobal;export { AdminBillingGlobal as Component };

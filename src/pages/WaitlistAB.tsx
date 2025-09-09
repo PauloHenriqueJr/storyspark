@@ -232,3 +232,4 @@ export default function WaitlistAB() {
     </div>
   );
 }
+export { WaitlistAB as Component };

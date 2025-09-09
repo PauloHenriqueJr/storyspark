@@ -505,4 +505,4 @@ const PersonasGrid: React.FC<PersonasGridProps> = ({ personas, onEdit, onDelete,
   );
 };
 
-export default Personas;
+export { Personas as Component };

@@ -456,4 +456,4 @@ const CallScripts = () => {
   );
 };
 
-export default CallScripts;
+export { CallScripts as Component };

@@ -623,4 +623,4 @@ const AdminBackup = () => {
   );
 };
 
-export default AdminBackup;
+export default AdminBackup;export { AdminBackup as Component };

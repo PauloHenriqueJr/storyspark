@@ -655,4 +655,4 @@ const ABTests = () => {
   );
 };
 
-export default ABTests;
+export { ABTests as Component };

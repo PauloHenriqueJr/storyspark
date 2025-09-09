@@ -469,4 +469,4 @@ const Funnels = () => {
   );
 };
 
-export default Funnels;
+export { Funnels as Component };

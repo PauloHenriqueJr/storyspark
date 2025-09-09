@@ -42,21 +42,21 @@ const AdminDashboard = () => {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar dados da waitlist
       const { data: waitlistData, error: waitlistError } = await supabase
         .from('waitlist_signups')
         .select('*');
-      
+
       if (waitlistError) throw waitlistError;
-      
+
       // Buscar dados dos jobs
       const { data: jobsData, error: jobsError } = await supabase
         .from('ai_processing_jobs')
         .select('*');
-      
+
       if (jobsError) throw jobsError;
-      
+
       // Calcular estatísticas
       const jobStats = {
         total: jobsData?.length || 0,
@@ -64,14 +64,14 @@ const AdminDashboard = () => {
         completed: jobsData?.filter(job => job.status === 'completed').length || 0,
         failed: jobsData?.filter(job => job.status === 'failed').length || 0
       };
-      
+
       setAnalytics({
         users: { total: 1247, growth: 12, active: 892 },
         waitlist: { total: waitlistData?.length || 0, growth: 8 },
         jobs: jobStats,
         performance: { uptime: 99.2, responseTime: 145 }
       });
-      
+
     } catch (error) {
       console.error('Erro ao carregar analytics:', error);
       toast({
@@ -180,8 +180,8 @@ const AdminDashboard = () => {
           <p className="text-muted-foreground">Visão geral do sistema StorySpark</p>
         </div>
         <div className="flex gap-3">
-          <Button 
-            onClick={loadAnalytics} 
+          <Button
+            onClick={loadAnalytics}
             disabled={loading}
             variant="outline"
             size="sm"
@@ -222,10 +222,9 @@ const AdminDashboard = () => {
                 <>
                   <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                   <div className="space-y-1">
-                    <p className={`text-xs ${
-                      stat.changeType === 'positive' ? 'text-green-600' : 
-                      stat.changeType === 'negative' ? 'text-red-600' : 'text-blue-600'
-                    }`}>
+                    <p className={`text-xs ${stat.changeType === 'positive' ? 'text-green-600' :
+                        stat.changeType === 'negative' ? 'text-red-600' : 'text-blue-600'
+                      }`}>
                       {stat.change}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -288,7 +287,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="growth">Crescimento</TabsTrigger>
                 <TabsTrigger value="performance">Performance</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="jobs" className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
@@ -308,7 +307,7 @@ const AdminDashboard = () => {
                     <div className="text-sm text-red-600">Falharam</div>
                   </div>
                 </div>
-                
+
                 {analytics.jobs.total > 0 && (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -319,7 +318,7 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="growth" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -330,7 +329,7 @@ const AdminDashboard = () => {
                     <div className="text-3xl font-bold text-blue-600">+{analytics.users.growth}%</div>
                     <p className="text-sm text-muted-foreground">Este mês vs. mês anterior</p>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Mail className="h-4 w-4" />
@@ -341,7 +340,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="performance" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -352,7 +351,7 @@ const AdminDashboard = () => {
                     <div className="text-3xl font-bold text-green-600">{analytics.performance.uptime}%</div>
                     <Progress value={analytics.performance.uptime} className="h-2" />
                   </div>
-                  
+
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Clock className="h-4 w-4" />
@@ -392,7 +391,7 @@ const AdminDashboard = () => {
                   <div className="text-sm text-purple-600">Jobs Processados</div>
                 </div>
               </div>
-              
+
               {systemStatus.map((service, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
@@ -401,8 +400,8 @@ const AdminDashboard = () => {
                   </div>
                   <div className="text-right">
                     <Badge variant="outline">
-                      {service.status === 'online' ? 'Online' : 
-                       service.status === 'warning' ? 'Atenção' : 'Offline'}
+                      {service.status === 'online' ? 'Online' :
+                        service.status === 'warning' ? 'Atenção' : 'Offline'}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">Uptime: {service.uptime}</p>
                   </div>
@@ -452,3 +451,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+export { AdminDashboard as Component };

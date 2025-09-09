@@ -443,4 +443,4 @@ const AdminPermissions = () => {
   );
 };
 
-export default AdminPermissions;
+export default AdminPermissions;export { AdminPermissions as Component };

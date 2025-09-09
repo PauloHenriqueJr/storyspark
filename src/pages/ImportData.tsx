@@ -94,4 +94,4 @@ export const ImportData: React.FC = () => {
     );
 };
 
-export default ImportData;
+export { ImportData as Component };

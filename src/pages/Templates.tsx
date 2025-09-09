@@ -629,4 +629,4 @@ const Templates = () => {
   );
 };
 
-export default Templates;
+export { Templates as Component };

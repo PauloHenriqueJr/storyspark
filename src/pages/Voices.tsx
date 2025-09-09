@@ -136,8 +136,8 @@ const Voices = () => {
       activeTab === 'all'
         ? bySearch
         : activeTab === 'active'
-        ? bySearch.filter((v) => v.is_active)
-        : bySearch.filter((v) => !v.is_active);
+          ? bySearch.filter((v) => v.is_active)
+          : bySearch.filter((v) => !v.is_active);
 
     return byTab;
   }, [voices, searchTerm, activeTab]);
@@ -434,4 +434,4 @@ const Voices = () => {
   );
 };
 
-export default Voices;
+export { Voices as Component };
