@@ -4,621 +4,218 @@
     "React",
     "Vite",
     "Tailwind CSS",
-    "shadcn/ui",
     "Supabase",
-    "PostgreSQL",
+    "React Query",
     "React Router",
-    "React Hook Form",
-    "Zod",
-    "Zustand",
+    "Radix UI",
     "Playwright",
-    "Vitest"
+    "Vitest",
+    "ESLint",
+    "PostCSS",
+    "shadcn/ui",
+    "PWA"
   ],
   "features": [
     {
       "name": "Authentication System",
-      "description": "Complete authentication system with email/password, Google OAuth, email confirmation, password reset, and role-based access control",
+      "description": "User authentication and authorization with role-based access control using Supabase",
       "files": [
-        "src/components/auth/AuthProvider.tsx",
-        "src/components/auth/ProtectedRoute.tsx",
-        "src/pages/Auth.tsx",
-        "src/pages/AuthCallback.tsx",
-        "src/lib/supabase.ts"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "StorySpark Authentication API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/auth/login": {
-            "post": {
-              "summary": "User login with email and password",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "email": {
-                          "type": "string",
-                          "format": "email"
-                        },
-                        "password": {
-                          "type": "string",
-                          "minLength": 6
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "/auth/register": {
-            "post": {
-              "summary": "User registration with email confirmation",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "minLength": 2
-                        },
-                        "email": {
-                          "type": "string",
-                          "format": "email"
-                        },
-                        "password": {
-                          "type": "string",
-                          "minLength": 6
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "/auth/google": {
-            "get": {
-              "summary": "Google OAuth authentication"
-            }
-          }
-        }
-      }
+        "src/integrations/supabase/client.ts",
+        "src/integrations/supabase/types.ts",
+        "src/hooks/useRole.tsx",
+        "src/components/auth/",
+        "src/app/router/admin.tsx"
+      ]
+    },
+    {
+      "name": "Composer (AI Content Generator)",
+      "description": "Main AI-powered content generation interface with chat functionality and real-time preview",
+      "files": [
+        "src/pages/Composer.tsx",
+        "src/components/composer/",
+        "src/services/copyGenerationService.ts",
+        "src/hooks/useComposer.ts"
+      ]
+    },
+    {
+      "name": "Personas Management",
+      "description": "Complete CRUD operations for user personas with templates, analysis and tone detection",
+      "files": [
+        "src/pages/Personas.tsx",
+        "src/components/personas/",
+        "src/services/personasService.ts",
+        "src/hooks/usePersonas.ts"
+      ]
+    },
+    {
+      "name": "Brand Voices System",
+      "description": "Brand voice creation and management with tone analysis, interactive tester and versioning",
+      "files": [
+        "src/pages/BrandVoices.tsx",
+        "src/components/brand-voices/",
+        "src/services/brandVoicesService.ts",
+        "src/hooks/useBrandVoices.ts"
+      ]
     },
     {
       "name": "Campaign Management",
-      "description": "Full CRUD operations for marketing campaigns with status tracking, budget management, analytics, and platform integration",
+      "description": "Campaign creation, management, scheduling and performance tracking system",
       "files": [
         "src/pages/Campaigns.tsx",
+        "src/components/campaigns/",
         "src/services/campaignsService.ts",
-        "src/components/modals/CreateCampaignModal.tsx",
-        "src/hooks/useCampaigns.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Campaign Management API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/campaigns": {
-            "get": {
-              "summary": "Get all campaigns for workspace",
-              "parameters": [
-                {
-                  "name": "workspace_id",
-                  "in": "query",
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                }
-              ]
-            },
-            "post": {
-              "summary": "Create new campaign",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "description": {
-                          "type": "string"
-                        },
-                        "budget": {
-                          "type": "number"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "DRAFT",
-                            "ACTIVE",
-                            "PAUSED",
-                            "COMPLETED"
-                          ]
-                        },
-                        "start_date": {
-                          "type": "string",
-                          "format": "date"
-                        },
-                        "end_date": {
-                          "type": "string",
-                          "format": "date"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "/campaigns/{id}": {
-            "put": {
-              "summary": "Update campaign",
-              "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                }
-              ]
-            },
-            "delete": {
-              "summary": "Delete campaign",
-              "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
+        "src/hooks/useCampaigns.ts"
+      ]
     },
     {
-      "name": "Brand Voice Management",
-      "description": "Create and manage brand voices with tone, personality, and guidelines for consistent content generation",
+      "name": "Editorial Calendar",
+      "description": "Interactive calendar view for content scheduling with drag & drop functionality",
       "files": [
-        "src/pages/BrandVoices.tsx",
-        "src/services/brandVoicesService.ts",
-        "src/components/modals/CreateBrandVoiceModal.tsx",
-        "src/hooks/useBrandVoices.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Brand Voice API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/brand-voices": {
-            "get": {
-              "summary": "Get all brand voices for workspace"
-            },
-            "post": {
-              "summary": "Create new brand voice",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "description": {
-                          "type": "string"
-                        },
-                        "tone": {
-                          "type": "string"
-                        },
-                        "personality": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "guidelines": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+        "src/components/calendar/DraggableCalendar.tsx",
+        "src/hooks/useCalendar.tsx",
+        "src/services/calendarService.ts"
+      ]
     },
     {
-      "name": "Persona Management",
-      "description": "Create and manage target personas with demographics, psychographics, goals, and pain points for targeted content",
+      "name": "Analytics Dashboard",
+      "description": "Interactive analytics and reporting dashboard with charts, filters and export capabilities",
       "files": [
-        "src/pages/Personas.tsx",
-        "src/services/personasService.ts",
-        "src/components/modals/CreatePersonaModal.tsx",
-        "src/hooks/usePersonas.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Persona Management API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/personas": {
-            "get": {
-              "summary": "Get all personas for workspace"
-            },
-            "post": {
-              "summary": "Create new persona",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "age_range": {
-                          "type": "string"
-                        },
-                        "occupation": {
-                          "type": "string"
-                        },
-                        "location": {
-                          "type": "string"
-                        },
-                        "interests": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "pain_points": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "goals": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "AI Copy Generation",
-      "description": "Generate marketing copy using AI with brand voice, persona targeting, and multiple platform optimization",
-      "files": [
-        "src/pages/CopyGenerator.tsx",
-        "src/services/copyGenerationService.ts",
-        "src/components/copy/CopyGeneratorForm.tsx",
-        "src/hooks/useCopyGeneration.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "AI Copy Generation API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/generate-copy": {
-            "post": {
-              "summary": "Generate marketing copy using AI",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "brief": {
-                          "type": "object"
-                        },
-                        "channel": {
-                          "type": "string"
-                        },
-                        "brand_voice_id": {
-                          "type": "string"
-                        },
-                        "persona_id": {
-                          "type": "string"
-                        },
-                        "ai_provider": {
-                          "type": "string",
-                          "enum": [
-                            "openai",
-                            "anthropic"
-                          ]
-                        },
-                        "ai_model": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "/copies": {
-            "get": {
-              "summary": "Get generated copies for workspace"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Dashboard Analytics",
-      "description": "Comprehensive dashboard with campaign performance, engagement metrics, conversion rates, and revenue tracking",
-      "files": [
-        "src/pages/Dashboard.tsx",
-        "src/hooks/useDashboardStats.tsx",
+        "src/pages/Analytics.tsx",
+        "src/components/analytics/",
         "src/services/analyticsService.ts",
-        "src/components/dashboard/StatsCards.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Dashboard Analytics API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/dashboard/stats": {
-            "get": {
-              "summary": "Get dashboard statistics",
-              "parameters": [
-                {
-                  "name": "workspace_id",
-                  "in": "query",
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                },
-                {
-                  "name": "period",
-                  "in": "query",
-                  "schema": {
-                    "type": "string",
-                    "enum": [
-                      "7d",
-                      "30d",
-                      "90d"
-                    ]
-                  }
-                }
-              ]
-            }
-          },
-          "/analytics/campaigns": {
-            "get": {
-              "summary": "Get campaign analytics data"
-            }
-          }
-        }
-      }
+        "src/hooks/useAnalytics.ts",
+        "src/hooks/useDashboardStats.tsx",
+        "src/hooks/useRecentActivities.tsx"
+      ]
     },
     {
-      "name": "Template Library",
-      "description": "Template management system with categories, performance tracking, and customizable content templates",
+      "name": "Templates Library",
+      "description": "Template management system with categories, variables, favorites and performance metrics",
       "files": [
         "src/pages/Templates.tsx",
+        "src/components/templates/",
         "src/services/templatesService.ts",
-        "src/components/templates/TemplateLibrary.tsx",
-        "src/hooks/useTemplates.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Template Library API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/templates": {
-            "get": {
-              "summary": "Get all templates",
-              "parameters": [
-                {
-                  "name": "category",
-                  "in": "query",
-                  "schema": {
-                    "type": "string"
-                  }
-                },
-                {
-                  "name": "type",
-                  "in": "query",
-                  "schema": {
-                    "type": "string",
-                    "enum": [
-                      "AD",
-                      "EMAIL",
-                      "SOCIAL",
-                      "BLOG",
-                      "LANDING"
-                    ]
-                  }
-                }
-              ]
-            },
-            "post": {
-              "summary": "Create new template"
-            }
-          }
-        }
-      }
+        "src/hooks/useTemplates.ts"
+      ]
     },
     {
       "name": "Admin Panel",
-      "description": "Complete admin system with user management, permissions, analytics, billing, security, and system monitoring",
+      "description": "Administrative interface for user management, plans and content moderation",
       "files": [
-        "src/pages/admin/AdminDashboard.tsx",
-        "src/pages/admin/AdminUsers.tsx",
-        "src/pages/admin/AdminAnalytics.tsx",
-        "src/pages/admin/AdminPermissions.tsx",
-        "src/pages/admin/AdminSecurity.tsx",
-        "src/pages/admin/AdminBilling.tsx",
-        "src/pages/AdminPlans.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Admin Panel API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/admin/users": {
-            "get": {
-              "summary": "Get all users (admin only)",
-              "security": [
-                {
-                  "AdminAuth": []
-                }
-              ]
-            }
-          },
-          "/admin/analytics": {
-            "get": {
-              "summary": "Get system-wide analytics",
-              "security": [
-                {
-                  "AdminAuth": []
-                }
-              ]
-            }
-          },
-          "/admin/permissions": {
-            "post": {
-              "summary": "Update user permissions",
-              "security": [
-                {
-                  "SuperAdminAuth": []
-                }
-              ]
-            }
-          }
-        }
-      }
+        "src/pages/admin/",
+        "src/components/admin/",
+        "src/hooks/useAdminUsers.tsx",
+        "src/hooks/useAdminPlans.tsx",
+        "src/hooks/useAdminPlansCache.tsx"
+      ]
     },
     {
-      "name": "Email Marketing",
-      "description": "Email campaign management with templates, scheduling, analytics, and automation workflows",
+      "name": "PWA Features",
+      "description": "Progressive Web App functionality with offline support, service workers and installation prompts",
       "files": [
-        "src/pages/EmailMarketing.tsx",
-        "src/services/emailMarketing.ts",
-        "src/hooks/useEmailCampaigns.tsx",
-        "src/components/email/EmailCampaignBuilder.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Email Marketing API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/email-campaigns": {
-            "get": {
-              "summary": "Get email campaigns"
-            },
-            "post": {
-              "summary": "Create email campaign"
-            }
-          },
-          "/email-campaigns/{id}/send": {
-            "post": {
-              "summary": "Send email campaign",
-              "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
+        "public/manifest.json",
+        "public/sw.js",
+        "src/hooks/usePWA.tsx",
+        "src/components/pwa/"
+      ]
     },
     {
-      "name": "Calendar Integration",
-      "description": "Calendar system for scheduling content publication, campaign launches, and marketing events",
+      "name": "Social Media Integrations",
+      "description": "OAuth integrations with major social media platforms for content publishing",
       "files": [
-        "src/pages/Calendar.tsx",
-        "src/components/calendar/CalendarView.tsx",
-        "src/hooks/useCalendar.tsx",
-        "src/services/calendarService.ts"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Calendar API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/calendar/events": {
-            "get": {
-              "summary": "Get calendar events",
-              "parameters": [
-                {
-                  "name": "start_date",
-                  "in": "query",
-                  "schema": {
-                    "type": "string",
-                    "format": "date"
-                  }
-                },
-                {
-                  "name": "end_date",
-                  "in": "query",
-                  "schema": {
-                    "type": "string",
-                    "format": "date"
-                  }
-                }
-              ]
-            },
-            "post": {
-              "summary": "Create calendar event"
-            }
-          }
-        }
-      }
+        "src/services/socialService.ts",
+        "src/components/social/"
+      ]
+    },
+    {
+      "name": "Billing System",
+      "description": "Subscription and billing management with payment processing and usage tracking",
+      "files": [
+        "src/pages/Billing.tsx",
+        "src/services/billingService.ts",
+        "src/hooks/useBilling.ts"
+      ]
+    },
+    {
+      "name": "Dynamic Plans System",
+      "description": "Dynamic pricing plans management system with admin controls and real-time updates",
+      "files": [
+        "src/hooks/useAdminPlansCache.tsx",
+        "src/pages/admin/AdminPlans.tsx",
+        "src/components/pricing/PricingSection.tsx"
+      ]
+    },
+    {
+      "name": "Document Upload with AI",
+      "description": "Document upload and AI processing system for automatic content extraction",
+      "files": [
+        "src/services/documentProcessingService.ts",
+        "src/components/upload/DocumentUploadModal.tsx",
+        "src/components/floating/FloatingCopyButton.tsx"
+      ]
+    },
+    {
+      "name": "UI Components Library",
+      "description": "Reusable UI components built with Radix UI, Tailwind CSS and shadcn/ui",
+      "files": [
+        "src/components/ui/",
+        "src/components/common/"
+      ]
+    },
+    {
+      "name": "State Management",
+      "description": "Global state management with React Context, custom hooks and React Query",
+      "files": [
+        "src/contexts/",
+        "src/providers/",
+        "src/hooks/",
+        "src/contexts/ToastContext.tsx",
+        "src/hooks/useNotifications.tsx",
+        "src/hooks/useToastNotifications.tsx"
+      ]
+    },
+    {
+      "name": "API Services",
+      "description": "Service layer for API communication with Supabase and external integrations",
+      "files": [
+        "src/services/",
+        "src/integrations/supabase/"
+      ]
+    },
+    {
+      "name": "Routing System",
+      "description": "Client-side routing with React Router, protected routes and error boundaries",
+      "files": [
+        "src/app/router/",
+        "src/components/RouteTracker.tsx",
+        "src/app/router/RouteErrorBoundary.tsx"
+      ]
+    },
+    {
+      "name": "Onboarding System",
+      "description": "User onboarding flow with interactive tutorials and setup wizards",
+      "files": [
+        "src/components/onboarding/",
+        "src/pages/public/"
+      ]
+    },
+    {
+      "name": "Testing Infrastructure",
+      "description": "Comprehensive testing setup with Vitest for unit tests and Playwright for E2E tests",
+      "files": [
+        "tests/",
+        "vitest.config.ts",
+        "playwright.config.ts",
+        "src/test-setup.tsx"
+      ]
+    },
+    {
+      "name": "Theme System",
+      "description": "Dark/light theme system with persistence and smooth transitions",
+      "files": [
+        "src/components/theme/",
+        "src/hooks/useTheme.ts"
+      ]
     }
   ]
 }
