@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "user login with email and password",
+    "description": "Test the /auth/login POST endpoint to verify user login functionality with valid and invalid email and password combinations, including validation of minimum password length and proper error handling."
+  },
+  {
+    "id": "TC002",
+    "title": "user registration with email confirmation",
+    "description": "Test the /auth/register POST endpoint to ensure new users can register with valid name, email, and password, including email format validation, minimum length checks, and triggering of email confirmation process."
+  },
+  {
+    "id": "TC003",
+    "title": "google oauth authentication",
+    "description": "Test the /auth/google GET endpoint to verify the Google OAuth authentication flow initiates correctly and handles success and failure scenarios appropriately."
+  },
+  {
+    "id": "TC004",
+    "title": "get all campaigns for workspace",
+    "description": "Test the /campaigns GET endpoint with a valid workspace_id query parameter to retrieve all campaigns associated with the workspace, verifying response structure and data correctness."
+  },
+  {
+    "id": "TC005",
+    "title": "create new campaign",
+    "description": "Test the /campaigns POST endpoint to create a new campaign with valid data including name, description, budget, status, start_date, and end_date, ensuring proper validation and successful creation."
+  },
+  {
+    "id": "TC006",
+    "title": "update campaign",
+    "description": "Test the /campaigns/{id} PUT endpoint to update an existing campaign by id with valid updated fields, verifying that changes are persisted and invalid updates are handled gracefully."
+  },
+  {
+    "id": "TC007",
+    "title": "delete campaign",
+    "description": "Test the /campaigns/{id} DELETE endpoint to delete a campaign by id, ensuring the campaign is removed and appropriate responses are returned for non-existent or unauthorized deletions."
+  },
+  {
+    "id": "TC008",
+    "title": "get all brand voices for workspace",
+    "description": "Test the /brand-voices GET endpoint to retrieve all brand voices for the workspace, verifying response data and access control."
+  },
+  {
+    "id": "TC009",
+    "title": "create new brand voice",
+    "description": "Test the /brand-voices POST endpoint to create a new brand voice with valid name, description, tone, personality array, and guidelines, ensuring data validation and successful creation."
+  },
+  {
+    "id": "TC010",
+    "title": "get all personas for workspace",
+    "description": "Test the /personas GET endpoint to retrieve all personas for the workspace, verifying response correctness and access permissions."
+  }
+]

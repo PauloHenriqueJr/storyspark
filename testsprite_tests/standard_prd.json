@@ -1,0 +1,670 @@
+{
+  "meta": {
+    "project": "StorySpark",
+    "date": "2025-09-08",
+    "prepared_by": "Especialista Full Stack (Kilo Code)"
+  },
+  "product_overview": "StorySpark is an AI-powered SaaS platform designed to revolutionize digital content creation by enabling marketing agencies, e-commerce, startups, and freelancers to efficiently generate high-performance, platform-optimized marketing copy. The fully implemented frontend integrates with backend services to offer personas analysis, brand voice customization, campaign management, AI-driven copy generation, and comprehensive analytics all within an intuitive, responsive UI.",
+  "core_goals": [
+    "Democratize access to professional AI-optimized marketing copy, reducing content creation time by up to 80% while increasing social media engagement.",
+    "Provide a modern, responsive design system ensuring intuitive user experience across devices.",
+    "Enable integrations with social media platforms and automation tools for streamlined publishing workflows.",
+    "Support scalable collaborative workflows suitable for teams of varying sizes.",
+    "Ensure accessibility compliance (WCAG 2.1 AA) for inclusive usage.",
+    "Implement Progressive Web App capabilities for offline use and mobile installation."
+  ],
+  "key_features": [
+    "AI-driven content Composer with chat interface supporting persona, brand voice, and template selection plus real-time multi-platform preview and export capabilities.",
+    "Complete Persona Management with CRUD operations, templates by segment, tone and channel analysis, integrated directly into the content Composer.",
+    "Brand Voice Management featuring editable tone, personality arrays, interactive voice testing and versioning with analytics.",
+    "Robust Campaign Management system supporting draft, active, paused, and completed statuses with budget handling, calendar integration, and detailed metrics (CTR, conversions, ROI).",
+    "Interactive Editorial Calendar with multi-view support (month/week/day), drag-and-drop scheduling, campaign and social post integration, filters, and automated reminders.",
+    "Comprehensive Analytics Dashboard providing campaign performance, platform engagement metrics, conversion tracking, comparative period views, drill-downs and report exports (PDF/CSV).",
+    "Template Library organized by platform and content type with interactive previews, tagging, custom variables, favorites, and usage performance tracking.",
+    "Social media and marketing platform integrations via OAuth with configuration testing, logs, and webhook support.",
+    "Administrative panel for managing users, roles, permissions, billing, security, system analytics and monitoring.",
+    "Extended features including team member management with granular permissions, plan and billing management, CMS blogging, PWA offline mode, onboarding tutorials, and multiple marketing tools (A/B testing, email marketing, push notifications, CRM integration)."
+  ],
+  "user_flow_summary": [
+    "User Onboarding with interactive tutorials following registration to guide initial platform setup and usage.",
+    "Content Creation Flow: Users select persona, brand voice, and template in Composer, generate AI-powered copy, preview formatted content for multiple social platforms, then export or schedule publication.",
+    "Campaign Management Flow: Users create/edit campaigns including budget and status, schedule via Editorial Calendar, integrate campaigns with social publishing tools, and monitor analytics for performance evaluation.",
+    "Admin Panel Flow: Admin and Super Admin users log in, access dashboards, manage users, permissions, and content governance, view system-wide analytics and audit logs for comprehensive oversight."
+  ],
+  "validation_criteria": [
+    "All frontend pages and components exhibit full responsiveness across defined breakpoints (mobile, tablet, desktop).",
+    "Authentication workflows (email/password, Google OAuth) function reliably with role-based access enforced.",
+    "CRUD operations for personas, brand voices, campaigns, and templates operate without data integrity issues.",
+    "AI copy generation triggers backend AI APIs correctly, with fallback to mock data as needed during integration phase.",
+    "Calendar scheduling supports drag-and-drop, filtering, and notification triggers accurately.",
+    "Analytics dashboards update dynamically with correct metrics and support export features.",
+    "OAuth integrations with social platforms maintain secure connections and proper data synchronization.",
+    "Admin panel restricts functionality appropriately by role and records action logs for audit.",
+    "Performance benchmarks meet loading times under 2 seconds and maintain Lighthouse scores above 90.",
+    "Accessibility compliance verified with keyboard navigation, screen reader compatibility, and ARIA labeling."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "React",
+      "Vite",
+      "Tailwind CSS",
+      "shadcn/ui",
+      "Supabase",
+      "PostgreSQL",
+      "React Router",
+      "React Hook Form",
+      "Zod",
+      "Zustand",
+      "Playwright",
+      "Vitest"
+    ],
+    "features": [
+      {
+        "name": "Authentication System",
+        "description": "Complete authentication system with email/password, Google OAuth, email confirmation, password reset, and role-based access control",
+        "files": [
+          "src/components/auth/AuthProvider.tsx",
+          "src/components/auth/ProtectedRoute.tsx",
+          "src/pages/Auth.tsx",
+          "src/pages/AuthCallback.tsx",
+          "src/lib/supabase.ts"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "StorySpark Authentication API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/auth/login": {
+              "post": {
+                "summary": "User login with email and password",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string",
+                            "format": "email"
+                          },
+                          "password": {
+                            "type": "string",
+                            "minLength": 6
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "/auth/register": {
+              "post": {
+                "summary": "User registration with email confirmation",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 2
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email"
+                          },
+                          "password": {
+                            "type": "string",
+                            "minLength": 6
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "/auth/google": {
+              "get": {
+                "summary": "Google OAuth authentication"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Campaign Management",
+        "description": "Full CRUD operations for marketing campaigns with status tracking, budget management, analytics, and platform integration",
+        "files": [
+          "src/pages/Campaigns.tsx",
+          "src/services/campaignsService.ts",
+          "src/components/modals/CreateCampaignModal.tsx",
+          "src/hooks/useCampaigns.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Campaign Management API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/campaigns": {
+              "get": {
+                "summary": "Get all campaigns for workspace",
+                "parameters": [
+                  {
+                    "name": "workspace_id",
+                    "in": "query",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "post": {
+                "summary": "Create new campaign",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "budget": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "DRAFT",
+                              "ACTIVE",
+                              "PAUSED",
+                              "COMPLETED"
+                            ]
+                          },
+                          "start_date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "end_date": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "/campaigns/{id}": {
+              "put": {
+                "summary": "Update campaign",
+                "parameters": [
+                  {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "delete": {
+                "summary": "Delete campaign",
+                "parameters": [
+                  {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Brand Voice Management",
+        "description": "Create and manage brand voices with tone, personality, and guidelines for consistent content generation",
+        "files": [
+          "src/pages/BrandVoices.tsx",
+          "src/services/brandVoicesService.ts",
+          "src/components/modals/CreateBrandVoiceModal.tsx",
+          "src/hooks/useBrandVoices.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Brand Voice API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/brand-voices": {
+              "get": {
+                "summary": "Get all brand voices for workspace"
+              },
+              "post": {
+                "summary": "Create new brand voice",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "tone": {
+                            "type": "string"
+                          },
+                          "personality": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "guidelines": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Persona Management",
+        "description": "Create and manage target personas with demographics, psychographics, goals, and pain points for targeted content",
+        "files": [
+          "src/pages/Personas.tsx",
+          "src/services/personasService.ts",
+          "src/components/modals/CreatePersonaModal.tsx",
+          "src/hooks/usePersonas.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Persona Management API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/personas": {
+              "get": {
+                "summary": "Get all personas for workspace"
+              },
+              "post": {
+                "summary": "Create new persona",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "age_range": {
+                            "type": "string"
+                          },
+                          "occupation": {
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": "string"
+                          },
+                          "interests": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "pain_points": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "goals": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "AI Copy Generation",
+        "description": "Generate marketing copy using AI with brand voice, persona targeting, and multiple platform optimization",
+        "files": [
+          "src/pages/CopyGenerator.tsx",
+          "src/services/copyGenerationService.ts",
+          "src/components/copy/CopyGeneratorForm.tsx",
+          "src/hooks/useCopyGeneration.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "AI Copy Generation API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/generate-copy": {
+              "post": {
+                "summary": "Generate marketing copy using AI",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "brief": {
+                            "type": "object"
+                          },
+                          "channel": {
+                            "type": "string"
+                          },
+                          "brand_voice_id": {
+                            "type": "string"
+                          },
+                          "persona_id": {
+                            "type": "string"
+                          },
+                          "ai_provider": {
+                            "type": "string",
+                            "enum": [
+                              "openai",
+                              "anthropic"
+                            ]
+                          },
+                          "ai_model": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "/copies": {
+              "get": {
+                "summary": "Get generated copies for workspace"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Dashboard Analytics",
+        "description": "Comprehensive dashboard with campaign performance, engagement metrics, conversion rates, and revenue tracking",
+        "files": [
+          "src/pages/Dashboard.tsx",
+          "src/hooks/useDashboardStats.tsx",
+          "src/services/analyticsService.ts",
+          "src/components/dashboard/StatsCards.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Dashboard Analytics API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/dashboard/stats": {
+              "get": {
+                "summary": "Get dashboard statistics",
+                "parameters": [
+                  {
+                    "name": "workspace_id",
+                    "in": "query",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "period",
+                    "in": "query",
+                    "schema": {
+                      "type": "string",
+                      "enum": [
+                        "7d",
+                        "30d",
+                        "90d"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "/analytics/campaigns": {
+              "get": {
+                "summary": "Get campaign analytics data"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Template Library",
+        "description": "Template management system with categories, performance tracking, and customizable content templates",
+        "files": [
+          "src/pages/Templates.tsx",
+          "src/services/templatesService.ts",
+          "src/components/templates/TemplateLibrary.tsx",
+          "src/hooks/useTemplates.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Template Library API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/templates": {
+              "get": {
+                "summary": "Get all templates",
+                "parameters": [
+                  {
+                    "name": "category",
+                    "in": "query",
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "type",
+                    "in": "query",
+                    "schema": {
+                      "type": "string",
+                      "enum": [
+                        "AD",
+                        "EMAIL",
+                        "SOCIAL",
+                        "BLOG",
+                        "LANDING"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "post": {
+                "summary": "Create new template"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Admin Panel",
+        "description": "Complete admin system with user management, permissions, analytics, billing, security, and system monitoring",
+        "files": [
+          "src/pages/admin/AdminDashboard.tsx",
+          "src/pages/admin/AdminUsers.tsx",
+          "src/pages/admin/AdminAnalytics.tsx",
+          "src/pages/admin/AdminPermissions.tsx",
+          "src/pages/admin/AdminSecurity.tsx",
+          "src/pages/admin/AdminBilling.tsx",
+          "src/pages/AdminPlans.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Admin Panel API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/admin/users": {
+              "get": {
+                "summary": "Get all users (admin only)",
+                "security": [
+                  {
+                    "AdminAuth": []
+                  }
+                ]
+              }
+            },
+            "/admin/analytics": {
+              "get": {
+                "summary": "Get system-wide analytics",
+                "security": [
+                  {
+                    "AdminAuth": []
+                  }
+                ]
+              }
+            },
+            "/admin/permissions": {
+              "post": {
+                "summary": "Update user permissions",
+                "security": [
+                  {
+                    "SuperAdminAuth": []
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Email Marketing",
+        "description": "Email campaign management with templates, scheduling, analytics, and automation workflows",
+        "files": [
+          "src/pages/EmailMarketing.tsx",
+          "src/services/emailMarketing.ts",
+          "src/hooks/useEmailCampaigns.tsx",
+          "src/components/email/EmailCampaignBuilder.tsx"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Email Marketing API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/email-campaigns": {
+              "get": {
+                "summary": "Get email campaigns"
+              },
+              "post": {
+                "summary": "Create email campaign"
+              }
+            },
+            "/email-campaigns/{id}/send": {
+              "post": {
+                "summary": "Send email campaign",
+                "parameters": [
+                  {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "Calendar Integration",
+        "description": "Calendar system for scheduling content publication, campaign launches, and marketing events",
+        "files": [
+          "src/pages/Calendar.tsx",
+          "src/components/calendar/CalendarView.tsx",
+          "src/hooks/useCalendar.tsx",
+          "src/services/calendarService.ts"
+        ],
+        "api_doc": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "Calendar API",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/calendar/events": {
+              "get": {
+                "summary": "Get calendar events",
+                "parameters": [
+                  {
+                    "name": "start_date",
+                    "in": "query",
+                    "schema": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  },
+                  {
+                    "name": "end_date",
+                    "in": "query",
+                    "schema": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  }
+                ]
+              },
+              "post": {
+                "summary": "Create calendar event"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

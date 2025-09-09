@@ -1,0 +1,16 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:8080",
+  "executionArgs": {
+    "projectName": "storyspark",
+    "projectPath": "c:/Users/pauli/Downloads/storyspark",
+    "testIds": [],
+    "additionalInstruction": "",
+    "envs": {
+      "API_KEY": "sk-user-aEMMNrmC-nJoGablDyYDNtiqJ3SjvSIGN-dBNE2ltZc5Q2vwAR32pUrpflIfN0vngDaZRS2tA51lAVW-oUBxJxQMfilg69d5e5eWrHbEosUWkcDPDUnwm6NDjIpI9bprdbA"
+    }
+  },
+  "proxy": "http://58429b53-5454-4415-8397-a25e045d7d03:qfziFhEMizKxFUP1rbBeJk7fIZzYMFOx@tun.testsprite.com:8080"
+}
