@@ -153,6 +153,16 @@ const FinalCTA = () => {
           <div className="mt-6 max-w-3xl mx-auto">
             <ReferralProgram />
           </div>
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-8 py-3"
+              onClick={() => window.location.href = '/founders-offer'}
+            >
+              💎 Ver Oferta Exclusiva de Fundador
+            </Button>
+          </div>
           <p className="text-muted-foreground text-sm mt-4">🔒 Seus dados estão seguros. Cancelar inscrição a qualquer momento.</p>
         </div>
       </div>

@@ -218,14 +218,24 @@ export default function WaitlistAB() {
           <div className="max-w-2xl mx-auto space-y-4">
             <h3 className="text-2xl font-bold">Não perca sua vaga</h3>
             <p className="text-muted-foreground">Apenas 50 vagas com desconto vitalício. Depois, preço cheio.</p>
-            <Button
-              size="lg"
-              className="bg-gradient-primary text-primary-foreground px-6 py-6 text-base font-semibold shadow-glow hover:shadow-xl"
-              onClick={() => document.querySelector('input')?.focus()}
-            >
-              Entrar na lista de espera
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                className="bg-gradient-primary text-primary-foreground px-6 py-6 text-base font-semibold shadow-glow hover:shadow-xl"
+                onClick={() => document.querySelector('input')?.focus()}
+              >
+                Entrar na lista de espera
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="px-6 py-6 text-base font-semibold border-2 border-primary"
+                onClick={() => navigate('/founders-offer')}
+              >
+                💎 Ver Oferta de Fundador
+              </Button>
+            </div>
           </div>
         </div>
       </div>

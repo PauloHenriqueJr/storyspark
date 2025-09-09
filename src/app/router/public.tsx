@@ -14,6 +14,7 @@ const Auth = lazy(() => import("../../pages/Auth").then(m => ({ default: m.Compo
 const AuthCallback = lazy(() => import("../../pages/AuthCallback").then(m => ({ default: m.Component })));
 const LandingWaitlist = lazy(() => import("../../pages/LandingWaitlist").then(m => ({ default: m.Component })));
 const WaitlistAB = lazy(() => import("../../pages/WaitlistAB").then(m => ({ default: m.Component })));
+const FoundersOffer = lazy(() => import("../../pages/FoundersOffer").then(m => ({ default: m.Component })));
 const Success = lazy(() => import("../../pages/Success").then(m => ({ default: m.Component })));
 const Blog = lazy(() => import("../../pages/Blog").then(m => ({ default: m.Component })));
 const BlogPost = lazy(() => import("../../pages/BlogPost").then(m => ({ default: m.Component })));
@@ -57,6 +58,14 @@ export const publicRoutes = [
     element: (
       <LazyWrapper>
         <WaitlistAB />
+      </LazyWrapper>
+    ),
+  },
+  {
+    path: "/founders-offer",
+    element: (
+      <LazyWrapper>
+        <FoundersOffer />
       </LazyWrapper>
     ),
   },

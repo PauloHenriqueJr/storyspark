@@ -20,7 +20,7 @@ export const AppWrapper = ({ children }: AppWrapperProps) => {
 
   return (
     <QueryProvider>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <TooltipProvider>
           <Toaster />
           <Sonner />
