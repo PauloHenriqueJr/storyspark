@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, User, LogOut, Clock, X, CheckCheck, Settings } from 'lucide-react';
+import { Bell, Search, User, LogOut, Clock, X, CheckCheck, Settings, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,23 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 
 export const AppHeader = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshProfile, refreshLoading } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
   const navigate = useNavigate();
+
+  // Função para obter a URL do avatar com fallbacks
+  const getAvatarUrl = (avatarUrl?: string) => {
+    if (!avatarUrl) return '/placeholder.svg';
+    
+    // Se for uma URL do Google, tentar diferentes variações
+    if (avatarUrl.includes('googleusercontent.com')) {
+      // Tentar sem parâmetros primeiro
+      const baseUrl = avatarUrl.split('=')[0];
+      return baseUrl + '=s96';
+    }
+    
+    return avatarUrl;
+  };
 
   const handleProfileClick = () => {
     navigate('/settings');
@@ -187,7 +201,28 @@ export const AppHeader = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0 sm:h-9 sm:w-9 lg:h-10 lg:w-10 mr-1 sm:mr-2">
                 <Avatar className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10">
-                  <AvatarImage src={user?.avatar_url || '/placeholder.svg'} alt={user?.name || 'Usuario'} />
+                  <AvatarImage
+                    src={getAvatarUrl(user?.avatar_url) || '/placeholder.svg'}
+                    alt={user?.name || 'Usuario'}
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      // Tentar sem CORS
+                      if (e.currentTarget.crossOrigin) {
+                        e.currentTarget.crossOrigin = null;
+                        e.currentTarget.src = getAvatarUrl(user?.avatar_url) || '/placeholder.svg';
+                        return;
+                      }
+
+                      // Tentar URL original se processada falhou
+                      if (user?.avatar_url && e.currentTarget.src !== user.avatar_url) {
+                        e.currentTarget.src = user.avatar_url;
+                        return;
+                      }
+
+                      // Fallback final para placeholder
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
                   <AvatarFallback className="text-xs sm:text-sm">{user?.name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -209,6 +244,17 @@ export const AppHeader = () => {
               <DropdownMenuItem onClick={handleSettingsClick}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configurações</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => refreshProfile()}
+                disabled={refreshLoading}
+              >
+                {refreshLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                <span>{refreshLoading ? 'Atualizando...' : 'Atualizar Perfil'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => logout()}>
