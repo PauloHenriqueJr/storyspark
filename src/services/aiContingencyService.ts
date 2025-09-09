@@ -519,7 +519,7 @@ class AIContingencyService {
     // Se contingência não está habilitada, usar apenas o provedor preferido
     if (!this.settings?.contingencyEnabled) {
       const provider = this.providers.find(
-        (p) => p.key === preferredProvider && p.active && p.apiKey
+        (p) => p.key === preferredProvider && p.active
       );
       if (!provider) {
         throw new Error("Provedor especificado não está disponível");
