@@ -25,14 +25,14 @@ export const AppHeader = () => {
   // Função para obter a URL do avatar com fallbacks
   const getAvatarUrl = (avatarUrl?: string) => {
     if (!avatarUrl) return '/placeholder.svg';
-    
+
     // Se for uma URL do Google, tentar diferentes variações
     if (avatarUrl.includes('googleusercontent.com')) {
       // Tentar sem parâmetros primeiro
       const baseUrl = avatarUrl.split('=')[0];
       return baseUrl + '=s96';
     }
-    
+
     return avatarUrl;
   };
 
