@@ -25,17 +25,23 @@ export const AppHeader = () => {
   // Função para obter a URL do avatar com fallbacks
   const getAvatarUrl = (avatarUrl?: string) => {
     if (!avatarUrl) return '/placeholder.svg';
-
-    // Se for uma URL do Google, tentar diferentes variações
-    if (avatarUrl.includes('googleusercontent.com')) {
-      // Tentar sem parâmetros primeiro
-      const baseUrl = avatarUrl.split('=')[0];
-      return baseUrl + '=s96';
+    try {
+      const url = new URL(avatarUrl);
+      if (url.hostname.includes('googleusercontent.com')) {
+        // Ajusta ?sz= para 96 se existir
+        if (url.searchParams.has('sz')) {
+          url.searchParams.set('sz', '96');
+          return url.toString();
+        }
+        // Substitui "=sNN" ou "=sNN-c" no final
+        const replaced = avatarUrl.replace(/(=s)\d+(-c)?$/, '=s96$2');
+        if (replaced !== avatarUrl) return replaced;
+      }
+    } catch {
+      // URL relativa ou inválida: segue retorno padrão
     }
-
     return avatarUrl;
   };
-
   const handleProfileClick = () => {
     navigate('/settings');
   };
