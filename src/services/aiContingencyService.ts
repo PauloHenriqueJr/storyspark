@@ -70,27 +70,29 @@ class AIContingencyService {
 
       // Se não há dados, criar configurações padrão
       if (!data || data.length === 0) {
-        console.warn("⚠️ Nenhuma configuração encontrada no banco. Usando configurações padrão.");
-        
+        console.warn(
+          "⚠️ Nenhuma configuração encontrada no banco. Usando configurações padrão."
+        );
+
         this.settings = {
           contingencyEnabled: false,
-          fallbackPriority: {"gemini": 1},
+          fallbackPriority: { gemini: 1 },
           autoRetryEnabled: true,
           maxRetryAttempts: 3,
           retryDelaySeconds: 5,
         };
-        
+
         // Criar provedor padrão (Gemini com simulação)
         this.providers = [
           {
             key: "gemini",
             name: "Google Gemini",
             active: true,
-            apiKey: '', // Sem API key = simulação
-            model: 'gemini-2.0-flash-exp',
-          }
+            apiKey: "", // Sem API key = simulação
+            model: "gemini-2.0-flash-exp",
+          },
         ];
-        
+
         console.log("👍 Configurações padrão criadas com simulação Gemini");
         return;
       }
@@ -107,46 +109,51 @@ class AIContingencyService {
 
         // Carregar provedores ativos
         console.log("🔄 Carregando provedores de IA:", settingsData);
-        
+
         this.providers = [
           {
             key: "openai",
             name: "OpenAI",
             active: settingsData?.openai_active || false,
-            apiKey: settingsData?.openai_api_key || '',
-            model: settingsData?.openai_model || 'gpt-4',
+            apiKey: settingsData?.openai_api_key || "",
+            model: settingsData?.openai_model || "gpt-4",
           },
           {
             key: "anthropic",
             name: "Claude (Anthropic)",
             active: settingsData?.anthropic_active || false,
-            apiKey: settingsData?.anthropic_api_key || '',
-            model: settingsData?.anthropic_model || 'claude-3-sonnet-20240229',
+            apiKey: settingsData?.anthropic_api_key || "",
+            model: settingsData?.anthropic_model || "claude-3-sonnet-20240229",
           },
           {
             key: "gemini",
             name: "Google Gemini",
             active: settingsData?.gemini_active ?? true, // Padrão ativo
-            apiKey: settingsData?.gemini_api_key || '',
-            model: settingsData?.gemini_model || 'gemini-2.0-flash-exp',
+            apiKey: settingsData?.gemini_api_key || "",
+            model: settingsData?.gemini_model || "gemini-2.0-flash-exp",
           },
           {
             key: "openrouter",
             name: "OpenRouter",
             active: settingsData?.openrouter_active || false,
-            apiKey: settingsData?.openrouter_api_key || '',
-            model: settingsData?.openrouter_model || 'openai/gpt-4',
+            apiKey: settingsData?.openrouter_api_key || "",
+            model: settingsData?.openrouter_model || "openai/gpt-4",
           },
           {
             key: "kilocode",
             name: "Kilocode",
             active: settingsData?.kilocode_active || false,
-            apiKey: settingsData?.kilocode_api_key || '',
-            model: settingsData?.kilocode_model || 'kilocode-model',
+            apiKey: settingsData?.kilocode_api_key || "",
+            model: settingsData?.kilocode_model || "kilocode-model",
           },
         ];
-        
-        console.log("👍 Provedores carregados:", this.providers.map(p => `${p.name}: ${p.active ? 'ativo' : 'inativo'}`));
+
+        console.log(
+          "👍 Provedores carregados:",
+          this.providers.map(
+            (p) => `${p.name}: ${p.active ? "ativo" : "inativo"}`
+          )
+        );
       }
     } catch (error) {
       console.error("Erro ao carregar configurações de contingência:", error);
@@ -208,21 +215,28 @@ class AIContingencyService {
     request: AIRequest
   ): Promise<AIResponse> {
     // Verificar se API key está configurada
-    if (!provider.apiKey || provider.apiKey.trim() === '') {
-      console.warn(`⚠️ API key não configurada para Gemini. Usando simulação temporária.`);
-      
+    if (!provider.apiKey || provider.apiKey.trim() === "") {
+      console.warn(
+        `⚠️ API key não configurada para Gemini. Usando simulação temporária.`
+      );
+
       // Retornar resposta simulada para desenvolvimento
       return {
-        content: `[SIMULAÇÃO GEMINI] Copy gerada para: ${request.prompt.substring(0, 50)}...\n\n🔥 Esta é uma copy simulada para demonstração.\n\nConfigure uma API key do Google Gemini nas configurações para usar a IA real.`,
+        content: `[SIMULAÇÃO GEMINI] Copy gerada para: ${request.prompt.substring(
+          0,
+          50
+        )}...\n\n🔥 Esta é uma copy simulada para demonstração.\n\nConfigure uma API key do Google Gemini nas configurações para usar a IA real.`,
         provider: provider.key,
         model: provider.model,
         tokensUsed: Math.floor(Math.random() * 200) + 50,
         success: true,
       };
     }
-    
-    console.log(`🔄 Fazendo requisição real para Google Gemini com modelo ${provider.model}`);
-    
+
+    console.log(
+      `🔄 Fazendo requisição real para Google Gemini com modelo ${provider.model}`
+    );
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.apiKey}`,
       {
@@ -231,10 +245,12 @@ class AIContingencyService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          system_instruction: request.systemPrompt ? {
-            role: "system",
-            parts: [{ text: request.systemPrompt }]
-          } : undefined,
+          system_instruction: request.systemPrompt
+            ? {
+                role: "system",
+                parts: [{ text: request.systemPrompt }],
+              }
+            : undefined,
           contents: [
             {
               parts: [
@@ -299,7 +315,9 @@ class AIContingencyService {
       body: JSON.stringify({
         model: provider.model,
         messages: [
-          ...(request.systemPrompt ? [{ role: "system", content: request.systemPrompt }] : []),
+          ...(request.systemPrompt
+            ? [{ role: "system", content: request.systemPrompt }]
+            : []),
           {
             role: "user",
             content: request.prompt,
@@ -312,7 +330,9 @@ class AIContingencyService {
 
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(`Erro na API da OpenAI: ${response.status} - ${errorData}`);
+      throw new Error(
+        `Erro na API da OpenAI: ${response.status} - ${errorData}`
+      );
     }
 
     const data = await response.json();
@@ -406,7 +426,9 @@ class AIContingencyService {
         body: JSON.stringify({
           model: provider.model,
           messages: [
-            ...(request.systemPrompt ? [{ role: "system", content: request.systemPrompt }] : []),
+            ...(request.systemPrompt
+              ? [{ role: "system", content: request.systemPrompt }]
+              : []),
             {
               role: "user",
               content: request.prompt,
@@ -502,19 +524,16 @@ class AIContingencyService {
     request: AIRequest,
     preferredProvider?: string
   ): Promise<AIResponse> {
-    console.log("🚀 ExecuteRequest iniciado:", { preferredProvider, prompt: request.prompt?.substring(0, 50) + '...' });
-    
+    console.log("🚀 ExecuteRequest iniciado:", {
+      preferredProvider,
+      prompt: request.prompt?.substring(0, 50) + "...",
+    });
+
     // Garantir que as configurações estão carregadas
     if (!this.settings) {
       console.log("🔄 Carregando settings...");
       await this.loadSettings();
     }
-    
-    console.log("📊 Status após loadSettings:", {
-      settingsLoaded: !!this.settings,
-      providersCount: this.providers.length,
-      activeProviders: this.providers.filter(p => p.active).length
-    });
 
     // Se contingência não está habilitada, usar apenas o provedor preferido
     if (!this.settings?.contingencyEnabled) {
