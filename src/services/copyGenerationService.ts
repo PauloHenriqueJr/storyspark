@@ -1,5 +1,6 @@
 import { aiContingencyService } from "./aiContingencyService";
 import { supabase } from "@/lib/supabase";
+import { CreditsService } from "./creditsService";
 
 interface CopyGenerationRequest {
   briefing: string;
@@ -41,7 +42,7 @@ export class CopyGenerationService {
 
     try {
       console.log("🔍 Carregando configurações de IA do banco...");
-      
+
       const { data, error } = await supabase
         .from("admin_llm_settings")
         .select(
@@ -51,7 +52,7 @@ export class CopyGenerationService {
 
       if (error) {
         console.error("❌ Erro ao carregar configurações de IA:", error);
-        
+
         // Fallback temporário para desenvolvimento
         console.warn("⚠️ Usando configurações padrão de fallback");
         this.settings = {
@@ -62,12 +63,14 @@ export class CopyGenerationService {
         };
         return this.settings;
       }
-      
+
       console.log("📋 Dados carregados do banco:", data);
-      
+
       // Verificar se há dados válidos
       if (!data || !data.default_provider) {
-        console.warn("⚠️ Dados do banco inválidos, usando configurações padrão");
+        console.warn(
+          "⚠️ Dados do banco inválidos, usando configurações padrão"
+        );
         this.settings = {
           defaultProvider: "gemini",
           defaultModel: "gemini-2.0-flash-exp",
@@ -80,7 +83,7 @@ export class CopyGenerationService {
       // Mapear o modelo baseado no provedor padrão
       let defaultModel = "";
       let provider = data.default_provider;
-      
+
       console.log(`🎯 Provedor configurado: ${provider}`);
 
       switch (provider) {
@@ -107,10 +110,12 @@ export class CopyGenerationService {
       }
 
       if (!defaultModel) {
-        console.warn(`⚠️ Modelo não configurado para '${provider}', usando padrão`);
+        console.warn(
+          `⚠️ Modelo não configurado para '${provider}', usando padrão`
+        );
         defaultModel = "gemini-2.0-flash-exp";
       }
-      
+
       console.log(`🤖 Modelo selecionado: ${defaultModel}`);
 
       this.settings = {
@@ -138,7 +143,34 @@ export class CopyGenerationService {
       console.log("Briefing:", request.briefing?.substring(0, 100) + "...");
       console.log("Plataforma:", request.platform);
       console.log("Tipo:", request.copyType);
-      
+
+      // Verificar créditos disponíveis antes de gerar
+      if (request.userId) {
+        console.log("🔍 Verificando créditos disponíveis...");
+        const creditCheck = await CreditsService.checkCreditsAvailable(
+          request.userId
+        );
+
+        if (!creditCheck.success) {
+          console.warn(`❌ Créditos insuficientes: ${creditCheck.error}`);
+          return {
+            content: "",
+            provider: "",
+            model: "",
+            tokensUsed: 0,
+            success: false,
+            error:
+              creditCheck.error || "Créditos insuficientes para gerar copy",
+          };
+        }
+
+        console.log(
+          `✅ Créditos disponíveis: ${
+            creditCheck.remainingCredits || "Ilimitado"
+          }`
+        );
+      }
+
       // Carregar configurações de IA dinamicamente
       console.log("🔄 Carregando configurações de IA...");
       const aiSettings = await this.loadAISettings();
@@ -150,12 +182,16 @@ export class CopyGenerationService {
       // Construir prompt estruturado para geração de copy
       console.log("📝 Construindo prompt...");
       const prompt = this.buildPrompt(request);
-      
-      console.log("Prompt construído (primeiros 200 chars):", prompt.substring(0, 200) + "...");
+
+      console.log(
+        "Prompt construído (primeiros 200 chars):",
+        prompt.substring(0, 200) + "..."
+      );
 
       // Fazer requisição usando o serviço de contingência de IA
       console.log("🔄 Executando requisição de IA...");
-      const systemRules = "Você é um copywriter sênior. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
+      const systemRules =
+        "Você é um copywriter sênior. Use meta-informações (persona, faixa etária, variáveis internas) apenas como contexto e NUNCA as mencione explicitamente no texto. Retorne apenas a copy final, sem títulos, sem instruções e sem Markdown. Não escreva 'Copy:' ou similares. Não exponha idade/faixa etária; integre o público-alvo de forma implícita e natural.";
       const response = await aiContingencyService.executeRequest(
         {
           prompt,
@@ -171,6 +207,26 @@ export class CopyGenerationService {
       console.log(
         `✅ Copy gerada com sucesso! Provedor: ${response.provider}, Modelo: ${response.model}, Tokens: ${response.tokensUsed}`
       );
+
+      // Consumir 1 crédito do usuário se a geração foi bem-sucedida
+      if (response.success && request.userId) {
+        console.log(`🔄 Consumindo 1 crédito do usuário ${request.userId}...`);
+        const creditResult = await CreditsService.consumeCredit(
+          request.userId,
+          response.tokensUsed
+        );
+
+        if (!creditResult.success) {
+          console.warn(`⚠️ Erro ao consumir crédito: ${creditResult.error}`);
+          // Note: Não falhar a operação, apenas logar o aviso
+        } else {
+          console.log(
+            `✅ 1 crédito consumido. Restantes: ${
+              creditResult.remainingCredits || "Ilimitado"
+            }`
+          );
+        }
+      }
 
       return {
         content: response.content,

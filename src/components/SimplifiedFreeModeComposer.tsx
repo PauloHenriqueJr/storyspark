@@ -370,7 +370,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
 
                 <div className="pt-4 space-y-4">
                   {credits < 1 && (
-                    <Alert className="border-destructive/20 bg-destructive/10"><AlertCircle className="h-4 w-4 text-destructive" /><AlertDescription className="text-destructive">Você precisa de 1 crédito para gerar copy brasileira.</AlertDescription></Alert>
+                    <Alert className="border-destructive/20 bg-destructive/10"><AlertCircle className="h-4 w-4 text-destructive" /><AlertDescription className="text-destructive">Você precisa de 1 crédito para gerar copy.</AlertDescription></Alert>
                   )}
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button

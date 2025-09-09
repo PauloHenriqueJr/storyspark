@@ -62,8 +62,6 @@ export const useFeatureFlags = () => {
           table: "feature_flags",
         },
         (payload) => {
-          console.log("Feature flag changed:", payload);
-
           if (
             payload.eventType === "UPDATE" ||
             payload.eventType === "INSERT"
@@ -97,8 +95,12 @@ export const useFeatureFlags = () => {
 
   const isFlagEnabled = (groupId: string, path: string) => {
     // Se qualquer entrada no banco marcou esse path como desabilitado, respeitar
-    if (disabledByPath[path] === true) return false;
+    if (disabledByPath[path] === true) {
+      return false;
+    }
+
     const key = `${groupId}-${path}`;
+
     // Se a flag existe no banco, usar seu valor; se não existe, default false
     return featureFlags.hasOwnProperty(key)
       ? featureFlags[key] === true

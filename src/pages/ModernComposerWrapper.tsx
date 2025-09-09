@@ -102,7 +102,7 @@ export const ModernComposerWrapper = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto bg-gray-50/50 dark:bg-gray-900/20 rounded-lg p-4 sm:p-6">
+    <div className="max-w-7xl mx-auto">
       {/* Header Section */}
       <div className="text-center mb-6 sm:mb-8">
         <div className="flex justify-center mb-4">

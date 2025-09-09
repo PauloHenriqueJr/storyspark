@@ -173,7 +173,7 @@ const adminSection: NavSection = {
 export const AppSidebar = () => {
   const { state } = useSidebar();
   const location = useLocation();
-  const { hasAdminAccess } = useRole();
+  const { hasAdminAccess, user } = useRole();
   const { isFlagEnabled } = useFeatureFlags();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
@@ -189,7 +189,7 @@ export const AppSidebar = () => {
 
   const filterNavItems = (items: NavItem[], groupId: string): NavItem[] => {
     return items.filter(item => {
-      // Para páginas administrativas, verificar se o usuário tem acesso admin E se a feature flag está habilitada
+      // Para páginas administrativas, verificar acesso admin E feature flags
       if (groupId === 'admin') {
         return hasAdminAccess() && isFlagEnabled(groupId, item.url);
       }
@@ -407,8 +407,8 @@ export const AppSidebar = () => {
                         <Badge
                           variant={criticalCredits ? "destructive" : lowCredits ? "secondary" : "default"}
                           className={`text-xs font-bold ${criticalCredits ? 'animate-pulse bg-red-500/20 text-red-500 border-red-500' :
-                              lowCredits ? 'bg-orange-500/20 text-orange-500 border-orange-500' :
-                                'bg-green-500/20 text-green-500 border-green-500'
+                            lowCredits ? 'bg-orange-500/20 text-orange-500 border-orange-500' :
+                              'bg-green-500/20 text-green-500 border-green-500'
                             }`}
                         >
                           <Zap className="w-3 h-3 mr-1" />

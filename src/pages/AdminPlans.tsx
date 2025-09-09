@@ -6,16 +6,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminPlansCache, AdminPlan, PlanFormData } from '@/hooks/useAdminPlansCache';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import { TokensService } from '@/services/tokensService';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
   EyeOff,
   Star,
   StarOff,
@@ -26,18 +27,20 @@ import {
   ArrowDown,
   Save,
   X,
-  Copy
+  Copy,
+  CreditCard,
+  User
 } from 'lucide-react';
 
 const AdminPlans = () => {
   const { toast } = useToast();
-  const { 
-    plans, 
-    loading, 
-    createPlan, 
-    updatePlan, 
-    deletePlan, 
-    togglePlanStatus, 
+  const {
+    plans,
+    loading,
+    createPlan,
+    updatePlan,
+    deletePlan,
+    togglePlanStatus,
     setPopularPlan,
     formatPrice,
     formatCredits,
@@ -49,6 +52,9 @@ const AdminPlans = () => {
     isSettingPopular
   } = useAdminPlansCache();
 
+  const plansData = plans as AdminPlan[];
+
+  // Estados para modal de planos
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<AdminPlan | null>(null);
   const [formData, setFormData] = useState<PlanFormData>({
@@ -56,6 +62,7 @@ const AdminPlans = () => {
     slug: '',
     price_brl: 0,
     monthly_credits: null,
+    monthly_tokens_limit: null,
     features: [],
     description: '',
     is_active: true,
@@ -64,20 +71,30 @@ const AdminPlans = () => {
   });
   const [featuresInput, setFeaturesInput] = useState('');
 
+  // Estados para modal de créditos
+  const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
+  const [creditFormData, setCreditFormData] = useState({ email: '', amount: 0 });
+  const [isAddingCredits, setIsAddingCredits] = useState(false);
+
   const resetForm = () => {
     setFormData({
       name: '',
       slug: '',
       price_brl: 0,
       monthly_credits: null,
+      monthly_tokens_limit: null,
       features: [],
       description: '',
       is_active: true,
       is_popular: false,
-      display_order: Math.max(...plans.map(p => p.display_order), 0) + 1,
+      display_order: Math.max(...plansData.map(p => p.display_order), 0) + 1,
     });
     setFeaturesInput('');
     setEditingPlan(null);
+  };
+
+  const resetCreditForm = () => {
+    setCreditFormData({ email: '', amount: 0 });
   };
 
   const openCreateModal = () => {
@@ -92,6 +109,7 @@ const AdminPlans = () => {
       slug: plan.slug,
       price_brl: plan.price_brl,
       monthly_credits: plan.monthly_credits,
+      monthly_tokens_limit: plan.monthly_tokens_limit,
       features: plan.features,
       description: plan.description,
       is_active: plan.is_active,
@@ -102,9 +120,14 @@ const AdminPlans = () => {
     setIsModalOpen(true);
   };
 
+  const openCreditModal = () => {
+    resetCreditForm();
+    setIsCreditModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const features = featuresInput.split('\n').filter(f => f.trim());
     const finalData = { ...formData, features };
 
@@ -134,6 +157,38 @@ const AdminPlans = () => {
         description: error.message || "Ocorreu um erro ao salvar o plano.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleAddCredits = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingCredits(true);
+
+    try {
+      const { success, error } = await TokensService.addCreditsByEmail(creditFormData.email, creditFormData.amount);
+
+      if (success) {
+        toast({
+          title: "Créditos adicionados!",
+          description: `Adicionados ${creditFormData.amount} créditos para ${creditFormData.email}.`,
+        });
+        setIsCreditModalOpen(false);
+        resetCreditForm();
+      } else {
+        toast({
+          title: "Erro!",
+          description: error || "Falha ao adicionar créditos.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro!",
+        description: error.message || "Ocorreu um erro ao adicionar créditos.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingCredits(false);
     }
   };
 
@@ -224,10 +279,16 @@ const AdminPlans = () => {
             Configure planos, preços e funcionalidades de forma centralizada
           </p>
         </div>
-        <Button onClick={openCreateModal} className="bg-gradient-primary hover:opacity-90 gap-2">
-          <Plus className="w-4 h-4" />
-          Novo Plano
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={openCreditModal} variant="outline" className="gap-2">
+            <CreditCard className="w-4 h-4" />
+            Gerenciar Créditos
+          </Button>
+          <Button onClick={openCreateModal} className="bg-gradient-primary hover:opacity-90 gap-2">
+            <Plus className="w-4 h-4" />
+            Novo Plano
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas */}
@@ -238,20 +299,20 @@ const AdminPlans = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{plans.length}</div>
+            <div className="text-2xl font-bold">{plansData.length}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Planos Ativos</CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{plans.filter(p => p.is_active).length}</div>
+            <div className="text-2xl font-bold">{plansData.filter(p => p.is_active).length}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Receita Potencial</CardTitle>
@@ -259,11 +320,11 @@ const AdminPlans = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatPrice(plans.filter(p => p.is_active && p.price_brl > 0).reduce((sum, p) => sum + p.price_brl, 0))}
+              {formatPrice(plansData.filter(p => p.is_active && p.price_brl > 0).reduce((sum, p) => sum + p.price_brl, 0))}
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Plano Popular</CardTitle>
@@ -271,7 +332,7 @@ const AdminPlans = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {plans.find(p => p.is_popular)?.name || 'Nenhum'}
+              {plansData.find(p => p.is_popular)?.name || 'Nenhum'}
             </div>
           </CardContent>
         </Card>
@@ -279,7 +340,7 @@ const AdminPlans = () => {
 
       {/* Lista de Planos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {plans.map((plan) => (
+        {plansData.map((plan) => (
           <Card key={plan.id} className={`relative ${!plan.is_active ? 'opacity-60' : ''}`}>
             {plan.is_popular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -289,7 +350,7 @@ const AdminPlans = () => {
                 </Badge>
               </div>
             )}
-            
+
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
@@ -314,8 +375,8 @@ const AdminPlans = () => {
                   >
                     {isSettingPopular ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : plan.is_popular ? 
-                      <Star className="w-4 h-4 fill-current text-yellow-500" /> : 
+                    ) : plan.is_popular ?
+                      <Star className="w-4 h-4 fill-current text-yellow-500" /> :
                       <StarOff className="w-4 h-4" />
                     }
                   </Button>
@@ -323,17 +384,17 @@ const AdminPlans = () => {
               </div>
               <CardDescription>{plan.description}</CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold">{formatPrice(plan.price_brl)}</span>
                 {plan.price_brl > 0 && <span className="text-muted-foreground">/mês</span>}
               </div>
-              
+
               <div className="text-sm text-muted-foreground">
                 <strong>{formatCredits(plan.monthly_credits)}</strong> por mês
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">Funcionalidades:</h4>
                 <ul className="space-y-1">
@@ -355,14 +416,14 @@ const AdminPlans = () => {
                   )}
                 </ul>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Badge variant={plan.is_active ? "default" : "secondary"}>
                   {plan.is_active ? "Ativo" : "Inativo"}
                 </Badge>
                 <Badge variant="outline">#{plan.display_order}</Badge>
               </div>
-              
+
               <div className="flex items-center gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -374,12 +435,12 @@ const AdminPlans = () => {
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </Button>
-                
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="text-destructive hover:text-destructive"
                       disabled={isDeleting || isUpdating}
                     >
@@ -399,7 +460,7 @@ const AdminPlans = () => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={() => handleDelete(plan)}
                         className="bg-destructive hover:bg-destructive/90"
                       >
@@ -422,8 +483,8 @@ const AdminPlans = () => {
               {editingPlan ? 'Editar Plano' : 'Criar Novo Plano'}
             </DialogTitle>
             <DialogDescription>
-              {editingPlan ? 
-                'Modifique as informações do plano abaixo.' : 
+              {editingPlan ?
+                'Modifique as informações do plano abaixo.' :
                 'Preencha as informações para criar um novo plano.'
               }
             </DialogDescription>
@@ -441,7 +502,7 @@ const AdminPlans = () => {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="slug">Slug (URL)</Label>
                 <Input
@@ -476,7 +537,7 @@ const AdminPlans = () => {
                   placeholder="297"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="credits">Créditos Mensais (vazio = ilimitado)</Label>
                 <Input
@@ -484,12 +545,30 @@ const AdminPlans = () => {
                   type="number"
                   min="0"
                   value={formData.monthly_credits || ''}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    monthly_credits: e.target.value ? parseInt(e.target.value) : null 
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    monthly_credits: e.target.value ? parseInt(e.target.value) : null
                   }))}
                   placeholder="800"
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="tokens">Limite de Tokens Mensais (vazio = ilimitado)</Label>
+                <Input
+                  id="tokens"
+                  type="number"
+                  min="0"
+                  value={formData.monthly_tokens_limit || ''}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    monthly_tokens_limit: e.target.value ? parseInt(e.target.value) : null
+                  }))}
+                  placeholder="15000"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Usado apenas para analytics. 1 crédito = 1 geração (independente de tokens).
+                </p>
               </div>
             </div>
 
@@ -515,7 +594,7 @@ const AdminPlans = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, display_order: parseInt(e.target.value) || 1 }))}
                 />
               </div>
-              
+
               <div className="flex items-center space-x-2 pt-6">
                 <Switch
                   id="active"
@@ -524,7 +603,7 @@ const AdminPlans = () => {
                 />
                 <Label htmlFor="active">Ativo</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2 pt-6">
                 <Switch
                   id="popular"
@@ -540,8 +619,8 @@ const AdminPlans = () => {
                 <X className="w-4 h-4 mr-2" />
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="bg-gradient-primary hover:opacity-90"
                 disabled={isCreating || isUpdating}
               >
@@ -556,6 +635,51 @@ const AdminPlans = () => {
                     {editingPlan ? 'Atualizar' : 'Criar'} Plano
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Adição de Créditos */}
+      <Dialog open={isCreditModalOpen} onOpenChange={setIsCreditModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Adicionar Créditos</DialogTitle>
+            <DialogDescription>
+              Adicione créditos avulsos para qualquer usuário pelo email.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddCredits} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email do Usuário</Label>
+              <Input
+                id="email"
+                type="email"
+                value={creditFormData.email}
+                onChange={(e) => setCreditFormData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="user@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Quantidade de Créditos</Label>
+              <Input
+                id="amount"
+                type="number"
+                min="1"
+                value={creditFormData.amount}
+                onChange={(e) => setCreditFormData(prev => ({ ...prev, amount: parseInt(e.target.value) || 0 }))}
+                placeholder="20"
+                required
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => { setIsCreditModalOpen(false); resetCreditForm(); }}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isAddingCredits}>
+                {isAddingCredits ? 'Adicionando...' : 'Adicionar Créditos'}
               </Button>
             </DialogFooter>
           </form>
