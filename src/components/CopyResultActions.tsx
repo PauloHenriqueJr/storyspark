@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, RefreshCw, Save, Share2, Calendar, Instagram, Facebook, Linkedin, Mail, MessageCircle, Download, Eye, Sparkles, Zap, Heart, TrendingUp } from "lucide-react";
+import { Copy, RefreshCw, Save, Share2, Calendar, Instagram, Facebook, Linkedin, Mail, MessageCircle, Download, Eye, Sparkles, Zap, Heart, TrendingUp, Video } from "lucide-react";
 
 interface CopyResultActionsProps {
   generatedCopy: string;
   onRegenerate?: () => void;
   onSave?: () => void;
+  onGenerateUGC?: () => void;
   canRegenerate?: boolean;
   isRegenerating?: boolean;
 }
@@ -18,6 +19,7 @@ export const CopyResultActions = ({
   generatedCopy,
   onRegenerate,
   onSave,
+  onGenerateUGC,
   canRegenerate = true,
   isRegenerating = false
 }: CopyResultActionsProps) => {
@@ -80,6 +82,10 @@ export const CopyResultActions = ({
   const saveToLibrary = () => {
     onSave?.();
     toast({ title: "Copy salva!", description: "Adicionada à sua biblioteca pessoal." });
+  };
+
+  const generateUGCVideo = () => {
+    onGenerateUGC?.();
   };
 
   return (
@@ -198,6 +204,10 @@ export const CopyResultActions = ({
             <Button type="button" variant="outline" size="sm" onClick={saveToLibrary} className="justify-start h-10 sm:h-12">
               <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               <span className="text-sm">Salvar</span>
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={generateUGCVideo} className="justify-start h-10 sm:h-12">
+              <Video className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="text-sm">Gerar UGC Vídeo</span>
             </Button>
           </div>
         </div>

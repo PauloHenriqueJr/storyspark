@@ -401,6 +401,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
               generatedCopy={generatedCopy}
               onRegenerate={regenerate}
               onSave={() => { toast({ title: "Copy salva!", description: "Adicionada à sua biblioteca pessoal." }); }}
+              onGenerateUGC={() => notifications.info.featureComingSoon('Geração de UGC Vídeo')}
               canRegenerate={credits >= 1}
               isRegenerating={isGenerating}
             />

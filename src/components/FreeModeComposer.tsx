@@ -295,6 +295,7 @@ ${processedPrompt}
                 generatedCopy={generatedCopy}
                 onRegenerate={() => handleGenerate()}
                 onSave={() => { notifications.success.copied(); }}
+                onGenerateUGC={() => notifications.info.featureComingSoon('Geração de UGC Vídeo')}
                 canRegenerate={credits >= 2}
                 isRegenerating={isGenerating}
               />
