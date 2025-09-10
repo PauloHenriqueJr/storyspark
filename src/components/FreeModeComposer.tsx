@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import { Sparkles, RefreshCw, Brain, Code2, Wand2, Settings } from "lucide-react
 import { SimplifiedFreeModeComposer } from "./SimplifiedFreeModeComposer";
 import { useNotifications } from '@/hooks/useNotifications';
 import { aiContingencyService } from '@/services/aiContingencyService';
+import { UGCGenerator } from "./UGCGenerator";
 
 interface FreeModeComposerProps {
   credits: number;
@@ -64,6 +65,12 @@ export const FreeModeComposer = ({ credits, onCreditsUpdate, onStatsUpdate, sele
   const [selectedFunnelStage, setSelectedFunnelStage] = useState<string>("");
   const [generatedCopy, setGeneratedCopy] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUGCOpen, setIsUGCOpen] = useState(false);
+  const templateData = useMemo(() => ({
+    id: 'modo-livre',
+    name: 'Modo Livre',
+    platform: variables.find(v => v.name === 'canal')?.value
+  }), [variables]);
 
   useEffect(() => {
     if (selectedHook && selectedHook.text) {
@@ -291,13 +298,24 @@ ${processedPrompt}
           <div className="space-y-4 sm:space-y-6">
             {/* Card de resultado da copy gerada - aparece ao lado dos controles de IA */}
             {generatedCopy && (
-              <CopyResultActions
-                generatedCopy={generatedCopy}
-                onRegenerate={() => handleGenerate()}
-                onSave={() => { notifications.success.copied(); }}
-                canRegenerate={credits >= 2}
-                isRegenerating={isGenerating}
-              />
+              <>
+                <CopyResultActions
+                  generatedCopy={generatedCopy}
+                  onRegenerate={() => handleGenerate()}
+                  onSave={() => { notifications.success.copied(); }}
+                  canRegenerate={credits >= 2}
+                  isRegenerating={isGenerating}
+                />
+                <Button variant="outline" className="w-full" onClick={() => setIsUGCOpen(true)}>
+                  Gerar UGC Vídeo
+                </Button>
+                <UGCGenerator
+                  open={isUGCOpen}
+                  onOpenChange={setIsUGCOpen}
+                  initialCopy={generatedCopy}
+                  template={templateData}
+                />
+              </>
             )}
 
             <Card>

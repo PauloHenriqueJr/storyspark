@@ -20,6 +20,7 @@ import type { Hook } from "@/data/hooks";
 import { HookQuickPicker } from "@/components/HookQuickPicker";
 import { useNotifications } from '@/hooks/useNotifications';
 import { aiContingencyService } from '@/services/aiContingencyService';
+import { UGCGenerator } from "./UGCGenerator";
 
 interface SimplifiedFreeModeComposerProps {
   credits: number;
@@ -49,6 +50,7 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
   const [generatedCopy, setGeneratedCopy] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedHook, setSelectedHook] = useState<Hook | null>(initialHook || null);
+  const [isUGCOpen, setIsUGCOpen] = useState(false);
 
   useEffect(() => {
     if (initialTemplateId) {
@@ -397,13 +399,24 @@ export const SimplifiedFreeModeComposer = ({ credits, onCreditsUpdate, onStatsUp
         <div className="space-y-4 sm:space-y-6">
           {/* Card de resultado da copy gerada - aparece no topo da coluna direita */}
           {generatedCopy && (
-            <CopyResultActions
-              generatedCopy={generatedCopy}
-              onRegenerate={regenerate}
-              onSave={() => { toast({ title: "Copy salva!", description: "Adicionada à sua biblioteca pessoal." }); }}
-              canRegenerate={credits >= 1}
-              isRegenerating={isGenerating}
-            />
+            <>
+              <CopyResultActions
+                generatedCopy={generatedCopy}
+                onRegenerate={regenerate}
+                onSave={() => { toast({ title: "Copy salva!", description: "Adicionada à sua biblioteca pessoal." }); }}
+                canRegenerate={credits >= 1}
+                isRegenerating={isGenerating}
+              />
+              <Button variant="outline" className="w-full" onClick={() => setIsUGCOpen(true)}>
+                Gerar UGC Vídeo
+              </Button>
+              <UGCGenerator
+                open={isUGCOpen}
+                onOpenChange={setIsUGCOpen}
+                initialCopy={generatedCopy}
+                template={progress.selectedTemplate ? { id: progress.selectedTemplate.id, name: progress.selectedTemplate.name, platform: progress.selectedTemplate.platform } : undefined}
+              />
+            </>
           )}
 
           {(progress.selectedTemplate || progress.selectedTone) && (
