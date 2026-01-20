@@ -5,6 +5,12 @@ import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
+const getDefaultRedirectPath = () => {
+  if (typeof window === 'undefined') return '/dashboard';
+  const host = window.location.hostname.toLowerCase();
+  return host.startsWith('admin.') ? '/admin' : '/dashboard';
+};
+
 const AuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -56,7 +62,7 @@ const AuthCallback = () => {
 
             // Redirect to dashboard after a brief success display
             setTimeout(() => {
-              navigate('/dashboard', { replace: true });
+              navigate(getDefaultRedirectPath(), { replace: true });
             }, 1500);
             return;
           }
@@ -82,7 +88,7 @@ const AuthCallback = () => {
 
           // Redirect to dashboard after a brief success display
           setTimeout(() => {
-            navigate('/dashboard', { replace: true });
+            navigate(getDefaultRedirectPath(), { replace: true });
           }, 1500);
         } else {
           // Se não há sessão, redirecionar para auth

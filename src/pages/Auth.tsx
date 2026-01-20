@@ -47,6 +47,12 @@ type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 type ResetForm = z.infer<typeof resetSchema>;
 
+const getDefaultRedirectPath = () => {
+  if (typeof window === 'undefined') return '/dashboard';
+  const host = window.location.hostname.toLowerCase();
+  return host.startsWith('admin.') ? '/admin' : '/dashboard';
+};
+
 const Auth = () => {
   const navigate = useNavigate();
   const { login, loginWithGoogle, register, resetPassword, loading: authLoading, isAuthenticated } = useAuth();
@@ -62,7 +68,7 @@ const Auth = () => {
       const timer = setTimeout(() => {
         // Verificar novamente se ainda está autenticado antes de redirecionar
         if (isAuthenticated && !authLoading) {
-          navigate('/dashboard', { replace: true });
+          navigate(getDefaultRedirectPath(), { replace: true });
         }
       }, 1000);
       return () => clearTimeout(timer);
@@ -100,7 +106,7 @@ const Auth = () => {
   const handleLogin = async (data: LoginForm) => {
     try {
       await login({ email: data.email, password: data.password });
-      navigate('/dashboard');
+      navigate(getDefaultRedirectPath());
     } catch (error) {
       console.error('Login error:', error);
       // Error handling is done in AuthProvider

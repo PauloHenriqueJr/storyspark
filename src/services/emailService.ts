@@ -307,7 +307,7 @@ class EmailService {
         };
       }
 
-      const loginUrl = `https://storyspark.com/auth?invite=${data.inviteCode}`;
+      const loginUrl = `https://app.storyspark.com.br/auth?invite=${data.inviteCode}`;
       const variables: TemplateVariables = {
         userName: data.name || "Usuário",
         inviteCode: data.inviteCode,
@@ -460,8 +460,8 @@ class EmailService {
         };
       }
 
-      const dashboardUrl = "https://storyspark.com/dashboard";
-      const tutorialUrl = "https://storyspark.com/tutorial";
+      const dashboardUrl = "https://app.storyspark.com.br/dashboard";
+      const tutorialUrl = "https://storyspark.com.br/tutorial";
       const variables: TemplateVariables = {
         userName: name || "Usuário",
         dashboardUrl,

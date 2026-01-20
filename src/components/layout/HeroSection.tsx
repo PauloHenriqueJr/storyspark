@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Mail, Send, Play, Users, Zap, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
 import appDark from '@/assets/app-dark.png';
 import appLight from '@/assets/app-light.png';
+import { appUrl } from '@/utils/urls';
 
 const stats = [
   { icon: Users, value: '2.500+', label: 'Profissionais confiam' },
@@ -104,7 +104,7 @@ export const HeroSection = () => {
                     className="bg-gradient-primary hover:shadow-glow h-10 px-6"
                     onClick={(e) => {
                       e.preventDefault();
-                      window.location.href = '/auth';
+                      window.location.href = appUrl('/auth');
                     }}
                   >
                     <span className="hidden md:block">Começar agora (grátis)</span>
@@ -115,7 +115,7 @@ export const HeroSection = () => {
 
               <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
                 <Button variant="outline" size="lg" asChild>
-                  <Link to="/billing">Ver planos</Link>
+                  <a href={appUrl('/billing')}>Ver planos</a>
                 </Button>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
@@ -129,10 +129,10 @@ export const HeroSection = () => {
               variants={fadeInUp}
             >
               <Button size="lg" className="bg-gradient-primary hover:shadow-glow" asChild>
-                <Link to="/dashboard">Demo Interativo</Link>
+                <a href={appUrl('/dashboard')}>Demo Interativo</a>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <Link to="/auth">Começar Demo</Link>
+                <a href={appUrl('/auth')}>Começar Demo</a>
               </Button>
             </motion.div>
 

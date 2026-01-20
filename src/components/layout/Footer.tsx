@@ -1,33 +1,33 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Sparkles, Mail, Phone, MapPin, Flame } from 'lucide-react';
+import { Mail, Phone, MapPin, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { adminUrl, appUrl, landingUrl } from '@/utils/urls';
 
 const footerLinks = {
   produto: [
-    { name: 'Recursos', href: '/templates' },
-    { name: 'Preços', href: '/billing' },
-    { name: 'Integrações', href: '/integrations' },
-    { name: 'Templates', href: '/templates' }
+    { name: 'Recursos', href: appUrl('/templates') },
+    { name: 'Preços', href: appUrl('/billing') },
+    { name: 'Integrações', href: appUrl('/integrations') },
+    { name: 'Templates', href: appUrl('/templates') }
   ],
   empresa: [
-    { name: 'Sobre', href: '/dashboard' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Contato', href: '/feedback' }
+    { name: 'Sobre', href: landingUrl('/') },
+    { name: 'Blog', href: landingUrl('/blog') },
+    { name: 'Dashboard', href: appUrl('/dashboard') },
+    { name: 'Contato', href: appUrl('/feedback') }
   ],
   suporte: [
-    { name: 'Central de Ajuda', href: '/feedback' },
-    { name: 'Documentação', href: '/templates' },
-    { name: 'Configurações', href: '/settings' },
-    { name: 'Equipe', href: '/team' }
+    { name: 'Central de Ajuda', href: appUrl('/feedback') },
+    { name: 'Documentação', href: appUrl('/templates') },
+    { name: 'Configurações', href: appUrl('/settings') },
+    { name: 'Equipe', href: appUrl('/team') }
   ],
   legal: [
-    { name: 'Privacidade', href: '/settings' },
-    { name: 'Termos', href: '/settings' },
-    { name: 'Cookies', href: '/settings' },
-    { name: 'Segurança', href: '/admin/security' }
+    { name: 'Privacidade', href: appUrl('/settings') },
+    { name: 'Termos', href: appUrl('/settings') },
+    { name: 'Cookies', href: appUrl('/settings') },
+    { name: 'Segurança', href: adminUrl('/admin/security') }
   ]
 };
 
@@ -63,14 +63,14 @@ export const Footer = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
             {/* Logo e descrição */}
             <div className="lg:col-span-2">
-              <Link to="/" className="flex items-center space-x-2 mb-4">
+              <a href={landingUrl('/')} className="flex items-center space-x-2 mb-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
                   <Flame className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                   StorySpark
                 </span>
-              </Link>
+              </a>
               
               <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
                 A plataforma de IA mais avançada para criação de conteúdo. 
@@ -99,12 +99,12 @@ export const Footer = () => {
               <ul className="space-y-2">
                 {footerLinks.produto.map((link, index) => (
                   <li key={index}>
-                    <Link 
-                      to={link.href}
+                    <a
+                      href={link.href}
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       {link.name}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -115,12 +115,12 @@ export const Footer = () => {
               <ul className="space-y-2">
                 {footerLinks.empresa.map((link, index) => (
                   <li key={index}>
-                    <Link 
-                      to={link.href}
+                    <a
+                      href={link.href}
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       {link.name}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -131,12 +131,12 @@ export const Footer = () => {
               <ul className="space-y-2">
                 {footerLinks.suporte.map((link, index) => (
                   <li key={index}>
-                    <Link 
-                      to={link.href}
+                    <a
+                      href={link.href}
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       {link.name}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -147,12 +147,12 @@ export const Footer = () => {
               <ul className="space-y-2">
                 {footerLinks.legal.map((link, index) => (
                   <li key={index}>
-                    <Link 
-                      to={link.href}
+                    <a
+                      href={link.href}
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       {link.name}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>

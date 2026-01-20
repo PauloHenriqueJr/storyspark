@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useAdminPlansCache } from '@/hooks/useAdminPlansCache';
+import { appUrl } from '@/utils/urls';
 
 export const PricingSection = () => {
   const { activePlans, loading, formatPrice } = useAdminPlansCache();
@@ -87,9 +87,9 @@ export const PricingSection = () => {
                   }`}
                   variant={plan.is_popular ? 'default' : 'outline'}
                 >
-                  <Link to="/register">
+                  <a href={appUrl('/auth')}>
                     {plan.slug === 'enterprise' ? 'Falar com Vendas' : 'Começar Agora'}
-                  </Link>
+                  </a>
                 </Button>
               </CardContent>
             </Card>
@@ -101,9 +101,9 @@ export const PricingSection = () => {
             Todos os planos incluem 7 dias de teste grátis
           </p>
           <Button variant="ghost" asChild>
-            <Link to="/compare-plans">
+            <a href={appUrl('/billing')}>
               Ver comparação completa de recursos →
-            </Link>
+            </a>
           </Button>
         </div>
       </div>

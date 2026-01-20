@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { appUrl } from '@/utils/urls';
 
 export const CTASection = () => {
   return (
@@ -34,10 +34,10 @@ export const CTASection = () => {
                 size="lg"
                 className="bg-background text-foreground hover:bg-background/90 shadow-elegant"
               >
-                <Link to="/register" className="group">
+                <a href={appUrl('/auth')} className="group">
                   Começar Gratuitamente
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
+                </a>
               </Button>
 
               <Button 
@@ -46,9 +46,9 @@ export const CTASection = () => {
                 size="lg"
                 className="text-primary-foreground hover:bg-white/10"
               >
-                <Link to="/feedback">
+                <a href={appUrl('/feedback')}>
                   Agendar Demo
-                </Link>
+                </a>
               </Button>
             </div>
 

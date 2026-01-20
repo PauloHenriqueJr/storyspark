@@ -4,10 +4,11 @@ import { Menu, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { cn } from '@/lib/utils';
+import { appUrl } from '@/utils/urls';
 
 const menuItems = [
   { name: 'Início', href: '/' },
-  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Dashboard', href: appUrl('/dashboard') },
   { name: 'Blog', href: '/blog' },
 ];
 
@@ -50,12 +51,21 @@ export const BlogHeader = () => {
               <ul className="flex gap-8 text-sm">
                 {menuItems.map((item, index) => (
                   <li key={index}>
-                    <Link
-                      to={item.href}
-                      className="text-muted-foreground hover:text-primary block duration-200 font-medium"
-                    >
-                      <span>{item.name}</span>
-                    </Link>
+                    {item.href.startsWith('http') ? (
+                      <a
+                        href={item.href}
+                        className="text-muted-foreground hover:text-primary block duration-200 font-medium"
+                      >
+                        <span>{item.name}</span>
+                      </a>
+                    ) : (
+                      <Link
+                        to={item.href}
+                        className="text-muted-foreground hover:text-primary block duration-200 font-medium"
+                      >
+                        <span>{item.name}</span>
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -74,13 +84,23 @@ export const BlogHeader = () => {
                 <ul className="space-y-6 text-base">
                   {menuItems.map((item, index) => (
                     <li key={index}>
-                      <Link
-                        to={item.href}
-                        className="text-muted-foreground hover:text-primary block duration-200"
-                        onClick={() => setMenuState(false)}
-                      >
-                        <span>{item.name}</span>
-                      </Link>
+                      {item.href.startsWith('http') ? (
+                        <a
+                          href={item.href}
+                          className="text-muted-foreground hover:text-primary block duration-200"
+                          onClick={() => setMenuState(false)}
+                        >
+                          <span>{item.name}</span>
+                        </a>
+                      ) : (
+                        <Link
+                          to={item.href}
+                          className="text-muted-foreground hover:text-primary block duration-200"
+                          onClick={() => setMenuState(false)}
+                        >
+                          <span>{item.name}</span>
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -94,18 +114,18 @@ export const BlogHeader = () => {
                   variant="outline"
                   size="sm"
                 >
-                  <Link to="/auth">
+                  <a href={appUrl('/auth')}>
                     <span>Entrar</span>
-                  </Link>
+                  </a>
                 </Button>
                 <Button
                   asChild
                   size="sm"
                   className="bg-gradient-primary hover:shadow-glow"
                 >
-                  <Link to="/dashboard">
+                  <a href={appUrl('/dashboard')}>
                     <span>Dashboard</span>
-                  </Link>
+                  </a>
                 </Button>
               </div>
             </div>

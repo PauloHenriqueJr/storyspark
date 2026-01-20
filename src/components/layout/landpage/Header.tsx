@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { appUrl } from '@/utils/urls';
 
 const menuItems = [
   { name: 'Início', anchor: 'hero' },
@@ -234,18 +235,18 @@ export const Header = () => {
                   variant="outline"
                   size="sm"
                 >
-                  <Link to="/auth">
+                  <a href={appUrl('/auth')}>
                     <span>Entrar</span>
-                  </Link>
+                  </a>
                 </Button>
                 <Button
                   asChild
                   size="sm"
                   className="bg-gradient-primary hover:shadow-glow"
                 >
-                  <Link to="/register">
+                  <a href={appUrl('/auth')}>
                     <span>Começar agora</span>
-                  </Link>
+                  </a>
                 </Button>
               </div>
             </div>
