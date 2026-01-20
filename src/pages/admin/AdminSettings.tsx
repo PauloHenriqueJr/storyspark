@@ -93,15 +93,15 @@ const AdminSettings = () => {
     // Configurações de Email - Mailtrap
     mailtrapApiToken: '',
     mailtrapAccountId: '',
-    defaultFromEmail: 'notifications@storyspark.com',
+    defaultFromEmail: 'notifications@storyspark.com.br',
     defaultFromName: 'StorySpark',
     emailsEnabled: true,
     emailProvider: 'mailtrap', // 'mailtrap' | 'smtp'
     
     // Configurações SMTP (fallback)
-    smtpHost: 'smtp.storyspark.com',
+    smtpHost: 'smtp.storyspark.com.br',
     smtpPort: 587,
-    smtpUser: 'notifications@storyspark.com',
+    smtpUser: 'notifications@storyspark.com.br',
     smtpPassword: '',
     
     // Configurações de Segurança
@@ -314,7 +314,7 @@ const AdminSettings = () => {
         await emailService.configure({
           apiToken: settings.mailtrapApiToken,
           accountId: settings.mailtrapAccountId,
-          defaultFromEmail: settings.defaultFromEmail || 'notifications@storyspark.com',
+          defaultFromEmail: settings.defaultFromEmail || 'notifications@storyspark.com.br',
           defaultFromName: settings.defaultFromName || 'StorySpark'
         });
       } else {
@@ -322,7 +322,7 @@ const AdminSettings = () => {
       }
       
       // Enviar e-mail de teste usando o template
-      const result = await emailService.sendTestEmail(settings.defaultFromEmail || 'test@storyspark.com');
+      const result = await emailService.sendTestEmail(settings.defaultFromEmail || 'test@storyspark.com.br');
       
       if (!result.success) {
         throw new Error(result.error || 'Falha ao enviar e-mail de teste');
@@ -330,7 +330,7 @@ const AdminSettings = () => {
       
       toast({
         title: "E-mail de teste enviado com sucesso!",
-        description: `Um e-mail de teste foi enviado para ${settings.defaultFromEmail || 'test@storyspark.com'}. Verifique sua caixa de entrada.`,
+        description: `Um e-mail de teste foi enviado para ${settings.defaultFromEmail || 'test@storyspark.com.br'}. Verifique sua caixa de entrada.`,
       });
       
     } catch (error: any) {
@@ -1063,7 +1063,7 @@ const AdminSettings = () => {
                         <Input
                           id="defaultFromEmail"
                           type="email"
-                          placeholder="notifications@storyspark.com"
+                          placeholder="notifications@storyspark.com.br"
                           value={settings.defaultFromEmail}
                           onChange={(e) => handleSettingChange('defaultFromEmail', e.target.value)}
                         />

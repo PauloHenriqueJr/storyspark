@@ -33,7 +33,7 @@ const AdminManagers = () => {
     {
       id: 1,
       name: 'Ricardo Ferreira',
-      email: 'ricardo@storyspark.com',
+      email: 'ricardo@storyspark.com.br',
       region: 'Sudeste',
       companies: 23,
       users: 156,
@@ -45,7 +45,7 @@ const AdminManagers = () => {
     {
       id: 2,
       name: 'Patrícia Mendes',
-      email: 'patricia@storyspark.com',
+      email: 'patricia@storyspark.com.br',
       region: 'Sul',
       companies: 18,
       users: 89,
@@ -57,7 +57,7 @@ const AdminManagers = () => {
     {
       id: 3,
       name: 'Eduardo Campos',
-      email: 'eduardo@storyspark.com',
+      email: 'eduardo@storyspark.com.br',
       region: 'Nordeste',
       companies: 31,
       users: 201,
@@ -69,7 +69,7 @@ const AdminManagers = () => {
     {
       id: 4,
       name: 'Camila Rodrigues',
-      email: 'camila@storyspark.com',
+      email: 'camila@storyspark.com.br',
       region: 'Norte',
       companies: 12,
       users: 67,
@@ -81,7 +81,7 @@ const AdminManagers = () => {
     {
       id: 5,
       name: 'Felipe Santos',
-      email: 'felipe@storyspark.com',
+      email: 'felipe@storyspark.com.br',
       region: 'Centro-Oeste',
       companies: 15,
       users: 92,

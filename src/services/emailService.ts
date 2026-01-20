@@ -12,6 +12,7 @@ import {
   ProcessedTemplate,
   emailTemplatesService,
 } from "./emailTemplatesService";
+import { appUrl, landingUrl } from "@/utils/urls";
 
 // Importações de fallback para compatibilidade durante migração
 import {
@@ -307,7 +308,7 @@ class EmailService {
         };
       }
 
-      const loginUrl = `https://app.storyspark.com.br/auth?invite=${data.inviteCode}`;
+      const loginUrl = `${appUrl("/auth")}?invite=${data.inviteCode}`;
       const variables: TemplateVariables = {
         userName: data.name || "Usuário",
         inviteCode: data.inviteCode,
@@ -397,8 +398,8 @@ class EmailService {
         position: data.waitlistPosition.toString(), // Usar 'position' em vez de 'waitlistPosition'
         waitlistPosition: data.waitlistPosition.toString(), // Manter ambos para compatibilidade
         supportEmail: "suporte@storyspark.com.br",
-        website_url: "https://storyspark.com.br",
-        unsubscribe_url: "https://storyspark.com.br/unsubscribe",
+        website_url: landingUrl("/"),
+        unsubscribe_url: landingUrl("/unsubscribe"),
         currentYear: new Date().getFullYear().toString(),
       };
 
@@ -460,8 +461,8 @@ class EmailService {
         };
       }
 
-      const dashboardUrl = "https://app.storyspark.com.br/dashboard";
-      const tutorialUrl = "https://storyspark.com.br/tutorial";
+      const dashboardUrl = appUrl("/dashboard");
+      const tutorialUrl = landingUrl("/tutorial");
       const variables: TemplateVariables = {
         userName: name || "Usuário",
         dashboardUrl,

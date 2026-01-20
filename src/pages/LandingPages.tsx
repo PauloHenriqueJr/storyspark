@@ -138,7 +138,7 @@ const LandingPages = () => {
                     <div className="space-y-1">
                       <CardTitle className="text-lg">{page.name}</CardTitle>
                       <CardDescription>
-                        storyspark.com/{page.url} • {page.template}
+                        storyspark.com.br/{page.url} • {page.template}
                       </CardDescription>
                     </div>
                     <Badge className={getStatusColor(page.status)}>

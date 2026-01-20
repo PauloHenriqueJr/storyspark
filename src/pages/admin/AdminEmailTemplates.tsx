@@ -539,8 +539,8 @@ const AdminEmailTemplates = () => {
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com">Website</a> |
-                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="https://storyspark.com.br">Website</a> |
+                <a href="https://storyspark.com.br.br/blog">Blog</a> |
                 <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
@@ -677,8 +677,8 @@ const AdminEmailTemplates = () => {
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com">Website</a> |
-                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="https://storyspark.com.br">Website</a> |
+                <a href="https://storyspark.com.br.br/blog">Blog</a> |
                 <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
@@ -996,8 +996,8 @@ const AdminEmailTemplates = () => {
               
               <div class="brand-footer">
                 <div class="social-links">
-                  <a href="https://storyspark.com.">Website</a> |
-.                  <a href="https://storyspark.com/blog">Blog</a> |
+                  <a href="https://storyspark.com.br.br">Website</a> |
+.                  <a href="https://storyspark.com.br.br/blog">Blog</a> |
                   <a href="mailto:suporte@storyspark.com.br">Suporte</a>
                 </div>
                 <p>© 2024 StorySpark. Todos os direitos reservados.</p>
@@ -1119,8 +1119,8 @@ const AdminEmailTemplates = () => {
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com.br">Website</a> |
-                <a href="https://blog.storyspark.com.br">Blog</a> |
+                <a href="https://storyspark.com.br.brbr">Website</a> |
+                <a href="https://storyspark.com.br.br/blog">Blog</a> |
                 <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
@@ -1305,8 +1305,8 @@ Preferências: {{preferencesUrl}}`
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com.br">Website</a> |
-                <a href="https://blog.storyspark.com">Blog</a> |
+                <a href="https://storyspark.com.br.brbr">Website</a> |
+                <a href="https://storyspark.com.br.br/blog">Blog</a> |
                 <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
@@ -1468,8 +1468,8 @@ Primeiros passos:
         <div class="footer">
             <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">StorySpark</div>
             <div style="margin: 20px 0;">
-                <a href="https://storyspark.com.br">Website</a> |
-                <a href="https://blog.storyspark.com.br">Blog</a> |
+                <a href="https://storyspark.com.br.brbr">Website</a> |
+                <a href="https://storyspark.com.br.br/blog">Blog</a> |
                 <a href="mailto:suporte@storyspark.com.br">Suporte</a>
             </div>
             <p>© 2024 StorySpark. Todos os direitos reservados.</p>
@@ -1540,32 +1540,32 @@ Equipe StorySpark
       position: '42',
       selectedIdeas: 'IA para Copywriting, Analytics Avançados, Integração com CRM',
       inviteCode: 'INV-1756616099-c110b08c',
-      website_url: 'https://storyspark.com',
+      website_url: 'https://storyspark.com.br',
 
       // Newsletter  
       productName: 'StorySpark Premium',
       discountCode: 'SAVE20',
       discountPercentage: '20%',
       productDescription: 'Plataforma completa de marketing de conteúdo com IA',
-      promotionUrl: 'https://storyspark.com/promo',
+      promotionUrl: 'https://storyspark.com.br.br/promo',
 
       // Boas-vindas
-      accountUrl: 'https://app.storyspark.com/dashboard',
-      gettingStartedUrl: 'https://storyspark.com/guia-inicio',
-      featuresUrl: 'https://storyspark.com/recursos',
+      accountUrl: 'https://app.storyspark.com.br.br/dashboard',
+      gettingStartedUrl: 'https://storyspark.com.br.br/guia-inicio',
+      featuresUrl: 'https://storyspark.com.br.br/recursos',
 
       // Pedidos
       orderNumber: 'SS-2024-001234',
       orderDate: '15 de Janeiro de 2024',
       orderTotal: 'R$ 297,00',
-      orderUrl: 'https://app.storyspark.com/pedidos/SS-2024-001234',
+      orderUrl: 'https://app.storyspark.com.br.br/pedidos/SS-2024-001234',
       orderStatus: 'Confirmado',
       customerName: 'João Silva',
       orderItems: 'StorySpark Premium - Plano Anual',
       totalAmount: 'R$ 297,00',
       deliveryAddress: 'Rua das Flores, 123, São Paulo - SP',
       deliveryDate: '22 de Janeiro de 2024',
-      trackingUrl: 'https://app.storyspark.com/tracking/SS-2024-001234',
+      trackingUrl: 'https://app.storyspark.com.br.br/tracking/SS-2024-001234',
       supportMessage: 'Se você tiver alguma dúvida, entre em contato conosco em'
     };
 
