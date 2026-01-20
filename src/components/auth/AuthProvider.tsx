@@ -320,7 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             avatar_url: newProfile.avatar_url || undefined,
             created_at: newProfile.created_at,
             updated_at: newProfile.updated_at,
-            role: newProfile.role
+            role: newProfile.role || 'user'
           };
         }
       }
@@ -334,7 +334,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar_url: profile.avatar_url || undefined,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
-          role: profile.role
+          role: profile.role || 'user'
         };
       }
 
