@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { appUrl } from "@/utils/urls";
 
 // Usar variáveis de ambiente
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
@@ -150,7 +151,7 @@ export const authHelpers = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: appUrl("/auth/callback"),
         queryParams: {
           access_type: "offline",
           prompt: "consent",
@@ -171,7 +172,7 @@ export const authHelpers = {
   // Reset password
   resetPassword: async (email: string) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: appUrl("/auth/reset-password"),
     });
 
     if (error) throw error;
