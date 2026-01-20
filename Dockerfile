@@ -9,7 +9,6 @@ WORKDIR /app
 
 # Copiar arquivos de dependências
 COPY package*.json ./
-COPY bun.lockb ./
 
 # Instalar dependências
 RUN npm ci --frozen-lockfile

@@ -125,8 +125,8 @@ jobs:
           
           # Parar e remover containers antigos (se existirem)
           echo "� Stopping old containers..."
-          docker stop storyspark-app storyspark-www storyspark-admin 2>/dev/null || true
-          docker rm storyspark-app storyspark-www storyspark-admin 2>/dev/null || true
+          docker stop storyspark-app storyspark-landing storyspark-admin 2>/dev/null || true
+          docker rm storyspark-app storyspark-landing storyspark-admin 2>/dev/null || true
           
           # Verificar se rede Traefik existe
           docker network ls | grep traefik || docker network create traefik
@@ -138,23 +138,25 @@ jobs:
             --network traefik \
             --restart unless-stopped \
             --label "traefik.enable=true" \
+            --label "traefik.docker.network=traefik" \
             --label "traefik.http.routers.storyspark-app.rule=Host(\`app.storyspark.com.br\`)" \
             --label "traefik.http.routers.storyspark-app.tls=true" \
-            --label "traefik.http.routers.storyspark-app.tls.certresolver=letsencrypt" \
+            --label "traefik.http.routers.storyspark-app.tls.certresolver=mytlschallenge" \
             --label "traefik.http.services.storyspark-app.loadbalancer.server.port=3000" \
             $FULL_IMAGE
           
           # Deploy da Landing Page (www.storyspark.com.br)
           echo "🏠 Deploying landing page..."
           docker run -d \
-            --name storyspark-www \
+            --name storyspark-landing \
             --network traefik \
             --restart unless-stopped \
             --label "traefik.enable=true" \
-            --label "traefik.http.routers.storyspark-www.rule=Host(\`www.storyspark.com.br\`) || Host(\`storyspark.com.br\`)" \
-            --label "traefik.http.routers.storyspark-www.tls=true" \
-            --label "traefik.http.routers.storyspark-www.tls.certresolver=letsencrypt" \
-            --label "traefik.http.services.storyspark-www.loadbalancer.server.port=3000" \
+            --label "traefik.docker.network=traefik" \
+            --label "traefik.http.routers.storyspark-landing.rule=Host(\`www.storyspark.com.br\`) || Host(\`storyspark.com.br\`)" \
+            --label "traefik.http.routers.storyspark-landing.tls=true" \
+            --label "traefik.http.routers.storyspark-landing.tls.certresolver=mytlschallenge" \
+            --label "traefik.http.services.storyspark-landing.loadbalancer.server.port=3000" \
             $FULL_IMAGE
           
           # Deploy do Admin (admin.storyspark.com.br)
@@ -164,9 +166,10 @@ jobs:
             --network traefik \
             --restart unless-stopped \
             --label "traefik.enable=true" \
+            --label "traefik.docker.network=traefik" \
             --label "traefik.http.routers.storyspark-admin.rule=Host(\`admin.storyspark.com.br\`)" \
             --label "traefik.http.routers.storyspark-admin.tls=true" \
-            --label "traefik.http.routers.storyspark-admin.tls.certresolver=letsencrypt" \
+            --label "traefik.http.routers.storyspark-admin.tls.certresolver=mytlschallenge" \
             --label "traefik.http.services.storyspark-admin.loadbalancer.server.port=3000" \
             $FULL_IMAGE
           
